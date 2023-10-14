@@ -152,11 +152,7 @@ def stable_diff(prompt,number):
     
                     if artifact.finish_reason == generation.FILTER:
         
-                        warnings.warn(
-        
-                            "Your request activated the API's safety filters and could not be processed."
-        
-                            "Please modify the prompt and try again.")
+                        return 'Something went wrong'
         
                     if artifact.type == generation.ARTIFACT_IMAGE:
         
