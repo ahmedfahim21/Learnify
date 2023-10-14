@@ -85,18 +85,56 @@ function MainBox({article}){
     }
 
     return (
-        <div className="container">
-			<div className="response-area">
+        <div  className='mx-5'>
+			{/* <div className="response-area overflow-x-hidden min-h-96 bg-gradient-to-r from-violet-200 to-blue-200 rounded-t-lg summary_box rounded-bl-sm">
                 {messages.map((message, index) => {
                     return index == 0 ? <div/> :(
-                        <div className={message.sender==="ChatGPT" ? 'gpt-message message' : 'user-message message'}>{message.message}</div>
+                        <div className={message.sender==="ChatGPT" ? 'gpt-message message bg-violet-400 max-w-sm  ' : 'user-message message max-w-sm bg-blue-400'}>{message.message}</div>
                     );
                 })}
+            </div> */}
+           
+      <div className="border  rounded-lg rounded-b-sm   mr-5 overflow-y-auto max-h-screen">
+        <div className="bg-gradient-to-r from-violet-500 to-blue-500 p-2 text-white text-center  rounded-t-lg">
+         <span className='font-semibold'> AI Tutor <br /></span>
+         <span className='text-sm'>Get your doubts cleared</span>
+        </div>
+        {/* Chat UI */}
+            <div className='p-2 summary_box '>
+            {messages.map((message, index) => (
+              <div
+                key={index}
+               
+                className={message.sender == 'user' ? 'text-right mb-2' : 'text-left mb-2'}
+              >
+                
+                <span className={message.sender === 'ChatGPT' ? 'bg-blue-500 text-white rounded-xl rounded-bl-sm p-2 inline-block max-w-md' : 'bg-violet-500 text-white rounded-xl rounded-br-sm p-2 inline-block max-w-md'}>
+                  {message.message}
+                </span>
+              </div>
+            ))}
             </div>
+        </div>
+            <div className="flex">
+            <input
+              type="text"
+              value={input}
+              onChange={handleChange}
+              placeholder="Type a message..."
+              className="flex-1 shadow-sm p-2 rounded-l-md"
+            />
+            <button
+              onClick={handleSend}
+              className="bg-blue-500 text-white rounded-r-md p-2 mr-5 hover:bg-blue-700"
+            >
+              Send
+            </button>
+          </div>
+{/* 
 			<div className="prompt-area">
 				<input type="text" placeholder="Send a message..." value={input} onChange={handleChange}/>
 				<button className="submit" type="submit" onClick={handleSend}>Send</button>
-			</div>
+			</div> */}
 		</div>
     );
 }
