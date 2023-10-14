@@ -2,6 +2,7 @@
 import {Link} from 'react-router-dom'
 import { deleteDoc, doc } from '@firebase/firestore'
 import { db } from '../../firebase'
+import imageData from "../../image.json"
 
 
 export default function CourseCard({id,title,img,content}) {
@@ -13,11 +14,11 @@ export default function CourseCard({id,title,img,content}) {
         console.log(res)
     }
 
-
+    console.log(imageData.image)
 
     return (
         <div  className="w-80 p-4 bg-white rounded-lg shadow-md transform hover:scale-105 transition-transform duration-300 ease-in-out">
-            <img className="w-full h-40 object-cover rounded-t-lg" alt="Card Image" src="https://via.placeholder.com/150" />
+            <img className="w-full h-40 object-cover rounded-t-lg" alt="Card Image" src={"data:image/png;base64,"+imageData.image} />
             <div className="p-4">
                 <h2 className="text-xl  font-semibold">{title}</h2>
                 <p className="text-gray-600">{content}</p>

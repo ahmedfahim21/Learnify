@@ -34,7 +34,7 @@ function Courses() {
             <form className="flex flex-col">
                 <input type="text" value={newChapter.name} onChange={(e)=>{ setNewChapter({...newChapter, name: e.target.value})}} placeholder="Enter Course name" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" /> 
                 <input type="text" value={newChapter.content} onChange={(e)=>{ setNewChapter({...newChapter, content: e.target.value})}} placeholder="Enter content" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" />
-                <input type="text" value={newChapter.media} onChange={(e)=>{ setNewChapter({...newChapter, media: e.target.value})}} placeholder="Enter media" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" />
+                {/* <input type="text" value={newChapter.media} onChange={(e)=>{ setNewChapter({...newChapter, media: e.target.value})}} placeholder="Enter media" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" /> */}
                 <button onClick={addChapter} className="flex px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Add</button>
               </form>
 
