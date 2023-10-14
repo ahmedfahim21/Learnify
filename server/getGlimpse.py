@@ -2,7 +2,7 @@ import os
 import base64
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, Blueprint
-from flask_cors import CORS
+
 import io
 import warnings
 from PIL import Image, ImageDraw, ImageFont, ImageColor
@@ -29,7 +29,7 @@ stability_api = client.StabilityInference(
 app = Flask(__name__)
 getGlimpse = Blueprint('getGlimpse', __name__)
 
-CORS(app, resources={r'/*': {'origins': '*'}})
+
 
 
 # ==== Helper Functions ====
@@ -282,7 +282,7 @@ def add_text_to_image(image_path, caption, file_number):
 
 @getGlimpse.route('/', methods=['GET'])
 def test():
-    return 'The comicify server is running!'
+    return 'The server is running!'
 
 
 @getGlimpse.route('/getGlimpse_course', methods=['POST'])
