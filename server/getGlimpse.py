@@ -135,7 +135,7 @@ def stable_diff(prompt,number):
     
         # Check if the folder exists, create it if necessary
     
-        folder_path = "server/images"
+        folder_path = "./images"
     
         # Save the generated image to the folder
     
@@ -151,11 +151,7 @@ def stable_diff(prompt,number):
     
                     if artifact.finish_reason == generation.FILTER:
         
-                        warnings.warn(
-        
-                            "Your request activated the API's safety filters and could not be processed."
-        
-                            "Please modify the prompt and try again.")
+                        return 'Something went wrong'
         
                     if artifact.type == generation.ARTIFACT_IMAGE:
         
@@ -197,7 +193,7 @@ def stable_diff(prompt,number):
 
 #     # Check if the folder exists, create it if necessary
 
-#     folder_path = "server/images"
+#     folder_path = "./images"
 #     # Save the generated image to the folder
 #     a=0
 
@@ -267,14 +263,14 @@ def add_text_to_image(image_path, caption, file_number):
 
     draw.text((10, 0), caption, fill='black', font=font_type)
 
-    result.save(f"server/images/{file_number}.png")
+    result.save(f"./images/{file_number}.png")
 
-    border_img = cv2.imread(f"server/images/{file_number}.png")
+    border_img = cv2.imread(f"./images/{file_number}.png")
 
     borderoutput = cv2.copyMakeBorder(
         border_img, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=[0, 0, 0])
 
-    cv2.imwrite(f"server/images/{file_number}.png", borderoutput)
+    cv2.imwrite(f"./images/{file_number}.png", borderoutput)
 
 
 # ==== Routes ====
@@ -301,10 +297,10 @@ def generate_comic_from_text():
         if(image_path == 'Something went wrong'):
             continue
 
-        add_text_to_image(f"server/images/{i}.png", response[i]['caption'], i)
+        add_text_to_image(f"./images/{i}.png", response[i]['caption'], i)
 
         # Read the image file
-        with open(f"server/images/{i}.png", 'rb') as image_file:  
+        with open(f"./images/{i}.png", 'rb') as image_file:  
             image_data = image_file.read()
         
         # Convert the image data to Base64
@@ -321,7 +317,7 @@ def generate_comic_from_text():
 @getGlimpse.route('/getimg', methods=['POST'])
 def getimg():
     # Read the image file
-    with open(f"server/images/0.png", 'rb') as image_file:  
+    with open(f"./images/0.png", 'rb') as image_file:  
         image_data = image_file.read()
     
     # Convert the image data to Base64

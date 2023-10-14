@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { onSnapshot,doc} from "firebase/firestore";
+import { getDoc ,doc} from "firebase/firestore";
 import { db } from './firebase'
 import {Link} from 'react-router-dom'
 import { useParams } from "react-router";
@@ -7,69 +7,74 @@ import Backbtn from "./Components/Buttons/Backbtn"
 
 function CourseID() {
 
-
-    let courseId = useParams();
-
+    const courseId = useParams();
 
     const [item, setItem] = useState({})
 
-    //read from firestore by id
-    onSnapshot(doc(db, "Course", courseId.id), (doc) => {
-        setItem(doc.data())
-    });
+    useEffect(() => {
+        const fetchCourseData = async () => {
+          const documentRef = doc(db, "Course", courseId.id);
+    
+          try {
+            const docSnapshot = await getDoc(documentRef);
+    
+            if (docSnapshot.exists()) {
+              await setItem(docSnapshot.data());
+            } else {
+              // Handle the case where the document doesn't exist
+              console.log("Document does not exist");
+            }
+          } catch (error) {
+            // Handle any errors that occur during the fetch
+            console.error("Error fetching document:", error);
+          }
+        };
+        fetchCourseData();
+      }, []);
+
+
 
     const [answersVisible, setAnswersVisible] = useState({});
-    const [subpartVisible, setSubpartVisible] = useState({});
-    const [faqData, setFaqData] = useState([
-        {
-            id: 1,
-            question: "Module 1",
-            completed: false,
-            answers: [
-                {
-                    sid: 1,
-                    title: "Article1",
-                    link: "/article",
-                },
-                {
-                    sid: 2,
-                    title: "Quiz",
-                    link: "/quiz",
-                },
-            ],
-        },
-        {
-            id: 2,
-            question: "Module 2",
-            completed: false,
-            answers: [
-                {
-                    sid: 3,
-                    title: "Article",
-                    link: "/article",
-                },
-                {
-                    sid: 4,
-                    title: "Quiz",
-                    link: "/quiz",
-                },
-            ],
-            // Add more questions and answers as needed
-        },
-    ]);
+    // const [subpartVisible, setSubpartVisible] = useState({});
+    const [faqData, setFaqData] = useState([]);
+
+    useEffect(() => {
+    const fetchData = async () => {
+        const faqData = [];
+
+        if (!item.modulesList) {
+            return;
+        }
+        const elem = await item.modulesList.topics;
+        
+        for (let i = 0; i < elem.length; i++) {
+            const modulesName = {
+                id: i,
+                question: elem[i],
+                completed: false,
+                answers: [
+                    {
+                        sid: 1,
+                        title: "Article",
+                        link: "/article",
+                    },
+                    {
+                        sid: 2,
+                        title: "Quiz",
+                        link: "/quiz",
+                    },
+                ],
+            };
+            faqData.push(modulesName);
+        }
+        setFaqData(faqData);
+    };
+    fetchData();
+    }, [item]);
+
 
     const toggleAnswer = (id) => {
         setAnswersVisible({ ...answersVisible, [id]: !answersVisible[id] });
-    };
-
-    const toggleSubpart = (questionId, subpartId) => {
-        setSubpartVisible((prevState) => ({
-            ...prevState,
-            [questionId]: {
-                ...prevState[questionId],
-                [subpartId]: !prevState[questionId][subpartId],
-            },
-        }));
     };
 
     const markModuleAsComplete = (event, moduleId) => {
@@ -89,7 +94,7 @@ function CourseID() {
     useEffect(() => {
         const completedModules = faqData.filter((faq) => faq.completed);
         const totalModules = faqData.length;
-        const progressPercentage = (completedModules.length / totalModules) * 100;
+        const progressPercentage = Math.round((completedModules.length / totalModules) * 100);
         setProgress(progressPercentage);
     }, [faqData]);
 

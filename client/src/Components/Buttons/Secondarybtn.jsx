@@ -4,9 +4,9 @@ import '../../CSS/Secondarybtn.css'
 function Secondarybtn({text,link}) {
   return (
     <div>
-        <Link to={link} class="Sfull-rounded Sbutton">
+        <Link to={link} className="Sfull-rounded Sbutton">
 <span>{text}</span>
-<div class="Sborder Sfull-rounded"></div></Link>
+<div className="Sborder Sfull-rounded"></div></Link>
     </div>
   )
 }

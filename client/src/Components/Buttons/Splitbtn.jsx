@@ -4,9 +4,9 @@ import '../../CSS/Splitbtn.css'
 function Splitbtn({text, link}) {
     return (
         <div>
-            <Link to={link} class="btn-17">
-                <span class="text-container">
-                    <span class="text">{text}</span>
+            <Link to={link} className="btn-17">
+                <span className="text-container">
+                    <span className="text">{text}</span>
                 </span>
             </Link>
 

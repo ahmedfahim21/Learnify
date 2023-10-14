@@ -27,12 +27,63 @@ function Courses() {
 
             try {
                 // Make an asynchronous POST request
-                const res = await axios.post(`${apiUrl}/get_ShortNote`, postData);
-                console.log(res)
+                const summary_res = await axios.post(`${apiUrl}/get_ShortNote`, postData);
+                console.log(summary_res)
+
+                const modules_res = await axios.post(`${apiUrl}/get_Modules`, postData);
+                console.log(modules_res)
+
+                const postDatawithMod = {
+                    course_name: `${newChapter.name}`,
+                    modules: modules_res.data.topics
+                };                    
+
+                const flow_res = await axios.post(`${apiUrl}/get_flowchart`, postDatawithMod);
+                console.log(flow_res)
+
+                // const glimpse_res = await axios.post(`${apiUrl}/getGlimpse_course`, postData);
+                // console.log(glimpse_res)
+
+                //for loop modules_res.data and get the article of each module
+                // const fetchData = async () => {
+                //     const articlesContent = [];
+                //     const novelArticlesContent = [];
+                  
+                //     for (let i = 0; i < 2; i++) {
+                //       const modulesName = {
+                //         userInput: modules_res.data.topics[i]
+                //       };
+                  
+                //       try {
+                //         const articles = await axios.post(`${apiUrl}/get_Article`, modulesName);
+                //         articlesContent.push(articles.data);
+                //         console.log("done articles");
+                  
+                //         const novelArticles = await axios.post(`${apiUrl}/get_novel_article`, modulesName);
+                //         novelArticlesContent.push(novelArticles.data);
+                //         console.log("done novel articles");
+                //       } catch (error) {
+                //         console.error("An error occurred:", error);
+                //       }
+                //     }
+                  
+                //     // Both arrays are ready here
+                //     console.log("articlesContent:", articlesContent);
+                //     console.log("novelArticlesContent:", novelArticlesContent);
+                  
+                //     // You can return or use these arrays as needed
+                //     return { articlesContent, novelArticlesContent };
+                // }
+
 
                 await addDoc(collection(db, "Course"), {
                     name: newChapter.name,
-                    content: res.data,
+                    content: summary_res.data,
+                    modulesList: modules_res.data,
+                    flowchart: flow_res.data,
+                    // media: glimpse_res.data,
+                    // articles: fetchData(),
+                    // novelArticles: fetchData().novelArticlesContent,
                 });
                 setNewChapter({ name: '' })
 

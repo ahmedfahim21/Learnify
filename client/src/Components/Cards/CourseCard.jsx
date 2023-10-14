@@ -24,7 +24,7 @@ export default function CourseCard({id,title,img,content}) {
                 <p className="text-gray-600">{content}</p>
                 <div className="flex justify-between items-center mt-4">
                     <Link to={`/courses/${id}`} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400">Learn More</Link>
-                    <button onClick={() => deleter(id)}className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-400">Delete</button>
+                    <button onClick={() => deleter(id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-400">Delete</button>
                 </div>
             </div>
         </div>
