@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { Link } from 'react-router-dom';
 const Topic = () => {
     const [answersVisible, setAnswersVisible] = useState({});
     const [subpartVisible, setSubpartVisible] = useState({});
@@ -12,12 +12,12 @@ const Topic = () => {
                 {
                     sid: 1,
                     title: "Article",
-                    link: "/demoA",
+                    link: "/article",
                 },
                 {
                     sid: 2,
                     title: "Quiz",
-                    link: "/demoA",
+                    link: "/quiz",
                 },
             ],
         },
@@ -29,12 +29,12 @@ const Topic = () => {
                 {
                     sid: 3,
                     title: "Article",
-                    link: "/demoA",
+                    link: "/article",
                 },
                 {
                     sid: 4,
                     title: "Quiz",
-                    link: "/demoA",
+                    link: "/quiz",
                 },
             ],
             // Add more questions and answers as needed
@@ -79,8 +79,8 @@ const Topic = () => {
     const [progress, setProgress] = useState(0);
 
     return (
-        <div className=" flex flex-col min-h-screen w-full items-center mt-16">
-            <span className="text-5xl font-semibold">Let's Study topic</span>
+        <div className=" flex flex-col min-h-screen w-1/2  items-start mt-16">
+            <span className="text-5xl font-semibold text-center">Let's Study topic</span>
             <span className="mt-5 summary_box w-1/2 text-center flex flex-col">
                 <span className="text-xl m-3">Sneak peek into the chapter!</span>
                 <span>glimpse will come here</span>
@@ -126,7 +126,8 @@ const Topic = () => {
                                         className="cursor-pointer border-b-2 p-2 border-violet-300"
                                         onClick={() => toggleSubpart(faq.id, answer.sid)}
                                     >
-                                        <span className="font-semibold m-2">{answer.title}</span>
+                                        <Link to=
+                                        {answer.link} className="font-semibold m-2">{answer.title}</Link>
                                     </div>
                                     <div
                                         className={`p-2 ${subpartVisible[faq.id] && subpartVisible[faq.id][answer.sid]

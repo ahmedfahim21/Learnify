@@ -5,6 +5,8 @@ import CourseCard from './Cards/CourseCard'
 
 
 function Courses() {
+    const [course, setChapters] = useState([])
+
 
     function CourseAdd() {
         const [newChapter, setNewChapter] = useState({ name: '', content: '', media: '' })
@@ -41,8 +43,6 @@ function Courses() {
           </div>
         );
     }
-
-    const [course, setChapters] = useState([])
 
 
 
