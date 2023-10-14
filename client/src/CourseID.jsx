@@ -3,6 +3,7 @@ import { onSnapshot,doc} from "firebase/firestore";
 import { db } from './firebase'
 import {Link} from 'react-router-dom'
 import { useParams } from "react-router";
+import Backbtn from "./Components/Buttons/Backbtn"
 
 function TestFBID() {
 
@@ -94,26 +95,47 @@ function TestFBID() {
 
     const [progress, setProgress] = useState(0);
 
-
+    useEffect(() => {
+        if (progress > 0) {
+          // Apply a delay to simulate the animation
+          const delay = 20; // Adjust as needed
+          let currentWidth = 0;
+          const interval = setInterval(() => {
+            if (currentWidth < progress) {
+              currentWidth += 1;
+              setWidth(currentWidth);
+            } else {
+              clearInterval(interval);
+            }
+          }, delay);
+        }
+      }, [progress]);
+      
+      const [width, setWidth] = useState(0);
+      
   return (
-    <div className=" flex flex-col min-h-screen w-full items-center mt-16">
+    <div className="">
+            <div className="flex justify-end mr-16 items-end right-0"><Backbtn link={"/courses"}/></div>
+    <div className=" flex flex-col min-h-screen w-full mx-auto items-center mt-8">
 
-            <Link to="/courses" className="text-blue-500 hover:text-blue-800"> Back to home</Link>
 
-            <span className="text-5xl font-semibold">Let&apos;s Study about {item.name}</span>
+            <span className="text-5xl w-3/4 text-center mt-1 font-semibold">Let&apos;s Study about <br /> {item.name}</span>
             <span className="mt-5 summary_box w-1/2 text-center flex flex-col">
                 <span className="text-xl m-3">Sneak peek into the chapter!</span>
-                <span>glimpse will come here {item.media}</span>
+                
                 <br></br>
                 <span>{item.content}</span>
             </span>
             <span className="mt-8 text-3xl font-semibold">Start your course</span>
-            <div className="mt-4 w-1/2 mx-auto items-center">
-                <div
-                    className="h-6 bg-green-500 rounded-xl text-center text-black"
-                    style={{ width: `${progress}%` }}
-                > {progress}% completed</div>
-            </div>
+            
+<div className="mt-4 w-1/2 mx-auto items-center">
+  <div className="h-6 bg-slate-300 rounded-xl text-center text-black relative">
+    <div className="w-full h-full bg-green-500 rounded-xl absolute transition-width duration-1000" style={{ width: `${progress}%` }}>
+      {progress > 0 ? `${progress}% completed` : ""}
+    </div>
+  </div>
+</div>
+
             <div className="w-1/2 p-6 space-y-4 mt-5 summary_box bg-gradient-to-r from-violet-200 to-rose-100 gap-3">
                 {faqData.map((faq) => (
                     <div key={faq.id}>
@@ -165,6 +187,7 @@ function TestFBID() {
                 ))}
             </div>
 
+    </div>
     </div>
   )
 }
