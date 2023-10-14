@@ -13,8 +13,7 @@ import Courses from './Components/Courses'
 
 import Topic from './Components/Topic'
 
-import TestFB from './TestFB'
-import TestFBID from './TestFBID'
+import CourseID from './CourseID'
 
 
 function App() {
@@ -32,8 +31,7 @@ function App() {
         <div className='app'>
         <Routes>
           <Route path='/' element={<Hero />} />
-          <Route path='/testFb' element={<TestFB />} />
-          <Route path="/testFb/:id" element={<TestFBID />} />
+          <Route path="/courses/:id" element={<CourseID />} />
           <Route path='/contact' element={<Contact />} />
           <Route path='/courses' element={<Courses />} />
           <Route path="/topic" element={<Topic />} />
