@@ -10,7 +10,12 @@ import Contact from './Components/Contact'
  
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Courses from './Components/Courses'
+
 import Topic from './Components/Topic'
+
+import TestFB from './TestFB'
+import TestFBID from './TestFBID'
+
 
 function App() {
  
@@ -27,7 +32,8 @@ function App() {
         <div className='app'>
         <Routes>
           <Route path='/' element={<Hero />} />
-          {/* <Route path='/about' element={<About />} /> */}
+          <Route path='/testFb' element={<TestFB />} />
+          <Route path="/testFb/:id" element={<TestFBID />} />
           <Route path='/contact' element={<Contact />} />
           <Route path='/courses' element={<Courses />} />
           <Route path="/topic" element={<Topic />} />
