@@ -5,6 +5,9 @@ import CourseCard from './Cards/CourseCard'
 
 
 function Courses() {
+    const [course, setChapters] = useState([])
+
+    const [newChapter, setNewChapter] = useState({ name: '', content: '', media: '' })
 
     function CourseAdd() {
         return (
@@ -25,9 +28,7 @@ function Courses() {
         );
     }
 
-    const [course, setChapters] = useState([])
-
-    const [newChapter, setNewChapter] = useState({ name: '', content: '', media: '' })
+   
 
 
     //add
