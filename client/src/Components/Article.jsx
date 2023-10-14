@@ -4,7 +4,7 @@ function Article() {
   return (
     <div className='w-3/4 mx-auto flex flex-col gap-5 mt-8 min-h-screen  '>
         <div className='flex justify-end'>
-            <Backbtn link={'/topic'} />
+            <Backbtn link={'../'} />
         </div>
         <span className='text-center text-4xl font-semibold '>Article Heading</span>
         <div className='flex items-center flex-col'>
