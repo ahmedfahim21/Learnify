@@ -177,11 +177,11 @@ def talkToGPT(prompt):
 
         max_tokens=1000)
     
-    article_with_image = response.choices[0].message.content
+    res = response.choices[0].message.content
     
 
     # Return the generated modules
-    return article_with_image
+    return res
 
 
 
