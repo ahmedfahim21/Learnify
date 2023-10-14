@@ -2,7 +2,7 @@ import os
 import base64
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, Blueprint
-from flask_cors import CORS
+
 import io
 import warnings
 from PIL import Image, ImageDraw, ImageFont, ImageColor
@@ -29,7 +29,7 @@ stability_api = client.StabilityInference(
 
 app = Flask(__name__)
 
-CORS(app, resources={r'/*': {'origins': '*'}})
+
 
 # ==== Helper Functions ====
 
