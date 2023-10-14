@@ -1,7 +1,6 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+// import { Link } from 'react-router-dom'
 import Primarybtn from './Buttons/Primarybtn'
-function nav() {
+function Nav() {
   return (
     <div className='flex justify-between'>
         <span>LOGO</span>
@@ -17,4 +16,4 @@ function nav() {
   )
 }
 
-export default nav
+export default Nav
