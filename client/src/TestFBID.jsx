@@ -24,7 +24,7 @@ function TestFBID() {
             <br />
             <p>CourseMedia {item.media}</p>
 
-            <Link to="/testFB" className="text-blue-500 hover:text-blue-800"> Back to home</Link>
+            <Link to="/courses" className="text-blue-500 hover:text-blue-800"> Back to home</Link>
 
     </div>
   )
