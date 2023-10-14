@@ -57,12 +57,12 @@ function CourseID() {
                     {
                         sid: 1,
                         title: "Article",
-                        link: "/article",
+                        link: `./article/${elem[i]}`,
                     },
                     {
                         sid: 2,
                         title: "Quiz",
-                        link: "/quiz",
+                        link: `./quiz/${elem[i]}`,
                     },
                 ],
             };
@@ -175,7 +175,7 @@ function CourseID() {
                             {faq.answers.map((answer, index) => (
                                 <div key={index} className="m-2">
                                     <div className="cursor-pointer border-b-2 p-2 border-violet-300">
-                                    <Link to="./article"
+                                    <Link to={answer.link}
                                         // onClick={() => toggleSubpart(faq.id, answer.sid)}
                                     >
                                         <span className="font-semibold m-2">{answer.title}</span>
