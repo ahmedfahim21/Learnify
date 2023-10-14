@@ -16,7 +16,7 @@ import Article from './Components/Article'
 import Faq from './Components/Faqs'
 
 import CourseID from './CourseID'
-import Quiz from './Quiz'
+import Quiz from './Components/Quiz'
 
 
 function App() {
@@ -43,8 +43,6 @@ function App() {
           <Route path="/quiz" element={<Quiz />} />
 
           <Route path="/Faq" element={<Faq />} />
-          <Route path="/quiz" element ={<Quiz />} />
-          
         </Routes>
         </div>
 
