@@ -39,6 +39,7 @@ function App() {
           <Route path='/courses' element={<Courses />} />
           <Route path="/topic" element={<Topic />} />
           <Route path="/Faq" element={<Faq />} />
+          
         </Routes>
         </div>
 
