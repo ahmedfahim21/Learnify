@@ -5,7 +5,7 @@ import {Link} from 'react-router-dom'
 import { useParams } from "react-router";
 import Backbtn from "./Components/Buttons/Backbtn"
 
-function TestFBID() {
+function CourseID() {
 
 
     let courseId = useParams();
@@ -28,13 +28,13 @@ function TestFBID() {
             answers: [
                 {
                     sid: 1,
-                    title: "Article",
-                    link: "/demoA",
+                    title: "Article1",
+                    link: "/article",
                 },
                 {
                     sid: 2,
                     title: "Quiz",
-                    link: "/demoA",
+                    link: "/quiz",
                 },
             ],
         },
@@ -46,12 +46,12 @@ function TestFBID() {
                 {
                     sid: 3,
                     title: "Article",
-                    link: "/demoA",
+                    link: "/article",
                 },
                 {
                     sid: 4,
                     title: "Quiz",
-                    link: "/demoA",
+                    link: "/quiz",
                 },
             ],
             // Add more questions and answers as needed
@@ -166,19 +166,12 @@ function TestFBID() {
                         >
                             {faq.answers.map((answer, index) => (
                                 <div key={index} className="m-2">
-                                    <div
-                                        className="cursor-pointer border-b-2 p-2 border-violet-300"
-                                        onClick={() => toggleSubpart(faq.id, answer.sid)}
+                                    <div className="cursor-pointer border-b-2 p-2 border-violet-300">
+                                    <Link to="./article"
+                                        // onClick={() => toggleSubpart(faq.id, answer.sid)}
                                     >
                                         <span className="font-semibold m-2">{answer.title}</span>
-                                    </div>
-                                    <div
-                                        className={`p-2 ${subpartVisible[faq.id] && subpartVisible[faq.id][answer.sid]
-                                                ? ''
-                                                : 'hidden'
-                                            }`}
-                                    >
-                                        <div>{answer.desc}</div>
+                                    </Link>
                                     </div>
                                 </div>
                             ))}
@@ -192,4 +185,4 @@ function TestFBID() {
   )
 }
 
-export default TestFBID
+export default CourseID
