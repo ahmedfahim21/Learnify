@@ -6,7 +6,7 @@ function Hero() {
       <span className="text-5xl font-bold ">We make your Learning fun and simple</span>
       <span className="text-2xl mt-8 w-1/2 mx-auto text-center ">Learnify is a platform that provides you with the best learning experience.</span>
       <div className="mt-8">
-      <Splitbtn text="Get Started " link={"/Courses"} />
+      <Splitbtn text="Get Started " link={"/courses"} />
       </div>
      
     </div>
