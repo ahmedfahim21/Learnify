@@ -281,7 +281,7 @@ def add_text_to_image(image_path, caption, file_number):
 
 @getGlimpse.route('/', methods=['GET'])
 def test():
-    return 'The comicify server is running!'
+    return 'The server is running!'
 
 
 @getGlimpse.route('/getGlimpse_course', methods=['POST'])
