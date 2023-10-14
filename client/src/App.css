@@ -5,3 +5,54 @@
 .summary_box {
     @apply rounded-xl border border-gray-200 bg-white/20 shadow-[inset_10px_-50px_94px_0_rgb(199,199,199,0.2)] backdrop-blur p-4;
   }
+
+  .response-area{
+    height: 85%;
+    width: 100%;
+    border: 1px solid black;
+    overflow: scroll;
+    padding: 20px;
+    font-size: 15px;
+  }
+  
+  .prompt-area{
+    height: 15%;
+    width: 100%;
+    border: 1px solid black;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+  }
+  
+  .prompt-area input{
+    height: 50%;
+    width: 85%;
+    padding: 5px;
+    font-size: 15px;
+  }
+  
+  .prompt-area button{
+    width: 10%;
+    height: 50%;
+  }
+  
+  .gpt-message{
+    display: block;
+    position: relative;
+    float: left;
+    width: 100%;
+    font-size: 15px;
+  }
+  
+  .user-message{
+    display: block;
+    width: 100%;
+    text-align: right;
+    position: relative;
+    float: right;
+    font-size: 15px;
+  }
+  
+  .message{
+    margin: 5px;
+  }
