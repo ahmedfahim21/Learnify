@@ -79,8 +79,8 @@ const Topic = () => {
     const [progress, setProgress] = useState(0);
 
     return (
-        <div className=" flex flex-col min-h-screen w-full items-center mt-16">
-            <span className="text-5xl font-semibold">Let's Study topic</span>
+        <div className=" flex flex-col min-h-screen w-1/2  items-start mt-16">
+            <span className="text-5xl font-semibold text-center">Let's Study topic</span>
             <span className="mt-5 summary_box w-1/2 text-center flex flex-col">
                 <span className="text-xl m-3">Sneak peek into the chapter!</span>
                 <span>glimpse will come here</span>
