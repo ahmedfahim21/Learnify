@@ -44,3 +44,21 @@ def talkToGPT():
     return res
 
 
+@chatBot.route('/chatBot2',methods=['POST'])
+def chatBot2():
+    openai.api_key = os.environ['OPENAI_API']
+    model = request.get_json()['model']
+    messages = request.get_json()['messages']
+    response =  openai.ChatCompletion.create(
+
+        model=model,
+
+        messages=messages,
+
+        temperature=0.6,
+
+        max_tokens=1000)
+    return response
+
+
+

@@ -1,9 +1,31 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Quiz = () => {
 
+  const apiUrl = 'http://localhost:5000';
+
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [quizData, setquizData] = useState([])
+  // let quizData = [
+  //   // ... Your quiz questions and options ...
+  //   {
+  //       question: 'What is the capital of France?',
+  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
+  //       answer: 'Paris',
+  //     },
+  //     {
+  //       question: 'What is the capital of France2?',
+  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
+  //       answer: 'Paris',
+  //     },
+  //     {
+  //       question: 'What is the capital of France3?',
+  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
+  //       answer: 'Paris',
+  //     },
+  // ];
   useEffect(() => {
     let interval;
 
@@ -18,29 +40,40 @@ const Quiz = () => {
     return () => clearInterval(interval);
   }, [isTimerRunning]);
 
-  const handleStartStopTimer = () => {
+  const handleStartStopTimer = async () => {
+    if(!isTimerRunning){
+      const article = "The French Revolution, a seminal event in late 18th-century France, marked a watershed moment in the history of both the nation and the modern world. Emerging in 1789, it was driven by a complex web of social, political, and economic factors. The revolution began with a groundswell of discontent among the common people, who were suffering under heavy taxation, while the nobility and clergy enjoyed privileges and tax exemptions. This discontent culminated in the famous storming of the Bastille in July 1789, which symbolized the people's revolt against oppression. As the revolution unfolded, it went through various phases, including the Reign of Terror led by Maximilien Robespierre, which saw mass executions and radical political changes.";
+
+      // const article = getArticlefromDB();
+      const postData = {
+        "userInput": article,
+      };
+      
+      try {
+        // await addDoc(collection(db, "Course"), {
+        //     name: newChapter.name,
+        //     content: res.data,
+        // });
+        // setNewChapter({ name: '' })
+
+
+        // Make an asynchronous POST request
+        const res = await axios.post(`${apiUrl}/get_Quiz`, postData);
+        setquizData(res.data['quiz']);
+        console.log(quizData)
+
+
+        
+      } catch (error) {
+        // Handle errors
+        console.error('POST request error:', error);
+      }
+    }
     setIsTimerRunning(!isTimerRunning);
   };
 
   
-  const quizData = [
-    // ... Your quiz questions and options ...
-    {
-        question: 'What is the capital of France?',
-        options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-        correctAnswer: 'Paris',
-      },
-      {
-        question: 'What is the capital of France2?',
-        options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-        correctAnswer: 'Paris',
-      },
-      {
-        question: 'What is the capital of France3?',
-        options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-        correctAnswer: 'Paris',
-      },
-  ];
+  
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState(new Array(quizData.length).fill(''));
@@ -68,7 +101,7 @@ const Quiz = () => {
     setIsTimerRunning(false);
 
     // Calculate the score
-    const correctAnswers = quizData.map((q) => q.correctAnswer);
+    const correctAnswers = quizData.map((q) => q.answer);
     const score = userAnswers.filter((answer, index) => answer === correctAnswers[index]).length;
 
     // Display the score and time taken
