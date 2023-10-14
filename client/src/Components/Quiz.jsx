@@ -84,7 +84,7 @@ const Quiz = () => {
     {!showScore && (  
     <div className=''>
     <button
-        className={`mx-3 bg-blue-500 text-white hover:bg-blue-700 py-1 px-5 rounded-lg ${isTimerRunning ? 'bg-red-500' : ''}`}
+        className={`mx-3 bg-gradient-to-l from-blue-600 to-violet-600 text-white py-1 px-5 rounded-lg ${isTimerRunning ? 'bg-red-500' : ''}`}
         onClick={handleStartStopTimer}
       >
         {isTimerRunning ? 'Stop' : 'Start'} 
@@ -151,6 +151,7 @@ const Quiz = () => {
         <div>
           <p className="text-xl font-semibold mt-4">Quiz completed!</p>
           <p className="text-lg mt-4">Your score: {showScore} out of {quizData.length}</p>
+          <p className="text-lg mt-4">Time taken: {timer} seconds</p>
         </div>
       )}
     </div>
