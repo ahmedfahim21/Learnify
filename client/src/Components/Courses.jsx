@@ -7,6 +7,23 @@ import CourseCard from './Cards/CourseCard'
 function Courses() {
 
     function CourseAdd() {
+        const [newChapter, setNewChapter] = useState({ name: '', content: '', media: '' })
+
+        //add
+        const addChapter = async (e) => {
+            e.preventDefault()
+            if (newChapter.name!=''){
+    
+            await addDoc(collection(db, "Course"), {
+                name: newChapter.name,
+                content: newChapter.content,
+                media: newChapter.media
+            });
+            setNewChapter({ name: '', content: '', media: '' })
+        }
+        }
+
+
         return (
           <div className="w-70 p-4 bg-white rounded-lg shadow-md transform items-center justify-center hover:scale-105 transition-transform duration-300 ease-in-out text-center">
             <div className='w-70 h-full p-12 bg-violet-100 rounded-lg shadow-md'>
@@ -27,22 +44,7 @@ function Courses() {
 
     const [course, setChapters] = useState([])
 
-    const [newChapter, setNewChapter] = useState({ name: '', content: '', media: '' })
 
-
-    //add
-    const addChapter = async (e) => {
-        e.preventDefault()
-        if (newChapter.name!=''){
-
-        await addDoc(collection(db, "Course"), {
-            name: newChapter.name,
-            content: newChapter.content,
-            media: newChapter.media
-        });
-        setNewChapter({ name: '', content: '', media: '' })
-    }
-    }
 
     //read
     useEffect(() => {
