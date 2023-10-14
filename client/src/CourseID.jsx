@@ -57,12 +57,12 @@ function CourseID() {
                     {
                         sid: 1,
                         title: "Article",
-                        link: `./${elem[i]}`,
+                        link: `./article/${elem[i]}`,
                     },
                     {
                         sid: 2,
                         title: "Quiz",
-                        link: "/quiz",
+                        link: `./quiz/${elem[i]}`,
                     },
                 ],
             };
