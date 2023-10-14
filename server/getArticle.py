@@ -224,7 +224,13 @@ def get_article_topics():
 
     # Return the generated modules
     return articles['topics']
-    
+
+@get_Article.route('/get_ShortNote',methods=['POST'])
+def get_short_note():
+    module = request.get_json()['userInput']
+    prompt = "Give me a short note within 25 words on " + module + "Be straight to the point, and never reply things like \"Sure, I can..\" etc."
+    # Your route logic here
+    return talkToGPT(prompt)
 
 
 
