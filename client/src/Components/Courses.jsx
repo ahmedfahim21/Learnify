@@ -3,7 +3,8 @@ import { collection, addDoc, onSnapshot, query} from "firebase/firestore";
 import { db } from '../firebase'
 import CourseCard from './Cards/CourseCard'
 import axios from 'axios'
-
+import {motion} from 'framer-motion'
+import { fadeInAnimation } from './animation';
 
 function Courses() {
 
@@ -98,7 +99,7 @@ function Courses() {
 
 
         return (
-          <div className="w-70 p-4 bg-white rounded-lg shadow-md transform items-center justify-center hover:scale-105 transition-transform duration-300 ease-in-out text-center">
+          <motion.div {...fadeInAnimation}className="w-70 p-4 bg-white rounded-lg shadow-md transform items-center justify-center hover:scale-105 transition-transform duration-300 ease-in-out text-center">
             <div className='w-70 h-full p-12 bg-violet-100 rounded-lg shadow-md'>
             <span className="text-2xl mt-32">Create course</span>
             <div className="mt-4">
@@ -111,7 +112,7 @@ function Courses() {
 
             </div>
             </div>
-          </div>
+          </motion.div>
         );
     }
 
@@ -136,7 +137,7 @@ function Courses() {
 
 
     return (
-        <div className='flex flex-col  mx-auto w-3/4 min-h-screen items-center p-5'>
+        <motion.div className='flex flex-col  mx-auto w-3/4 min-h-screen items-center p-5'>
             <span className='text-5xl font-semibold mt-5'>Start Learning </span>
             {/* courses div */}
             <div className="w-full flex flex-wrap gap-4 justify-center h-auto p-5 mt-12 summary_box bg-gradient-to-r from-violet-200 to-rose-100">
@@ -149,7 +150,7 @@ function Courses() {
 
             </div>
 
-        </div>
+        </motion.div>
     )
 }
 
