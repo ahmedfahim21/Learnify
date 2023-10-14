@@ -4,6 +4,7 @@ import { db } from './firebase'
 import {Link} from 'react-router-dom'
 import { useParams } from "react-router";
 import Backbtn from "./Components/Buttons/Backbtn"
+import Flowchart from "./Components/FlowChart";
 
 function CourseID() {
 
@@ -127,7 +128,9 @@ function CourseID() {
             <span className="text-5xl w-3/4 text-center mt-1 font-semibold">Let&apos;s Study about <br /> {item.name}</span>
             <span className="mt-5 summary_box w-1/2 text-center flex flex-col">
                 <span className="text-xl m-3">Sneak peek into the chapter!</span>
-                
+                {item.flowchart &&
+                    <Flowchart hierarchicalData={item.flowchart}/>
+                }
                 <br></br>
                 <span>{item.content}</span>
             </span>
