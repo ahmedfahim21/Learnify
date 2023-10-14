@@ -9,6 +9,7 @@ function Courses() {
 
     const apiUrl = 'http://localhost:5000';
     const [course, setChapters] = useState([])
+    const [loading, setLoading] = useState(false)
 
 
     function CourseAdd() {
@@ -27,6 +28,7 @@ function Courses() {
 
             try {
                 // Make an asynchronous POST request
+                setLoading(true)
                 const summary_res = await axios.post(`${apiUrl}/get_ShortNote`, postData);
                 console.log(summary_res)
 
@@ -41,8 +43,8 @@ function Courses() {
                 const flow_res = await axios.post(`${apiUrl}/get_flowchart`, postDatawithMod);
                 console.log(flow_res)
 
-                // const glimpse_res = await axios.post(`${apiUrl}/getGlimpse_course`, postData);
-                // console.log(glimpse_res)
+                const glimpse_res = await axios.post(`${apiUrl}/getGlimpse_course`, postData);
+                console.log(glimpse_res)
 
 
 
@@ -51,10 +53,11 @@ function Courses() {
                     content: summary_res.data,
                     modulesList: modules_res.data,
                     flowchart: flow_res.data,
-                    // media: glimpse_res.data,
+                    media: glimpse_res.data,
 
                 });
                 setNewChapter({ name: '' })
+                setLoading(false)
 
                 
               } catch (error) {
@@ -73,9 +76,10 @@ function Courses() {
             <div className="mt-4">
             <form className="flex flex-col">
                 <input type="text" value={newChapter.name} onChange={(e)=>{ setNewChapter({...newChapter, name: e.target.value})}} placeholder="Enter Course name" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" /> 
-                {/* <input type="text" value={newChapter.content} onChange={(e)=>{ setNewChapter({...newChapter, content: e.target.value})}} placeholder="Enter content" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" /> */}
-                {/* <input type="text" value={newChapter.media} onChange={(e)=>{ setNewChapter({...newChapter, media: e.target.value})}} placeholder="Enter media" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" /> */}
-                <button onClick={addChapter} className="flex px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Add</button>
+                {
+                    loading ? <span className="text-blue-500">Loading...</span> : <button onClick={addChapter} className="flex px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Add</button>
+                }
+                
               </form>
 
             </div>
