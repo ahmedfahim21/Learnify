@@ -258,7 +258,7 @@ def add_text_to_image(image_path, caption, file_number):
     result = Image.new(image.mode, (new_width, new_height), (255, 255, 255))
     result.paste(image, (left_pad, top_pad))
 
-    font_type = ImageFont.truetype("server/font/animeace2_reg.ttf", 12)
+    font_type = ImageFont.truetype("./font/animeace2_reg.ttf", 12)
 
     draw = ImageDraw.Draw(result)
 
@@ -286,7 +286,7 @@ def generate_comic_from_text():
 
     course = request.get_json()['userInput']
 
-    prompt = "You are a comic book author specialized in digital art,You have to  give instructions to panel for drawing, the content of the comic is about :"+course+"\n\nPlease write detailed drawing instructions and a one-sentence short caption for the panels of a new silent comic book page.Give your response as a JSON array like this: Array<{ panel: number; instructions: string; caption: string}>.Be brief in your upto 6 instructions and captions, don't add your own comments. Be straight to the point, and never reply things like \"Sure, I can..\" etc."
+    prompt = "You are a comic book author specialized in digital art,You have to  give instructions to panel for drawing, the content of the comic is about :"+course+"\n\nPlease write detailed drawing instructions and a one-sentence short caption for upto 5 panels of a new silent comic book page.Give your response as a JSON array like this: Array<{ panel: number; instructions: string; caption: string}>.Be brief in your upto 6 instructions and captions, don't add your own comments. Be straight to the point, and never reply things like \"Sure, I can..\" etc."
 
     response = fetch_instructions_and_captions(prompt)
 
