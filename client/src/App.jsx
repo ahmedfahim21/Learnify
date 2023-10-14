@@ -35,11 +35,11 @@ function App() {
         <Routes>
           <Route path='/' element={<Hero />} />
           <Route path="/courses/:id" element={<CourseID />} />
-          <Route path="/courses/:id/article" element={<Article />} />
+          <Route path="/courses/:id/:article" element={<Article />} />
           <Route path='/contact' element={<Contact />} />
           <Route path='/courses' element={<Courses />} />
           <Route path="/topic" element={<Topic />} />
-          <Route path="/article" element={<Article />} />
+          {/* <Route path="/article" element={<Article />} /> */}
           <Route path="/quiz" element={<Quiz />} />
 
           <Route path="/Faq" element={<Faq />} />
