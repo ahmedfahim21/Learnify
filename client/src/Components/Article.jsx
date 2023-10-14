@@ -3,8 +3,8 @@ import Backbtn from './Buttons/Backbtn';
 
 function Article() {
   const [messages, setMessages] = useState([
-    { text: 'Hello!', sender: 'user' },
-    { text: 'Hi there!', sender: 'bot' },
+    { content: 'Hello!', role: 'user' },
+    { content: 'Hi there!', role: 'assistant' },
   ]);
 
   const [newMessage, setNewMessage] = useState('');
@@ -12,11 +12,11 @@ function Article() {
 
   const handleSendMessage = () => {
     if (newMessage.trim() !== '') {
-      setMessages((prevMessages) => [...prevMessages, { text: newMessage, sender: 'user' }]);
+      setMessages((prevMessages) => [...prevMessages, { content: newMessage, role: 'user' }]);
       setNewMessage('');
       // Simulate a bot response (you can replace this with actual bot logic)
       setTimeout(() => {
-        setMessages((prevMessages) => [...prevMessages, { text: 'I am a bot.', sender: 'bot' }]);
+        setMessages((prevMessages) => [...prevMessages, { content: 'I am a bot.', role: 'bot' }]);
       }, 2000);
     }
   };
@@ -64,9 +64,10 @@ function Article() {
       </div>
 
 
-      <div className="w-1/4 border border-gray-300 rounded-lg min-h-96 h-auto mr-5">
-        <div className="bg-gradient-to-r from-green-400 to-blue-500 py-2 text-white text-center font-semibold rounded-t-lg">
-          AI Tutor
+      <div className="w-1/4 border border-gray-300 rounded-lg min-h-96 max-h-screen mr-5">
+        <div className="bg-gradient-to-r from-violet-500 to-blue-500 p-2 text-white text-center  rounded-t-lg">
+         <span className='font-semibold'> AI Tutor <br /></span>
+         <span className='text-sm'>Get your doubts cleared</span>
         </div>
         {/* Chat UI */}
         <div className="bg-white p-4 h-full flex flex-col justify-between">
@@ -74,10 +75,10 @@ function Article() {
             {messages.map((message, index) => (
               <div
                 key={index}
-                className={message.sender == 'user' ? 'text-right mb-2' : 'text-left mb-2'}
+                className={message.role == 'user' ? 'text-right mb-2' : 'text-left mb-2'}
               >
-                <span className={message.sender === 'user' ? 'bg-blue-500 text-white rounded-md p-2 inline-block max-w-md' : 'bg-gray-500 text-white rounded-md p-2 inline-block max-w-md'}>
-                  {message.text}
+                <span className={message.role === 'user' ? 'bg-blue-500 text-white rounded-xl rounded-br-sm p-2 inline-block max-w-md' : 'bg-gray-500 text-white rounded-xl rounded-bl-sm p-2 inline-block max-w-md'}>
+                  {message.content}
                 </span>
               </div>
             ))}
