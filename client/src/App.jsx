@@ -13,6 +13,7 @@ import Courses from './Components/Courses'
 
 import Topic from './Components/Topic'
 import Article from './Components/Article'
+import Faq from './Components/Faqs'
 
 import CourseID from './CourseID'
 
@@ -37,6 +38,7 @@ function App() {
           <Route path='/courses' element={<Courses />} />
           <Route path="/topic" element={<Topic />} />
           <Route path="/article" element={<Article />} />
+          <Route path="/Faq" element={<Faq />} />
         </Routes>
         </div>
 
