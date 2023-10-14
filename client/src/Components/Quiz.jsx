@@ -1,9 +1,68 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useParams } from 'react-router-dom';
+import { doc, getDoc,updateDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const Quiz = () => {
 
   const apiUrl = 'http://localhost:5000';
+  const param = useParams();
+  const savedArticle = param.quiz;
+  // console.log(savedArticle)
+
+  const [article, setArticleData] = useState([]);
+  const [status, setStatus] = useState(false);
+
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      const documentRef = doc(db, "Course", param.id);
+
+      try {
+        const docSnapshot = await getDoc(documentRef);
+
+        if (docSnapshot.exists()) {
+          const res = await docSnapshot.data();
+          // console.log(res[savedArticle]);
+
+          if(res[savedArticle] == undefined){
+            // request to server
+            const postData = {
+              userInput: `${savedArticle}`
+            };
+
+            try {
+              // Make an asynchronous POST request
+              const normalArticle = await axios.post(`${apiUrl}/get_Article`, postData);
+              // console.log(normalArticle.data)
+              await updateDoc(documentRef, {
+                [savedArticle]: normalArticle.data
+              });
+            }
+            catch (error) {
+              // Handle any errors that occur during the fetch
+              console.error("Error fetching document:", error);
+            }
+
+          }
+          setArticleData(res[savedArticle]);
+          setStatus(true);
+
+        } else {
+          // Handle the case where the document doesn't exist
+          console.log("Document does not exist");
+        }
+      } catch (error) {
+        // Handle any errors that occur during the fetch
+        console.error("Error fetching document:", error);
+      }
+    };
+    fetchCourseData();
+  }, [savedArticle]);
+
+
+
+
 
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -42,9 +101,7 @@ const Quiz = () => {
 
   const handleStartStopTimer = async () => {
     if(!isTimerRunning){
-      const article = "The French Revolution, a seminal event in late 18th-century France, marked a watershed moment in the history of both the nation and the modern world. Emerging in 1789, it was driven by a complex web of social, political, and economic factors. The revolution began with a groundswell of discontent among the common people, who were suffering under heavy taxation, while the nobility and clergy enjoyed privileges and tax exemptions. This discontent culminated in the famous storming of the Bastille in July 1789, which symbolized the people's revolt against oppression. As the revolution unfolded, it went through various phases, including the Reign of Terror led by Maximilien Robespierre, which saw mass executions and radical political changes.";
-
-      // const article = getArticlefromDB();
+      // request to server
       const postData = {
         "userInput": article,
       };
@@ -111,6 +168,7 @@ const Quiz = () => {
 
   return (
   
+
     <div className=" p-5 w-2/3 mt-12 mx-auto rounded-lg shadow-md mb-32 ">
     <div className='flex justify-between'>
     <h2 className="text-2xl font-semibold mb-4">Quiz Time! </h2>
@@ -125,7 +183,7 @@ const Quiz = () => {
       {isTimerRunning && `${timer} Seconds`}
     </div>
     )
-}
+    }
 
      
       
