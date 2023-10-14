@@ -1,5 +1,6 @@
 // import { Link } from 'react-router-dom'
 import Primarybtn from './Buttons/Primarybtn'
+import Secondarybtn from './Buttons/Secondarybtn'
 function Nav() {
   return (
     <div className='flex justify-between p-5 w-3/4 mx-auto'>

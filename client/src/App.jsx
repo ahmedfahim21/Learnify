@@ -10,6 +10,7 @@ import Contact from './Components/Contact'
  
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
 import Courses from './Components/Courses'
+import Topic from './Components/Topic'
 
 function App() {
  
@@ -29,6 +30,7 @@ function App() {
           {/* <Route path='/about' element={<About />} /> */}
           <Route path='/contact' element={<Contact />} />
           <Route path='/courses' element={<Courses />} />
+          <Route path="/topic" element={<Topic />} />
         </Routes>
         </div>
 
