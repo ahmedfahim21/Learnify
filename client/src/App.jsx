@@ -14,9 +14,12 @@ function App() {
  
 
   return (
-    <div>
+    <div className=''>
       <Router>
       <main>
+      <div className='main'>
+          <div className='gradient' />
+        </div>
         <Nav/>
         
         <div className='app'>
