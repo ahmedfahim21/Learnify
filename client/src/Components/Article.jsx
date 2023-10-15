@@ -18,6 +18,17 @@ function Article() {
   const [article, setArticleData] = useState([]);
   const [status, setStatus] = useState(false);
 
+  const renderArticleWithLineBreaks = (article) => {
+    // Replace newline characters with <br> tags
+    const lines = article.split('\n');
+    return lines.map((line, index) => (
+      <span key={index}>
+        {line}
+        <br />
+      </span>
+    ));
+  };
+
   useEffect(() => {
     const fetchCourseData = async () => {
       const documentRef = doc(db, "Course", param.id);
@@ -129,11 +140,11 @@ function Article() {
         
         <span className="text-center text-4xl font-semibold">Article Heading</span>
         <div className="flex items-center flex-col">
-          <span className="text-md w-full mx-auto summary_box text-center p-2">
-            Article content
+          <span className="text-md w-full mx-auto summary_box  p-2">
+           
             <br/>
             {
-              status ? <span>{article}</span> : <span><Loader/></span>
+              status ? <span>{renderArticleWithLineBreaks(article)}</span> : <span><Loader/></span>
             }
           </span>
 
