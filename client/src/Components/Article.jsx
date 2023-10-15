@@ -115,7 +115,7 @@ function Article() {
         <Backbtn link={'../'} />
       </div>
   
-    <div className='min-h-screen w-3/4 mx-auto gap-5 mb-32'>
+    <div className='min-h-screen w-4/5 mx-auto gap-5 mb-32'>
       
       <div className="w-full flex gap-5 mt-8 ">
 
@@ -145,7 +145,7 @@ function Article() {
 
         {/* <ChatBot article={article}/> */}
 
-        <div className='w-1/2'>
+        <div className='w-1/3'>
         <MainBox article={article} />
         </div>
 
