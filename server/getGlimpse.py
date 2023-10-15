@@ -321,7 +321,7 @@ def generate_comic_from_text():
 @getGlimpse.route('/getimg', methods=['POST'])
 def getimg():
 
-    for i in range(4):
+    for i in range(5):
          # Read the image file
         with open(f"./images/"+i+".png", 'rb') as image_file:  
             image_data = image_file.read()
