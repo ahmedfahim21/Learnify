@@ -7,7 +7,7 @@ function Hero() {
   return (
     <motion.div {...fadeInAnimation}  className="w-3/4 mx-auto flex flex-col items-center pt-32 min-h-screen  h-auto">
       
-      <span className=" text-3xl md:text-6xl animated-text ">We make your Learning <span className="orange-500"></span> </span>
+      <span className=" text-3xl font-bold md:text-6xl animated-text ">We make your Learning <span className="orange-500"></span> </span>
             <span className=" text-xl sm:text-4xl text-bold text-center">
               
             </span>

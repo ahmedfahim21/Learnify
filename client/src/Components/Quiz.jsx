@@ -87,6 +87,7 @@ const Quiz = () => {
   const handleStartStopTimer = async () => {
     if(!isTimerRunning){
       // request to server
+      setIsLoading(true);
       const postData = {
         "userInput": article,
       };
@@ -96,12 +97,13 @@ const Quiz = () => {
         const res = await axios.post(`${apiUrl}/get_Quiz`, postData);
         setquizData(res.data['quiz']);
         console.log(quizData)
-
+        setIsLoading(false);
 
         
       } catch (error) {
         // Handle errors
         console.error('POST request error:', error);
+        setIsLoading(false);
       }
     }
     setIsTimerRunning(!isTimerRunning);
@@ -167,7 +169,7 @@ const Quiz = () => {
       
     </div>
     {isLoading ? ( // Display the loader if loading
-        <Loader />
+       <div className='flex justify-center items-center'> <Loader /></div>
      ) :(isTimerRunning &&!showScore && (
         <div className='summary_box'>
           <p className="text-lg mb-4">{quizData[currentQuestion].question}</p>
