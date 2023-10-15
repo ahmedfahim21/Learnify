@@ -1,9 +1,9 @@
-# Learnify - Interactive Learning Platform
+# Learnify.ai
 
 ![image](https://github.com/ahmedfahim21/Learnify/assets/99824146/c478f78a-2261-4811-9b3d-f89dbcf45f8e)
 
 
-Learnify is an interactive learning platform that combines the power of OpenAI's language models and Stable Diffusion for creating engaging courses, quizzes, and insightful articles with a context-aware chatbot.
+Learnify.ai is an interactive learning platform that combines the power of OpenAI's language models and Stable Diffusion for creating engaging courses, quizzes, and insightful articles with a context-aware chatbot.
 
 ## Features
 
@@ -17,7 +17,8 @@ Learnify is an interactive learning platform that combines the power of OpenAI's
 ### Prerequisites
 
 - Node.js (v14+)
-- npm or yarn
+- npm
+- python3
 - OpenAI API Key
 - DreamStudio API Key
 
@@ -38,6 +39,7 @@ Learnify is an interactive learning platform that combines the power of OpenAI's
    ```
 
 3. For backend
+   set up the API keys in the .env file inside /server
    ```shell
    cd server
    pip install -r requirements.txt
