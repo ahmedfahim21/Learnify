@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { doc, getDoc,updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import Loader from './Loader';
 
 function Article() {
 
@@ -121,10 +122,10 @@ function Article() {
 
 
 
-        <div className='w-3/4 mx-auto flex flex-col gap-5  '>
+        <div className='w-3/4 mx-auto flex flex-col gap-1  '>
 
 
-      <div className='w-1/2 mx-auto flex flex-col gap-5  '>
+      <div className='w-full mx-auto flex flex-col gap-5  '>
         
         <span className="text-center text-4xl font-semibold">Article Heading</span>
         <div className="flex items-center flex-col">
@@ -132,7 +133,7 @@ function Article() {
             Article content
             <br/>
             {
-              status ? <span>{article}</span> : <span>Loading...</span>
+              status ? <span>{article}</span> : <span><Loader/></span>
             }
           </span>
 
@@ -144,7 +145,7 @@ function Article() {
 
         {/* <ChatBot article={article}/> */}
 
-        <div className='w-1/3'>
+        <div className='w-1/2'>
         <MainBox article={article} />
         </div>
 

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc,updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import Loader from './Loader'
 
 const Quiz = () => {
 
@@ -11,6 +12,7 @@ const Quiz = () => {
   const savedArticle = param.quiz;
   // console.log(savedArticle)
 
+  const [isLoading, setIsLoading] = useState(false);
   const [article, setArticleData] = useState([]);
   const [status, setStatus] = useState(false);
 
@@ -67,24 +69,7 @@ const Quiz = () => {
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [quizData, setquizData] = useState([])
-  // let quizData = [
-  //   // ... Your quiz questions and options ...
-  //   {
-  //       question: 'What is the capital of France?',
-  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-  //       answer: 'Paris',
-  //     },
-  //     {
-  //       question: 'What is the capital of France2?',
-  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-  //       answer: 'Paris',
-  //     },
-  //     {
-  //       question: 'What is the capital of France3?',
-  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-  //       answer: 'Paris',
-  //     },
-  // ];
+  
   useEffect(() => {
     let interval;
 
@@ -107,14 +92,7 @@ const Quiz = () => {
       };
       
       try {
-        // await addDoc(collection(db, "Course"), {
-        //     name: newChapter.name,
-        //     content: res.data,
-        // });
-        // setNewChapter({ name: '' })
-
-
-        // Make an asynchronous POST request
+       
         const res = await axios.post(`${apiUrl}/get_Quiz`, postData);
         setquizData(res.data['quiz']);
         console.log(quizData)
@@ -188,7 +166,9 @@ const Quiz = () => {
      
       
     </div>
-      {isTimerRunning &&!showScore && (
+    {isLoading ? ( // Display the loader if loading
+        <Loader />
+     ) :(isTimerRunning &&!showScore && (
         <div className='summary_box'>
           <p className="text-lg mb-4">{quizData[currentQuestion].question}</p>
           <div className="space-y-2 ">
@@ -224,7 +204,7 @@ const Quiz = () => {
           </div>
         </div>
       )
-      }
+      )}
       {!isTimerRunning && !showScore && (
         <span className='text-center min-h-32 text-lg'>Click on start when you are ready!</span>
       )
