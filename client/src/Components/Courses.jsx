@@ -5,6 +5,7 @@ import CourseCard from './Cards/CourseCard'
 import axios from 'axios'
 import {motion} from 'framer-motion'
 import { fadeInAnimation } from './animation';
+import Loader from './Loader';
 
 function Courses() {
 
@@ -78,7 +79,7 @@ function Courses() {
             <form className="flex flex-col">
                 <input type="text" value={newChapter.name} onChange={(e)=>{ setNewChapter({...newChapter, name: e.target.value})}} placeholder="Enter Course name" className="flex px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-200 focus:border-transparent" /> 
                 {
-                    loading ? <span className="text-blue-500">Loading...</span> : <button onClick={addChapter} className="flex px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Add</button>
+                    loading ? <span className="text-blue-500 p-5 text-center mx-auto "><Loader/></span> : <button onClick={addChapter} className="flex px-4 py-2 mt-4 text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600">Add</button>
                 }
                 
               </form>

@@ -290,12 +290,15 @@ def generate_comic_from_text():
 
     response = fetch_instructions_and_captions(prompt)
 
+    print(response)
+
     image_dict = {}
     for i in range(len(response)):
 
         image_path = stable_diff(response[i]['instructions'],i)
 
         if(image_path == 'Something went wrong'):
+            print("invalid prompt : ",response[i]['instructions'] )
             continue
 
         add_text_to_image(f"./images/{i}.png", response[i]['caption'], i)
@@ -317,15 +320,19 @@ def generate_comic_from_text():
   
 @getGlimpse.route('/getimg', methods=['POST'])
 def getimg():
-    # Read the image file
-    with open(f"./images/0.png", 'rb') as image_file:  
-        image_data = image_file.read()
-    
-    # Convert the image data to Base64
-    encoded_image = base64.b64encode(image_data).decode('utf-8')
-    
-    # Create a dictionary to hold the image data
-    image_dict = { 'image': encoded_image }
+
+    for i in range(5):
+         # Read the image file
+        with open(f"./images/"+i+".png", 'rb') as image_file:  
+            image_data = image_file.read()
+        
+        # Convert the image data to Base64
+        encoded_image = base64.b64encode(image_data).decode('utf-8')
+        
+        # Create a dictionary to hold the image data
+        image_dict = { 'image': encoded_image }
+
+   
      
     return jsonify(image_dict)
 

@@ -85,7 +85,7 @@ function MainBox({article}){
     }
 
     return (
-        <div  className='mx-5'>
+        <div  className='mx-1  '>
 			{/* <div className="response-area overflow-x-hidden min-h-96 bg-gradient-to-r from-violet-200 to-blue-200 rounded-t-lg summary_box rounded-bl-sm">
                 {messages.map((message, index) => {
                     return index == 0 ? <div/> :(
@@ -94,14 +94,15 @@ function MainBox({article}){
                 })}
             </div> */}
            
-      <div className="border  rounded-lg rounded-b-sm   mr-5 overflow-y-auto max-h-screen">
+      <div className="border h-96 rounded-lg rounded-b-sm   mr-2 overflow-y-auto max-h-screen">
         <div className="bg-gradient-to-r from-violet-500 to-blue-500 p-2 text-white text-center  rounded-t-lg">
          <span className='font-semibold'> AI Tutor <br /></span>
          <span className='text-sm'>Get your doubts cleared</span>
         </div>
         {/* Chat UI */}
-            <div className='p-2 summary_box '>
-            {messages.map((message, index) => index==0 ? <div key={index}></div> : (
+
+            <div className='p-2 summary_box  h-128 max-h-screen '>
+            {messages.map((message, index) => index == 0 ? <div key={index}/> :(
 
               <div
                 key={index}
@@ -109,7 +110,7 @@ function MainBox({article}){
                 className={message.sender == 'user' ? 'text-right mb-2' : 'text-left mb-2'}
               >
                 
-                <span className={message.sender === 'ChatGPT' ? 'bg-blue-500 text-white rounded-xl rounded-bl-sm p-2 inline-block max-w-md' : 'bg-violet-500 text-white rounded-xl rounded-br-sm p-2 inline-block max-w-md'}>
+                <span className={message.sender === 'ChatGPT' ? 'bg-blue-500 text-white ml-4 rounded-xl rounded-bl-sm p-2 pr-3 inline-block max-w-md' : 'bg-violet-500 text-white rounded-xl rounded-br-sm p-2 ml-4 inline-block max-w-md'}>
                   {message.message}
                 </span>
               </div>
@@ -126,7 +127,7 @@ function MainBox({article}){
             />
             <button
               onClick={handleSend}
-              className="bg-blue-500 text-white rounded-r-md p-2 mr-5 hover:bg-blue-700"
+              className="bg-blue-500 text-white rounded-r-md p-2 mr-2 hover:bg-blue-700"
             >
               Send
             </button>
