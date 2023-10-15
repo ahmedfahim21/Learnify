@@ -22,7 +22,7 @@ const Contact = () => {
         <span className='text-4xl font-semibold'>Contact us </span>
         <span className='text-lg'>Got any issue or wanna collaborate with us? Contact us through  our social media or fill up this form and we will reach out to you ASAP! </span>
       </div>
-      <form ref={form} onSubmit={sendEmail} className='flex flex-col w-1/2 bg-gradient-to-tr from-green-100 to-violet-100 summary_box '>
+      <form ref={form} onSubmit={sendEmail} className='flex flex-col w-1/2 bg-gradient-to-tr gap-2  from-green-100 to-violet-100 summary_box '>
       <label>Name</label>
       <input type="text" name="user_name" className='rounded-md p-1 text-sm' placeholder='Enter your name'  />
       <label>Email</label>
