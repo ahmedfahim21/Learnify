@@ -108,11 +108,14 @@ function Article() {
 
 
   return (
-    <div className='min-h-screen w-3/4 mx-auto gap-5 mb-32'>
-      <div className='flex justify-end mr-12'>
-        <Backbtn link={'../'} />
 
+    <div>
+    <div className='flex justify-end mr-12'>
+        <Backbtn link={'../'} />
       </div>
+  
+    <div className='min-h-screen w-3/4 mx-auto gap-5 mb-32'>
+      
       <div className="w-full flex gap-5 mt-8 ">
 
 
@@ -135,6 +138,8 @@ function Article() {
 
         </div>
 
+        </div>
+    </div>
 
 
         {/* <ChatBot article={article}/> */}
@@ -144,10 +149,11 @@ function Article() {
         </div>
 
 
+    
     </div>
-
     </div>
-
+ 
+    </div>
   );
 }
 
