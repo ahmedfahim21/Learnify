@@ -5,12 +5,18 @@ import {Link} from 'react-router-dom'
 import { useParams } from "react-router";
 import Backbtn from "./Components/Buttons/Backbtn"
 import Flowchart from "./Components/FlowChart";
+import { getStorage, ref } from "firebase/storage";
+import { getDownloadURL } from "firebase/storage";
+
+
 
 function CourseID() {
 
     const courseId = useParams();
 
     const [item, setItem] = useState({})
+
+    const [mediaList, setMediaList] = useState([{}]);
 
     useEffect(() => {
         const fetchCourseData = async () => {
@@ -31,7 +37,27 @@ function CourseID() {
           }
         };
         fetchCourseData();
-      }, []);
+        if(item.name != undefined){
+        const storage = getStorage();
+        for (let i = 0; i < 5; i++) {
+            getDownloadURL(ref(storage, `${item.name}/${i}.png`))
+            .then((url) => {
+                const media = mediaList;
+                media[i] = url;
+                setMediaList(media);
+                
+            }
+            )
+            console.log(mediaList.media)
+        }
+    }
+      }, [item.name]);
+
+
+    //   useEffect(() => {
+    //     // Create a reference with an initial file path and name
+
+    //     }, [item.name]);
 
 
 
@@ -133,6 +159,15 @@ function CourseID() {
                 }
                 <br></br>
                 <span>{item.content}</span>
+                <div className="flex flex-wrap gap-3 mt-10 justify-center">
+                {
+                    mediaList && mediaList.map((i) => (
+                        console.log(i),
+                        <img key={i} src={i} className="w-[30%] mx-auto"/>
+                    ))
+
+                }
+                </div>
             </span>
             <span className="mt-8 text-3xl font-semibold">Start your course</span>
             

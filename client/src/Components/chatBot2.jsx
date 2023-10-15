@@ -100,8 +100,10 @@ function MainBox({article}){
          <span className='text-sm'>Get your doubts cleared</span>
         </div>
         {/* Chat UI */}
+
             <div className='p-2 summary_box  h-128 max-h-screen '>
             {messages.map((message, index) => index == 0 ? <div key={index}/> :(
+
               <div
                 key={index}
                
