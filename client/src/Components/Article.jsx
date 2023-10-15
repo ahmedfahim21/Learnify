@@ -138,6 +138,8 @@ function Article() {
 
         </div>
 
+        </div>
+    </div>
 
 
         {/* <ChatBot article={article}/> */}
@@ -147,8 +149,7 @@ function Article() {
         </div>
 
 
-    </div>
-    </div>
+    
     </div>
     </div>
  

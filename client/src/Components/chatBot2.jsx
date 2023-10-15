@@ -101,7 +101,7 @@ function MainBox({article}){
         </div>
         {/* Chat UI */}
             <div className='p-2 summary_box '>
-            {messages.map((message, index) => (
+            {messages.map((message, index) => index == 0 ? <div key={index}/> :(
               <div
                 key={index}
                
