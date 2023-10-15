@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { doc, getDoc,updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import Loader from './Loader';
 
 function Article() {
 
@@ -16,6 +17,17 @@ function Article() {
 
   const [article, setArticleData] = useState([]);
   const [status, setStatus] = useState(false);
+
+  const renderArticleWithLineBreaks = (article) => {
+    // Replace newline characters with <br> tags
+    const lines = article.split('\n');
+    return lines.map((line, index) => (
+      <span key={index}>
+        {line}
+        <br />
+      </span>
+    ));
+  };
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -114,25 +126,25 @@ function Article() {
         <Backbtn link={'../'} />
       </div>
   
-    <div className='min-h-screen w-3/4 mx-auto gap-5 mb-32'>
+    <div className='min-h-screen w-4/5 mx-auto gap-5 mb-32'>
       
       <div className="w-full flex gap-5 mt-8 ">
 
 
 
 
-        <div className='w-3/4 mx-auto flex flex-col gap-5  '>
+        <div className='w-3/4 mx-auto flex flex-col gap-1  '>
 
 
-      <div className='w-1/2 mx-auto flex flex-col gap-5  '>
+      <div className='w-full mx-auto flex flex-col gap-5  '>
         
         <span className="text-center text-4xl font-semibold">Article Heading</span>
         <div className="flex items-center flex-col">
-          <span className="text-md w-full mx-auto summary_box text-center p-2">
-            Article content
+          <span className="text-md w-full mx-auto summary_box  p-2">
+           
             <br/>
             {
-              status ? <span>{article}</span> : <span>Loading...</span>
+              status ? <span>{renderArticleWithLineBreaks(article)}</span> : <span><Loader/></span>
             }
           </span>
 
@@ -141,19 +153,21 @@ function Article() {
         </div>
     </div>
 
-
+        </div>
         {/* <ChatBot article={article}/> */}
-
+        </div>
         <div className='w-1/3'>
         <MainBox article={article} />
         </div>
 
 
     
+
     </div>
     </div>
  
     </div>
+
   );
 }
 

@@ -3,14 +3,16 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc,updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import Loader from './Loader'
 
 const Quiz = () => {
 
   const apiUrl = 'http://localhost:5000';
   const param = useParams();
   const savedArticle = param.quiz;
-  // console.log(savedArticle)
+  console.log(savedArticle)
 
+  const [isLoading, setIsLoading] = useState(false);
   const [article, setArticleData] = useState([]);
   const [status, setStatus] = useState(false);
 
@@ -23,7 +25,7 @@ const Quiz = () => {
 
         if (docSnapshot.exists()) {
           const res = await docSnapshot.data();
-          // console.log(res[savedArticle]);
+          console.log(res[savedArticle]);
 
           if(res[savedArticle] == undefined){
             // request to server
@@ -67,24 +69,7 @@ const Quiz = () => {
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [quizData, setquizData] = useState([])
-  // let quizData = [
-  //   // ... Your quiz questions and options ...
-  //   {
-  //       question: 'What is the capital of France?',
-  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-  //       answer: 'Paris',
-  //     },
-  //     {
-  //       question: 'What is the capital of France2?',
-  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-  //       answer: 'Paris',
-  //     },
-  //     {
-  //       question: 'What is the capital of France3?',
-  //       options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-  //       answer: 'Paris',
-  //     },
-  // ];
+  
   useEffect(() => {
     let interval;
 
@@ -102,28 +87,23 @@ const Quiz = () => {
   const handleStartStopTimer = async () => {
     if(!isTimerRunning){
       // request to server
+      setIsLoading(true);
       const postData = {
         "userInput": article,
       };
       
       try {
-        // await addDoc(collection(db, "Course"), {
-        //     name: newChapter.name,
-        //     content: res.data,
-        // });
-        // setNewChapter({ name: '' })
-
-
-        // Make an asynchronous POST request
+       
         const res = await axios.post(`${apiUrl}/get_Quiz`, postData);
         setquizData(res.data['quiz']);
         console.log(quizData)
-
+        setIsLoading(false);
 
         
       } catch (error) {
         // Handle errors
         console.error('POST request error:', error);
+        setIsLoading(false);
       }
     }
     setIsTimerRunning(!isTimerRunning);
@@ -188,7 +168,9 @@ const Quiz = () => {
      
       
     </div>
-      {isTimerRunning &&!showScore && (
+    {isLoading ? ( // Display the loader if loading
+       <div className='flex justify-center items-center'> <Loader /></div>
+     ) :(isTimerRunning &&!showScore && (
         <div className='summary_box'>
           <p className="text-lg mb-4">{quizData[currentQuestion].question}</p>
           <div className="space-y-2 ">
@@ -224,7 +206,7 @@ const Quiz = () => {
           </div>
         </div>
       )
-      }
+      )}
       {!isTimerRunning && !showScore && (
         <span className='text-center min-h-32 text-lg'>Click on start when you are ready!</span>
       )
