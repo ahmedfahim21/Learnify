@@ -136,16 +136,20 @@ function Article() {
         </div>
 
 
-
+        </div>
         {/* <ChatBot article={article}/> */}
-
+        </div>
         <div className='w-1/3'>
         <MainBox article={article} />
         </div>
 
 
-    </div>
+    
 
+    
+
+    </div>
+  
     </div>
 
   );
