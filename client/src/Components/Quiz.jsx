@@ -10,7 +10,7 @@ const Quiz = () => {
   const apiUrl = 'http://localhost:5000';
   const param = useParams();
   const savedArticle = param.quiz;
-  // console.log(savedArticle)
+  console.log(savedArticle)
 
   const [isLoading, setIsLoading] = useState(false);
   const [article, setArticleData] = useState([]);
@@ -25,7 +25,7 @@ const Quiz = () => {
 
         if (docSnapshot.exists()) {
           const res = await docSnapshot.data();
-          // console.log(res[savedArticle]);
+          console.log(res[savedArticle]);
 
           if(res[savedArticle] == undefined){
             // request to server
