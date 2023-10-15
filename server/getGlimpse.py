@@ -320,19 +320,21 @@ def generate_comic_from_text():
   
 @getGlimpse.route('/getimg', methods=['POST'])
 def getimg():
+    image_dict = {}
 
     for i in range(5):
          # Read the image file
-        with open(f"./images/"+i+".png", 'rb') as image_file:  
+        with open(f"./images/"+str(i)+".png", 'rb') as image_file:  
             image_data = image_file.read()
         
         # Convert the image data to Base64
         encoded_image = base64.b64encode(image_data).decode('utf-8')
         
         # Create a dictionary to hold the image data
-        image_dict = { 'image': encoded_image }
+        image_dict['image' + str(i)] = encoded_image 
 
    
+    print(image_dict)
      
     return jsonify(image_dict)
 

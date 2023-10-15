@@ -35,16 +35,16 @@ function Courses() {
                 const summary_res = await axios.post(`${apiUrl}/get_ShortNote`, postData);
                 console.log(summary_res)
 
-                // const modules_res = await axios.post(`${apiUrl}/get_Modules`, postData);
-                // console.log(modules_res)
+                const modules_res = await axios.post(`${apiUrl}/get_Modules`, postData);
+                console.log(modules_res)
 
-                // const postDatawithMod = {
-                //     course_name: `${newChapter.name}`,
-                //     modules: modules_res.data.topics
-                // };                    
+                const postDatawithMod = {
+                    course_name: `${newChapter.name}`,
+                    modules: modules_res.data.topics
+                };                    
 
-                // const flow_res = await axios.post(`${apiUrl}/get_flowchart`, postDatawithMod);
-                // console.log(flow_res)
+                const flow_res = await axios.post(`${apiUrl}/get_flowchart`, postDatawithMod);
+                console.log(flow_res)
 
                 const glimpse_res = await axios.post(`${apiUrl}/getGlimpse_course`, postData);
                 console.log(glimpse_res)
@@ -54,17 +54,23 @@ function Courses() {
                 await addDoc(collection(db, "Course"), {
                     name: newChapter.name,
                     content: summary_res.data,
-                    // modulesList: modules_res.data,
-                    // flowchart: flow_res.data,
+                    modulesList: modules_res.data,
+                    flowchart: flow_res.data,
                     // media: glimpse_res.data,
 
                 });
                 const storage = getStorage();
-                const storageRef = ref(storage, `${newChapter.name}/${0}.png`);
+                const images = Object.values(glimpse_res.data)
 
-                await uploadString(storageRef, glimpse_res.data, 'base64').then((snapshot) => {
-                    console.log('Uploaded a base64 string!');
-                  });
+                for(var i=0;i<images.length;i++){
+                    const storageRef = ref(storage, `${newChapter.name}/${i}.png`);                
+
+                    await uploadString(storageRef,images[i], 'base64').then((snapshot) => {
+                        console.log('Uploaded a base64 string!');
+                    });
+                }
+
+                
                 setNewChapter({ name: '' })
                 setLoading(false)
 
