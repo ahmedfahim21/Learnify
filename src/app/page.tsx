@@ -10,10 +10,12 @@ export default function Home() {
         generating the <em>experience</em> — live adaptive sessions where every
         screen is streamed as interactive UI and grounded in your sources.
       </p>
-      <p className="text-sm text-white/40">
-        The Next.js 15 foundation is in place. The generative classroom lands
-        next.
-      </p>
+      <a
+        href="/topics"
+        className="rounded-lg border border-white/20 bg-white/10 px-5 py-3 font-medium transition hover:bg-white/15"
+      >
+        Start learning
+      </a>
     </main>
   );
 }
