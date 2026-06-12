@@ -14,11 +14,14 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.30.2",
     "@neondatabase/serverless": "^0.10.4",
     "drizzle-orm": "^0.38.3",
     "next": "^15.1.6",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.4.3",
+    "zod-to-json-schema": "^3.25.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
