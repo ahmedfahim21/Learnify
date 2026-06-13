@@ -1,4 +1,4 @@
-# Learnify 2.0
+# Learnify
 
 **An agentic tutor that teaches through generative UI.**
 
