@@ -16,6 +16,8 @@ export function getBedrock(): AnthropicBedrock {
     awsRegion: process.env.AWS_REGION ?? "us-east-1",
     // Access keys are read from AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY (and
     // optional AWS_SESSION_TOKEN) via the SDK's standard credential resolution.
+    // Bearer-token auth (AWS_BEARER_TOKEN_BEDROCK) is picked up automatically —
+    // the SDK defaults the `apiKey` option to that env var.
   });
   return cached;
 }
