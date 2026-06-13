@@ -2,11 +2,10 @@
 
 **An agentic tutor that teaches through generative UI.**
 
-Learnify 1.0 (a 2023 hackathon) generated static AI courses — a loop that's now
-a commodity. Learnify 2.0 stops generating *content* and starts generating the
-*experience*: an agentic tutor (Claude on AWS Bedrock) that runs live, adaptive
-sessions where every screen is streamed as declarative UI and rendered from a
-safe client-side widget catalog.
+Learnify turns any topic into a live, adaptive tutoring session. Instead of
+serving pre-written courses, the tutor — Claude on AWS Bedrock — generates each
+screen as you learn: explanations, checks, flashcards, diagrams, and exercises
+stream in as declarative UI and adapt in real time to how you answer.
 
 ## What it does
 
