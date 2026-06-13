@@ -14,9 +14,17 @@ import { z } from "zod";
 /** Layout containers reference children by id; leaf widgets do not. */
 export type WidgetKind = "leaf" | "container";
 
+/** An `{ id, label }` pair — used for options, orderable items, match columns. */
 const optionSchema = z.object({
   id: z.string(),
   label: z.string(),
+});
+
+/** One labelled progress bar for {@link ProgressMeter}. */
+const conceptProgressSchema = z.object({
+  label: z.string(),
+  /** Mastery on a 0–1 scale; the renderer clamps out-of-range values. */
+  mastery: z.number(),
 });
 
 /**
@@ -41,6 +49,47 @@ export const widgetProps = {
     correctOptionId: z.string(),
     explanation: z.string().optional(),
   }),
+  /** A flippable card; the learner self-rates recall (SM-2 quality 0–5). */
+  Flashcard: z.object({
+    front: z.string(),
+    back: z.string(),
+    hint: z.string().optional(),
+  }),
+  /** Items to put in the correct sequence (learner reorders, then submits). */
+  OrderingExercise: z.object({
+    prompt: z.string(),
+    items: z.array(optionSchema),
+  }),
+  /** Match each left item to its partner on the right. */
+  MatchingPairs: z.object({
+    prompt: z.string().optional(),
+    left: z.array(optionSchema),
+    right: z.array(optionSchema),
+  }),
+  /** A read-only code block with optional language + emphasized lines. */
+  CodeSnippet: z.object({
+    code: z.string(),
+    language: z.string().optional(),
+    caption: z.string().optional(),
+    /** 1-based line numbers to highlight. */
+    highlightLines: z.array(z.number()).optional(),
+  }),
+  /** A Mermaid diagram, rendered in a sandboxed iframe; nodes emit clicks. */
+  Diagram: z.object({
+    /** Mermaid source (e.g. `graph TD; A-->B`). */
+    source: z.string(),
+    caption: z.string().optional(),
+  }),
+  /** A free-text prompt; the learner writes a short answer. */
+  FreeResponse: z.object({
+    prompt: z.string(),
+    placeholder: z.string().optional(),
+  }),
+  /** Per-concept mastery bars plus the current session phase. */
+  ProgressMeter: z.object({
+    concepts: z.array(conceptProgressSchema),
+    phase: z.string().optional(),
+  }),
   /** End-of-session summary. */
   SessionRecap: z.object({
     summary: z.string(),
@@ -63,6 +112,13 @@ export const WIDGET_KIND: Record<WidgetName, WidgetKind> = {
   Narration: "leaf",
   ExplanationCard: "leaf",
   MultipleChoiceCheck: "leaf",
+  Flashcard: "leaf",
+  OrderingExercise: "leaf",
+  MatchingPairs: "leaf",
+  CodeSnippet: "leaf",
+  Diagram: "leaf",
+  FreeResponse: "leaf",
+  ProgressMeter: "leaf",
   SessionRecap: "leaf",
   Row: "container",
   Column: "container",

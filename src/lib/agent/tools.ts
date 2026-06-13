@@ -6,8 +6,16 @@ import { ComponentSchema } from "../a2ui/catalog";
  * Tool definitions for the tutor agent, derived from the A2UI catalog.
  *
  * `present_ui` is the model's only way to put pixels on screen — it emits a
- * batch of catalog-validated components (strict tool use). `end_session` lets
- * the model close the turn/session deliberately.
+ * batch of components that are validated server-side against the catalog
+ * (`validatePresentUi` in a2ui/emit; invalid input is bounced back to the model
+ * with a repair prompt). `end_session` lets the model close the turn/session
+ * deliberately.
+ *
+ * Note: `present_ui` is intentionally NOT a strict tool. The full widget
+ * catalog (a 13-branch discriminated union nested in an array) compiles to a
+ * decoding grammar too large for strict tool use, and the catalog only grows.
+ * Server-side Zod validation + the loop's one-shot repair round-trip give us
+ * the same correctness guarantee without the grammar-size ceiling.
  */
 
 export const PRESENT_UI_TOOL_NAME = "present_ui";
@@ -42,8 +50,8 @@ export const endSessionInputSchema = z.object({
 
 /**
  * Recursively rewrite `oneOf` → `anyOf`. zod emits `oneOf` for discriminated
- * unions, but Anthropic strict tool use accepts `anyOf` (the branches are
- * mutually exclusive, so the two are equivalent here).
+ * unions; `anyOf` is the more widely accepted spelling and is equivalent here
+ * (the branches are mutually exclusive on `component`).
  */
 function normalizeSchema(node: unknown): unknown {
   if (Array.isArray(node)) return node.map(normalizeSchema);
@@ -81,7 +89,6 @@ export const presentUiTool: ToolDef = {
     "(explanations, checks, recaps, layout). Use at most a few widgets per call; " +
     "build the lesson incrementally across turns.",
   input_schema: toInputSchema(presentUiInputSchema),
-  strict: true,
 };
 
 export const endSessionTool: ToolDef = {
