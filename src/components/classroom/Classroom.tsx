@@ -47,7 +47,14 @@ export function Classroom({
   const startedRef = useRef(false);
 
   const postTurn = useCallback(
-    async (body: { message?: string }) => {
+    async (body: {
+      message?: string;
+      action?: {
+        componentId: string;
+        name: string;
+        payload?: Record<string, unknown>;
+      };
+    }) => {
       setStatus("streaming");
       setError(null);
       let completed = false;
@@ -113,13 +120,15 @@ export function Classroom({
 
   const onAction = useCallback(
     (action: A2UIActionMessage) => {
-      // The /turn route consumes the next learner turn as text, so translate
-      // the interaction into a message the tutor can grade.
-      const label =
-        typeof action.payload?.label === "string"
-          ? action.payload.label
-          : JSON.stringify(action.payload ?? {});
-      void postTurn({ message: label });
+      // Forward the structured interaction so the server can grade checks
+      // (MCQ/ordering/matching) deterministically against the original payload.
+      void postTurn({
+        action: {
+          componentId: action.componentId,
+          name: action.action,
+          payload: action.payload ?? {},
+        },
+      });
     },
     [postTurn],
   );

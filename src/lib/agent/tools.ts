@@ -20,6 +20,16 @@ import { ComponentSchema } from "../a2ui/catalog";
 
 export const PRESENT_UI_TOOL_NAME = "present_ui";
 export const END_SESSION_TOOL_NAME = "end_session";
+export const UPDATE_PLAN_TOOL_NAME = "update_plan";
+export const RECORD_EVIDENCE_TOOL_NAME = "record_evidence";
+
+/** Session phases the tutor moves through (persisted to `sessions.plan`). */
+export const SESSION_PHASES = [
+  "diagnostic",
+  "teach",
+  "assess",
+  "recap",
+] as const;
 
 /** Zod schema for the `present_ui` tool input — the contract with the model. */
 export const presentUiInputSchema = z.object({
@@ -46,6 +56,39 @@ export const endSessionInputSchema = z.object({
     .string()
     .optional()
     .describe("Short human-readable reason the session is ending."),
+});
+
+export const updatePlanInputSchema = z.object({
+  phase: z
+    .enum(SESSION_PHASES)
+    .describe(
+      "Current phase: diagnostic (probe before teaching), teach, assess, or recap.",
+    ),
+  remainingConceptIds: z
+    .array(z.string())
+    .optional()
+    .describe("Concept ids still to cover, most important first."),
+  note: z
+    .string()
+    .optional()
+    .describe("One-line note on where the session stands."),
+});
+
+export const recordEvidenceInputSchema = z.object({
+  conceptId: z
+    .string()
+    .optional()
+    .describe("The concept this evidence is about, if known."),
+  kind: z
+    .enum(["mcq", "ordering", "matching", "flashcard", "free_text", "self_report"])
+    .describe("What produced the evidence."),
+  quality: z
+    .number()
+    .describe("Graded quality 0–5 (5 = mastered, 0 = no recall)."),
+  note: z
+    .string()
+    .optional()
+    .describe("Short observation (misconception, what worked)."),
 });
 
 /**
@@ -99,4 +142,27 @@ export const endSessionTool: ToolDef = {
   input_schema: toInputSchema(endSessionInputSchema),
 };
 
-export const TUTOR_TOOLS: ToolDef[] = [presentUiTool, endSessionTool];
+export const updatePlanTool: ToolDef = {
+  name: UPDATE_PLAN_TOOL_NAME,
+  description:
+    "Record the session plan: the current phase and the concepts still to cover. " +
+    "Call it when you start (set phase to diagnostic if there's no prior evidence) " +
+    "and whenever the phase changes, so a resumed session knows where it left off.",
+  input_schema: toInputSchema(updatePlanInputSchema),
+};
+
+export const recordEvidenceTool: ToolDef = {
+  name: RECORD_EVIDENCE_TOOL_NAME,
+  description:
+    "Record graded evidence of the learner's mastery for answers the server " +
+    "can't grade deterministically — free-text answers and self-reported recall. " +
+    "Deterministic checks (MCQ, ordering, matching) are already graded for you.",
+  input_schema: toInputSchema(recordEvidenceInputSchema),
+};
+
+export const TUTOR_TOOLS: ToolDef[] = [
+  presentUiTool,
+  updatePlanTool,
+  recordEvidenceTool,
+  endSessionTool,
+];
