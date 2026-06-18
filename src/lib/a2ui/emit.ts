@@ -16,6 +16,13 @@ import {
  * surface.
  */
 
+/**
+ * Hard cap on top-level widgets emitted in a single `present_ui` call — a guard
+ * against a runaway turn that dumps a wall of UI. The tutor is told to emit ≤3;
+ * this is the server-enforced ceiling that bounces excess back for a retry.
+ */
+export const MAX_TOP_LEVEL_WIDGETS = 6;
+
 export class A2UIValidationError extends Error {
   constructor(
     message: string,
@@ -73,6 +80,7 @@ export function validatePresentUi(
     );
   }
 
+  const childIds = new Set<string>();
   for (const c of components) {
     for (const childId of c.children ?? []) {
       if (!ids.has(childId)) {
@@ -81,7 +89,16 @@ export function validatePresentUi(
           [],
         );
       }
+      childIds.add(childId);
     }
+  }
+
+  const topLevelCount = components.filter((c) => !childIds.has(c.id)).length;
+  if (topLevelCount > MAX_TOP_LEVEL_WIDGETS) {
+    throw new A2UIValidationError(
+      `Too many top-level widgets (${topLevelCount}); emit at most ${MAX_TOP_LEVEL_WIDGETS} per call. Split the lesson across turns.`,
+      [],
+    );
   }
 
   return {

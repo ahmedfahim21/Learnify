@@ -49,6 +49,19 @@ export const sessions = pgTable("sessions", {
     .references(() => topics.id, { onDelete: "cascade" }),
   // "active" | "completed" | "abandoned"
   status: text("status").notNull().default("active"),
+  /**
+   * The tutor's running session plan: `{ phase, remainingConceptIds }`, updated
+   * via the `update_plan` tool so a resumed turn knows where it left off.
+   */
+  plan: jsonb("plan"),
+  /**
+   * Per-session token ledger, accumulated from streaming usage across every
+   * Bedrock call. `cacheReadTokens > 0` on multi-turn sessions is the caching
+   * discipline assertion (#41).
+   */
+  inputTokens: integer("input_tokens").notNull().default(0),
+  outputTokens: integer("output_tokens").notNull().default(0),
+  cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

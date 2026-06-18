@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { sessionEvents, sessions, topics } from "@/db/schema";
@@ -9,18 +9,35 @@ import {
   type EventPayload,
   type StoredEvent,
 } from "@/lib/agent/transcript";
-import { renderLearnerSnapshot } from "@/lib/agent/prompts";
+import {
+  FORCED_RECAP_DIRECTIVE,
+  MAX_LEARNER_TURNS,
+  renderLearnerSnapshot,
+} from "@/lib/agent/prompts";
+import {
+  collectComponents,
+  gradeAction,
+  type LearnerAction,
+} from "@/lib/agent/grading";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 interface TurnRequestBody {
-  /** A new learner message for this turn (resumed sessions). */
+  /** A new free-text learner message for this turn (resumed sessions). */
   message?: string;
+  /** A structured widget interaction, graded deterministically server-side. */
+  action?: LearnerAction;
   /** Optional topic title to seed a brand-new session. */
   topicTitle?: string;
   /** Optional learner notes (how they learn). */
   learnerNotes?: string;
+}
+
+/** Read a numeric token-usage field defensively. */
+function usageField(usage: unknown, key: string): number {
+  const value = (usage as Record<string, unknown> | undefined)?.[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
 const SURFACE_PREFIX = "session";
@@ -102,6 +119,12 @@ export async function POST(
 
   // Seed a brand-new session, or record this turn's incoming message.
   const hasHistory = stored.length > 0;
+  // Once the learner has taken enough turns, force a wrap-up.
+  const learnerTurns = stored.filter(
+    (e) => e.payload.kind === EventKind.UserMessage,
+  ).length;
+  const forceRecap = hasHistory && learnerTurns >= MAX_LEARNER_TURNS;
+
   if (!hasHistory) {
     const text = renderLearnerSnapshot({
       topicTitle,
@@ -110,11 +133,17 @@ export async function POST(
     const payload: EventPayload = { kind: EventKind.UserMessage, text };
     await insertEvent("user", payload.kind, payload);
     stored.push({ seq: nextSeq - 1, role: "user", payload });
-  } else if (body.message) {
-    const payload: EventPayload = {
-      kind: EventKind.UserMessage,
-      text: body.message,
-    };
+  } else if (body.action || body.message) {
+    // A structured widget interaction is graded deterministically here; a plain
+    // message passes through. The forced-recap directive is appended either way.
+    let text: string;
+    if (body.action) {
+      text = gradeAction(body.action, collectComponents(stored)).message;
+    } else {
+      text = body.message ?? "";
+    }
+    if (forceRecap) text += FORCED_RECAP_DIRECTIVE;
+    const payload: EventPayload = { kind: EventKind.UserMessage, text };
     await insertEvent("user", payload.kind, payload);
     stored.push({ seq: nextSeq - 1, role: "user", payload });
   }
@@ -128,14 +157,45 @@ export async function POST(
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(frame)}\n\n`));
       };
 
+      // Accumulate this turn's token usage into the per-session ledger.
+      let addInput = 0;
+      let addOutput = 0;
+      let addCacheRead = 0;
+
       try {
         await runTurn({
           messages,
           surfaceId,
           emit: send,
           persist: (role, payload) => insertEvent(role, payload.kind, payload),
-          onUsage: (usage) => insertEvent("system", "usage", { kind: "usage", usage }),
+          onUsage: (usage) => {
+            addInput += usageField(usage, "input_tokens");
+            addOutput += usageField(usage, "output_tokens");
+            addCacheRead += usageField(usage, "cache_read_input_tokens");
+            return insertEvent("system", "usage", { kind: "usage", usage });
+          },
+          onPlan: async (plan) => {
+            await db
+              .update(sessions)
+              .set({ plan: plan as object })
+              .where(eq(sessions.id, sessionId));
+          },
+          onEvidence: (evidence) =>
+            insertEvent("system", "evidence", { kind: "evidence", evidence }),
         });
+
+        // Persist the turn's token totals (cache_read_input_tokens > 0 on
+        // multi-turn sessions is the caching-discipline assertion from #41).
+        if (addInput || addOutput || addCacheRead) {
+          await db
+            .update(sessions)
+            .set({
+              inputTokens: sql`${sessions.inputTokens} + ${addInput}`,
+              outputTokens: sql`${sessions.outputTokens} + ${addOutput}`,
+              cacheReadTokens: sql`${sessions.cacheReadTokens} + ${addCacheRead}`,
+            })
+            .where(eq(sessions.id, sessionId));
+        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Unexpected tutor error.";

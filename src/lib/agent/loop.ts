@@ -9,7 +9,9 @@ import {
 import {
   END_SESSION_TOOL_NAME,
   PRESENT_UI_TOOL_NAME,
+  RECORD_EVIDENCE_TOOL_NAME,
   TUTOR_TOOLS,
+  UPDATE_PLAN_TOOL_NAME,
 } from "./tools";
 import { TUTOR_SYSTEM_PROMPT } from "./prompts";
 import { EventKind, type EventPayload } from "./transcript";
@@ -49,9 +51,21 @@ export interface RunTurnOptions {
   persist: (role: "tutor" | "user", payload: EventPayload) => Promise<void>;
   /** Report token usage for one model call (for cost tracking). */
   onUsage?: (usage: unknown) => void | Promise<void>;
+  /** The tutor updated its plan (phase + remaining concepts). */
+  onPlan?: (plan: unknown) => void | Promise<void>;
+  /** The tutor recorded fuzzy mastery evidence (free-text / self-report). */
+  onEvidence?: (evidence: unknown) => void | Promise<void>;
   maxModelCalls?: number;
   model?: string;
   maxTokens?: number;
+}
+
+/** Anthropic/Bedrock throttling (429) and overloaded (529) are retryable. */
+function isRetryableApiError(err: unknown): boolean {
+  const status = (err as { status?: number } | undefined)?.status;
+  if (status === 429 || status === 529 || status === 503) return true;
+  const name = (err as { name?: string } | undefined)?.name ?? "";
+  return /throttl|overload|toomany/i.test(name);
 }
 
 interface StreamResultBlock {
@@ -98,48 +112,73 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
 
   for (let call = 0; call < maxModelCalls; call++) {
     // --- stream one model call ---
-    const stream = client.messages.stream({
-      model,
-      max_tokens: maxTokens,
-      system: [
-        {
-          type: "text",
-          text: TUTOR_SYSTEM_PROMPT,
-          cache_control: { type: "ephemeral" },
-        },
-      ],
-      // The catalog-derived tools are part of the cached prefix (rendered
-      // before system), so the tool set must stay stable across the turn.
-      tools: TUTOR_TOOLS,
-      messages: convo,
-    } as Parameters<typeof client.messages.stream>[0]);
+    const streamOnce = async () => {
+      const stream = client.messages.stream({
+        model,
+        max_tokens: maxTokens,
+        system: [
+          {
+            type: "text",
+            text: TUTOR_SYSTEM_PROMPT,
+            cache_control: { type: "ephemeral" },
+          },
+        ],
+        // The catalog-derived tools are part of the cached prefix (rendered
+        // before system), so the tool set must stay stable across the turn.
+        tools: TUTOR_TOOLS,
+        messages: convo,
+      } as Parameters<typeof client.messages.stream>[0]);
 
-    // Accumulate streamed narration text per content block index.
-    const narrationText = new Map<number, string>();
-    for await (const event of stream) {
-      if (
-        event.type === "content_block_start" &&
-        event.content_block.type === "text"
-      ) {
-        narrationText.set(event.index, "");
-      } else if (
-        event.type === "content_block_delta" &&
-        event.delta.type === "text_delta"
-      ) {
-        const acc = (narrationText.get(event.index) ?? "") + event.delta.text;
-        narrationText.set(event.index, acc);
+      // Accumulate streamed narration text per content block index.
+      const narrationText = new Map<number, string>();
+      for await (const event of stream) {
+        if (
+          event.type === "content_block_start" &&
+          event.content_block.type === "text"
+        ) {
+          narrationText.set(event.index, "");
+        } else if (
+          event.type === "content_block_delta" &&
+          event.delta.type === "text_delta"
+        ) {
+          const acc = (narrationText.get(event.index) ?? "") + event.delta.text;
+          narrationText.set(event.index, acc);
+          emit({
+            type: "a2ui",
+            message: narrationEnvelope(
+              surfaceId,
+              `${surfaceId}:narration:${call}:${event.index}`,
+              acc,
+            ),
+          });
+        }
+      }
+      return stream.finalMessage();
+    };
+
+    let final: Awaited<ReturnType<typeof streamOnce>>;
+    try {
+      final = await streamOnce();
+    } catch (err) {
+      // The SDK already backs off and retries transient errors; if a throttling
+      // or overloaded error still surfaces, degrade gracefully (HTTP 200) with a
+      // retry widget instead of tearing the stream down with a 500.
+      if (isRetryableApiError(err)) {
         emit({
           type: "a2ui",
-          message: narrationEnvelope(
+          message: apologyEnvelope(
             surfaceId,
-            `${surfaceId}:narration:${call}:${event.index}`,
-            acc,
+            "The tutor is busy right now",
+            "We hit a temporary rate limit reaching the model. Give it a moment and tap Retry.",
           ),
         });
+        emit({ type: "error", message: "rate_limited" });
+        emit({ type: "done" });
+        return;
       }
+      throw err;
     }
 
-    const final = await stream.finalMessage();
     await opts.onUsage?.(final.usage);
     const blocks = final.content as StreamResultBlock[];
 
@@ -207,6 +246,30 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
         });
         emit({ type: "session_end", reason });
         ended = true;
+        continue;
+      }
+
+      if (tu.name === UPDATE_PLAN_TOOL_NAME) {
+        await opts.onPlan?.(tu.input);
+        const content = "Plan updated.";
+        toolResults.push({ type: "tool_result", tool_use_id: tu.id!, content });
+        await persist("user", {
+          kind: EventKind.ToolResult,
+          toolUseId: tu.id!,
+          content,
+        });
+        continue;
+      }
+
+      if (tu.name === RECORD_EVIDENCE_TOOL_NAME) {
+        await opts.onEvidence?.(tu.input);
+        const content = "Evidence recorded.";
+        toolResults.push({ type: "tool_result", tool_use_id: tu.id!, content });
+        await persist("user", {
+          kind: EventKind.ToolResult,
+          toolUseId: tu.id!,
+          content,
+        });
         continue;
       }
 

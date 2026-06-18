@@ -8,6 +8,13 @@
       "when": 1781231733792,
       "tag": "0000_illegal_iron_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781750463255,
+      "tag": "0001_lame_demogoblin",
+      "breakpoints": true
     }
   ]
 }

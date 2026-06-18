@@ -27,6 +27,12 @@ const conceptProgressSchema = z.object({
   mastery: z.number(),
 });
 
+/** A correct left→right match, used as the server-side grading key. */
+const correctPairSchema = z.object({
+  leftId: z.string(),
+  rightId: z.string(),
+});
+
 /**
  * Per-widget property schemas. Keep these strict and flat — strict tool use
  * forbids unsupported JSON-schema constraints, so no `min`/`max`/`regex`.
@@ -58,13 +64,24 @@ export const widgetProps = {
   /** Items to put in the correct sequence (learner reorders, then submits). */
   OrderingExercise: z.object({
     prompt: z.string(),
+    /** Presented scrambled; the renderer never reveals the right order. */
     items: z.array(optionSchema),
+    /**
+     * The correct sequence of `items` ids — the server grades the learner's
+     * submission against this (the renderer ignores it). Always provide it.
+     */
+    correctOrder: z.array(z.string()).optional(),
   }),
   /** Match each left item to its partner on the right. */
   MatchingPairs: z.object({
     prompt: z.string().optional(),
     left: z.array(optionSchema),
     right: z.array(optionSchema),
+    /**
+     * The correct left→right matches — the server grades against this (the
+     * renderer ignores it). Always provide it.
+     */
+    correctPairs: z.array(correctPairSchema).optional(),
   }),
   /** A read-only code block with optional language + emphasized lines. */
   CodeSnippet: z.object({
