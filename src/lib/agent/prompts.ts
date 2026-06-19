@@ -63,6 +63,8 @@ export interface LearnerSnapshot {
   topicTitle: string;
   /** Free-form notes about how this learner learns (from memory, later phases). */
   learnerNotes?: string;
+  /** Concept names this session should focus on (from the topic graph, #42). */
+  focusConcepts?: string[];
   /** Anything already covered this session, for resumed turns. */
   coveredSoFar?: string;
 }
@@ -72,6 +74,13 @@ export function renderLearnerSnapshot(snapshot: LearnerSnapshot): string {
     `Topic: ${snapshot.topicTitle}`,
     `Available widgets: ${WIDGET_NAMES.join(", ")}.`,
   ];
+  if (snapshot.focusConcepts && snapshot.focusConcepts.length > 0) {
+    lines.push(
+      `Focus this session on these concepts (taught roughly in order): ${snapshot.focusConcepts.join(
+        ", ",
+      )}.`,
+    );
+  }
   if (snapshot.learnerNotes) {
     lines.push(`How this learner learns: ${snapshot.learnerNotes}`);
   }
