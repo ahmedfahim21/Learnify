@@ -15,18 +15,7 @@ export function TopicsClient({ initialTopics }: { initialTopics: TopicSummary[] 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function startSession(topicId: string) {
-    const response = await fetch("/api/sessions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ topicId, kind: "learn" }),
-    });
-    if (!response.ok) throw new Error("Could not start a session.");
-    const { session } = (await response.json()) as { session: { id: string } };
-    router.push(`/session/${session.id}`);
-  }
-
-  async function createAndStart() {
+  async function createTopic() {
     const trimmed = title.trim();
     if (!trimmed || busy) return;
     setBusy(true);
@@ -43,18 +32,9 @@ export function TopicsClient({ initialTopics }: { initialTopics: TopicSummary[] 
       };
       setTopics((prev) => [topic, ...prev]);
       setTitle("");
-      await startSession(topic.id);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Something went wrong.");
-      setBusy(false);
-    }
-  }
-
-  async function resume(topicId: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      await startSession(topicId);
+      // Land on the topic page, where the concept map is built and a session
+      // can be started against the whole topic or selected concepts (#42).
+      router.push(`/topics/${topic.id}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong.");
       setBusy(false);
@@ -76,7 +56,7 @@ export function TopicsClient({ initialTopics }: { initialTopics: TopicSummary[] 
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") void createAndStart();
+            if (event.key === "Enter") void createTopic();
           }}
           placeholder="e.g. Bayes' theorem"
           disabled={busy}
@@ -84,7 +64,7 @@ export function TopicsClient({ initialTopics }: { initialTopics: TopicSummary[] 
         />
         <button
           type="button"
-          onClick={() => void createAndStart()}
+          onClick={() => void createTopic()}
           disabled={busy || !title.trim()}
           className="rounded-lg border border-white/20 bg-white/10 px-5 py-3 font-medium transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -112,11 +92,11 @@ export function TopicsClient({ initialTopics }: { initialTopics: TopicSummary[] 
                 <span>{topic.title}</span>
                 <button
                   type="button"
-                  onClick={() => void resume(topic.id)}
+                  onClick={() => router.push(`/topics/${topic.id}`)}
                   disabled={busy}
                   className="rounded border border-white/15 px-3 py-1 text-sm text-white/70 transition hover:border-white/40 disabled:opacity-50"
                 >
-                  New session
+                  Open
                 </button>
               </li>
             ))}

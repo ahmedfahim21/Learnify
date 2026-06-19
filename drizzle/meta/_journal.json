@@ -15,6 +15,13 @@
       "when": 1781750463255,
       "tag": "0001_lame_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781836850247,
+      "tag": "0002_clear_fantastic_four",
+      "breakpoints": true
     }
   ]
 }

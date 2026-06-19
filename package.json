@@ -16,6 +16,9 @@
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.30.2",
     "@neondatabase/serverless": "^0.10.4",
+    "@types/dagre": "^0.7.54",
+    "@xyflow/react": "^12.11.0",
+    "dagre": "^0.8.5",
     "drizzle-orm": "^0.38.3",
     "next": "^15.1.6",
     "react": "^19.0.0",

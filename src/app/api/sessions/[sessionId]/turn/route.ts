@@ -60,7 +60,7 @@ export async function POST(
 
   // Confirm the session exists and grab its topic title for the snapshot.
   const [session] = await db
-    .select({ id: sessions.id, topicId: sessions.topicId })
+    .select({ id: sessions.id, topicId: sessions.topicId, plan: sessions.plan })
     .from(sessions)
     .where(eq(sessions.id, sessionId))
     .limit(1);
@@ -126,9 +126,16 @@ export async function POST(
   const forceRecap = hasHistory && learnerTurns >= MAX_LEARNER_TURNS;
 
   if (!hasHistory) {
+    // A session started against selected concepts carries them in its plan; seed
+    // them as the snapshot's focus so the tutor teaches them in order (#42).
+    const planFocus = (session.plan as { focus?: unknown } | null)?.focus;
+    const focusConcepts = Array.isArray(planFocus)
+      ? planFocus.filter((f): f is string => typeof f === "string")
+      : undefined;
     const text = renderLearnerSnapshot({
       topicTitle,
       learnerNotes: body.learnerNotes,
+      focusConcepts,
     });
     const payload: EventPayload = { kind: EventKind.UserMessage, text };
     await insertEvent("user", payload.kind, payload);
