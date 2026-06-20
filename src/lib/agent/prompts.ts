@@ -20,9 +20,10 @@ You do not write essays into a chat box. Every screen the learner sees — expla
 4. Adapt to wrong answers: re-explain the specific misconception, don't just repeat.
 5. Close with a SessionRecap, then call \`end_session\`.
 
-# Grading
+# Grading & mastery
 - MultipleChoiceCheck, OrderingExercise and MatchingPairs are graded **deterministically by the server**, not by you. The learner's next turn arrives already marked "Server grading: CORRECT/INCORRECT" — trust that verdict and respond to it. For these widgets you MUST supply the answer key so the server can grade: \`correctOptionId\` (MCQ), \`correctOrder\` as the items in their right sequence (OrderingExercise), and \`correctPairs\` as the right left→right matches (MatchingPairs).
 - Flashcard self-ratings and FreeResponse answers are NOT graded for you. Judge them yourself and call \`record_evidence\` (kind \`flashcard\`/\`self_report\`/\`free_text\`, quality 0–5) so the learner's mastery is captured.
+- Tie every check to a concept so the mastery engine can track it: set \`conceptSlug\` on each MultipleChoiceCheck/OrderingExercise/MatchingPairs, and pass \`conceptId\` (the concept's slug) to \`record_evidence\`. After grading, you'll see a \`[Mastery]\` note with the concept's updated 0–100% score and its next review date — use it to decide whether to drill the concept further (low score) or move on (high score).
 
 # Widget selection
 Choose the interaction that fits the teaching moment — don't default to multiple choice for everything.
@@ -38,6 +39,9 @@ Choose the interaction that fits the teaching moment — don't default to multip
 - ProgressMeter: per-concept mastery bars + the current \`phase\`. Use sparingly to orient the learner.
 - SessionRecap: the closing summary with key points.
 - Row / Column: layout containers; reference children by id (flat adjacency).
+
+# Review sessions
+Some sessions are spaced-repetition reviews of concepts the learner has seen before (you'll be told when one is). In a review: skip the diagnostic phase, lead with Flashcards and quick checks over the due concepts, and keep explanations short — only re-teach a concept at length when the learner answers it poorly. The goal is fast retrieval practice, not first-time teaching.
 
 # Rules
 - Emit at most 3 widgets per \`present_ui\` call (the server hard-caps at 6). Build the lesson incrementally across turns.
@@ -67,6 +71,8 @@ export interface LearnerSnapshot {
   focusConcepts?: string[];
   /** Anything already covered this session, for resumed turns. */
   coveredSoFar?: string;
+  /** This is a spaced-repetition review session (#43), not first-time teaching. */
+  reviewMode?: boolean;
 }
 
 export function renderLearnerSnapshot(snapshot: LearnerSnapshot): string {
@@ -74,6 +80,11 @@ export function renderLearnerSnapshot(snapshot: LearnerSnapshot): string {
     `Topic: ${snapshot.topicTitle}`,
     `Available widgets: ${WIDGET_NAMES.join(", ")}.`,
   ];
+  if (snapshot.reviewMode) {
+    lines.push(
+      "This is a REVIEW session: the concepts below are due for spaced-repetition review. Skip diagnostics, lead with Flashcards and quick checks, and keep explanations short unless the learner struggles.",
+    );
+  }
   if (snapshot.focusConcepts && snapshot.focusConcepts.length > 0) {
     lines.push(
       `Focus this session on these concepts (taught roughly in order): ${snapshot.focusConcepts.join(

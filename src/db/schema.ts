@@ -1,4 +1,6 @@
 import {
+  date,
+  index,
   integer,
   jsonb,
   pgTable,
@@ -119,6 +121,12 @@ export const sessions = pgTable("sessions", {
   topicId: uuid("topic_id")
     .notNull()
     .references(() => topics.id, { onDelete: "cascade" }),
+  /**
+   * Session kind: "learn" (default — teach the topic/selected concepts) or
+   * "review" (#43 — spaced-repetition pass seeded from the due queue; the tutor
+   * runs flashcard-heavy with short explanations unless the learner struggles).
+   */
+  kind: text("kind").notNull().default("learn"),
   // "active" | "completed" | "abandoned"
   status: text("status").notNull().default("active"),
   /**
@@ -165,6 +173,100 @@ export const sessionEvents = pgTable(
   (table) => [unique("session_events_session_seq_unique").on(table.sessionId, table.seq)],
 );
 
+/**
+ * Per-learner mastery of a concept — the retention moat (#43).
+ *
+ * One row per (user, concept). `score` is a 0–1 exponential moving average over
+ * graded evidence (see `lib/mastery/update`); the SM-2-lite fields
+ * (`repetitions`, `intervalDays`, `easeFactor`, `dueAt`) drive spaced-repetition
+ * scheduling (see `lib/mastery/schedule`). The `(userId, dueAt)` index powers
+ * the Today due queue.
+ */
+export const mastery = pgTable(
+  "mastery",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    conceptId: uuid("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+    // 0–1 EMA over evidence quality.
+    score: real("score").notNull().default(0),
+    // SM-2-lite scheduling state.
+    repetitions: integer("repetitions").notNull().default(0),
+    intervalDays: real("interval_days").notNull().default(0),
+    easeFactor: real("ease_factor").notNull().default(2.5),
+    // How many pieces of evidence have updated this row (gates "weak" surfacing).
+    evidenceCount: integer("evidence_count").notNull().default(0),
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }),
+    // When this concept next becomes due for review.
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    unique("mastery_user_concept_unique").on(table.userId, table.conceptId),
+    index("mastery_user_due_idx").on(table.userId, table.dueAt),
+  ],
+);
+
+/**
+ * Append-only audit trail of every mastery update: what kind of evidence, the
+ * graded quality, and the score/schedule before and after. Useful for debugging
+ * the engine and (later) charting progress over time.
+ */
+export const reviewEvents = pgTable("review_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  conceptId: uuid("concept_id")
+    .notNull()
+    .references(() => concepts.id, { onDelete: "cascade" }),
+  // The session this evidence came from, if any (nulled if the session is gone).
+  sessionId: uuid("session_id").references(() => sessions.id, {
+    onDelete: "set null",
+  }),
+  // "mcq" | "ordering" | "matching" | "flashcard" | "free_text" | "self_report"
+  kind: text("kind").notNull(),
+  // Graded quality 0–5.
+  quality: real("quality").notNull(),
+  scoreBefore: real("score_before").notNull(),
+  scoreAfter: real("score_after").notNull(),
+  dueAt: timestamp("due_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * Daily-habit streak per learner. `lastActiveDate` is the most recent day the
+ * learner produced mastery evidence; `current` resets to 1 if a day is skipped.
+ */
+export const streaks = pgTable("streaks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  current: integer("current").notNull().default(0),
+  longest: integer("longest").notNull().default(0),
+  // YYYY-MM-DD of the last day with activity (date mode keeps it tz-agnostic).
+  lastActiveDate: date("last_active_date"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Topic = typeof topics.$inferSelect;
@@ -177,3 +279,9 @@ export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
 export type SessionEvent = typeof sessionEvents.$inferSelect;
 export type NewSessionEvent = typeof sessionEvents.$inferInsert;
+export type Mastery = typeof mastery.$inferSelect;
+export type NewMastery = typeof mastery.$inferInsert;
+export type ReviewEvent = typeof reviewEvents.$inferSelect;
+export type NewReviewEvent = typeof reviewEvents.$inferInsert;
+export type Streak = typeof streaks.$inferSelect;
+export type NewStreak = typeof streaks.$inferInsert;

@@ -43,12 +43,21 @@ export function TopicsClient({ initialTopics }: { initialTopics: TopicSummary[] 
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-8 px-4 py-12">
-      <div>
-        <h1 className="text-3xl font-semibold">What do you want to learn?</h1>
-        <p className="mt-2 text-white/60">
-          Enter any topic and the tutor will build a live, interactive session
-          for you.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-semibold">What do you want to learn?</h1>
+          <p className="mt-2 text-white/60">
+            Enter any topic and the tutor will build a live, interactive session
+            for you.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => router.push("/today")}
+          className="shrink-0 rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 transition hover:border-white/40"
+        >
+          Today
+        </button>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">

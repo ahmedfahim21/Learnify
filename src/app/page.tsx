@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
@@ -10,12 +12,20 @@ export default function Home() {
         generating the <em>experience</em> — live adaptive sessions where every
         screen is streamed as interactive UI and grounded in your sources.
       </p>
-      <a
-        href="/topics"
-        className="rounded-lg border border-white/20 bg-white/10 px-5 py-3 font-medium transition hover:bg-white/15"
-      >
-        Start learning
-      </a>
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <Link
+          href="/topics"
+          className="rounded-lg border border-white/20 bg-white/10 px-5 py-3 font-medium transition hover:bg-white/15"
+        >
+          Start learning
+        </Link>
+        <Link
+          href="/today"
+          className="rounded-lg border border-white/15 px-5 py-3 font-medium text-white/80 transition hover:border-white/40"
+        >
+          Today
+        </Link>
+      </div>
     </main>
   );
 }

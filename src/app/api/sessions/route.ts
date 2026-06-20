@@ -9,17 +9,23 @@ export const runtime = "nodejs";
 /**
  * Start a learning session against a topic.
  *
- * Phase 1 only has one session kind ("learn"); the `kind` field is accepted for
- * forward-compatibility but not yet persisted (review sessions arrive in #43).
+ * Two kinds (#43): "learn" (default — first-time teaching) and "review" (a
+ * spaced-repetition pass; the tutor runs flashcard-heavy off the due queue).
+ * The kind is persisted on the session and seeds the tutor's opening snapshot.
  *
- * An optional `conceptIds` array (from the topic's concept graph, #42) focuses
- * the session on selected concepts: they're resolved to names/slugs and seeded
- * into the session plan so the tutor's opening snapshot teaches them in order.
+ * An optional `conceptIds` array (from the topic's concept graph, #42, or the
+ * Today due queue) focuses the session on selected concepts: they're resolved to
+ * names/slugs and seeded into the session plan so the tutor teaches/reviews them
+ * in order.
  */
 export async function POST(request: Request): Promise<Response> {
-  let body: { topicId?: unknown; conceptIds?: unknown };
+  let body: { topicId?: unknown; conceptIds?: unknown; kind?: unknown };
   try {
-    body = (await request.json()) as { topicId?: unknown; conceptIds?: unknown };
+    body = (await request.json()) as {
+      topicId?: unknown;
+      conceptIds?: unknown;
+      kind?: unknown;
+    };
   } catch {
     body = {};
   }
@@ -28,6 +34,8 @@ export async function POST(request: Request): Promise<Response> {
   if (!topicId) {
     return Response.json({ error: "topicId is required" }, { status: 400 });
   }
+
+  const kind = body.kind === "review" ? "review" : "learn";
 
   const conceptIds = Array.isArray(body.conceptIds)
     ? body.conceptIds.filter((id): id is string => typeof id === "string")
@@ -63,7 +71,8 @@ export async function POST(request: Request): Promise<Response> {
       .orderBy(concepts.orderIndex);
     if (targeted.length > 0) {
       plan = {
-        phase: "diagnostic",
+        // Reviews skip diagnostics and jump straight to retrieval practice.
+        phase: kind === "review" ? "assess" : "diagnostic",
         remainingConceptIds: targeted.map((c) => c.slug),
         focus: targeted.map((c) => c.name),
       };
@@ -72,7 +81,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const [session] = await db
     .insert(sessions)
-    .values({ userId, topicId, status: "active", plan })
+    .values({ userId, topicId, kind, status: "active", plan })
     .returning();
 
   return Response.json({ session }, { status: 201 });
