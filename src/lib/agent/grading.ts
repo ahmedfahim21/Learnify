@@ -15,6 +15,7 @@
 
 import type { ComponentDef } from "../a2ui/messages";
 import type { ValidatePresentUiInput } from "../a2ui/emit";
+import type { EvidenceKind } from "../mastery/update";
 
 import { EventKind, type StoredEvent } from "./transcript";
 import { PRESENT_UI_TOOL_NAME } from "./tools";
@@ -34,6 +35,13 @@ export interface GradeResult {
   verdict: Verdict;
   /** The user-turn text to feed the model (the answer + any deterministic verdict). */
   message: string;
+  /**
+   * Mastery signal for a deterministically-graded check (#43): which concept it
+   * assessed, the evidence kind, and the graded quality (correct → 5, wrong → 1).
+   * Present only when the widget carried a `conceptSlug`; the `/turn` route feeds
+   * it into the mastery engine.
+   */
+  mastery?: { conceptSlug: string; kind: EvidenceKind; quality: number };
 }
 
 interface Option {
@@ -109,6 +117,12 @@ export function collectComponents(
   return index;
 }
 
+/** Read an optional `conceptSlug` widget property (set by the tutor, #43). */
+function conceptSlugOf(def: ComponentDef): string | undefined {
+  const slug = def.properties.conceptSlug;
+  return typeof slug === "string" && slug.trim() ? slug.trim() : undefined;
+}
+
 function fallbackLabel(action: LearnerAction): string {
   const label = action.payload?.label;
   return typeof label === "string" && label.trim()
@@ -139,14 +153,20 @@ export function gradeAction(
       const labelFor = (id: string) => options.find((o) => o.id === id)?.label ?? id;
       const correct = chosenId === correctId;
       const chosenLabel = labelFor(chosenId) || label;
+      const slug = conceptSlugOf(def);
+      const mastery = slug
+        ? { conceptSlug: slug, kind: "mcq" as const, quality: correct ? 5 : 1 }
+        : undefined;
       return correct
         ? {
             verdict: "correct",
             message: `The learner chose "${chosenLabel}". Server grading: CORRECT. Briefly affirm and move on to the next idea.`,
+            mastery,
           }
         : {
             verdict: "incorrect",
             message: `The learner chose "${chosenLabel}". Server grading: INCORRECT — the correct answer was "${labelFor(correctId)}". Address that specific misconception before continuing; do not just repeat the question.`,
+            mastery,
           };
     }
 
@@ -162,14 +182,20 @@ export function gradeAction(
       const correct = arraysEqual(correctOrder, submitted);
       const labelOf = new Map(readOptions(def.properties.items).map((i) => [i.id, i.label]));
       const correctLabels = correctOrder.map((id) => labelOf.get(id) ?? id).join(" → ");
+      const slug = conceptSlugOf(def);
+      const mastery = slug
+        ? { conceptSlug: slug, kind: "ordering" as const, quality: correct ? 5 : 1 }
+        : undefined;
       return correct
         ? {
             verdict: "correct",
             message: `The learner ordered the items as: ${label}. Server grading: CORRECT. Affirm and continue.`,
+            mastery,
           }
         : {
             verdict: "incorrect",
             message: `The learner ordered the items as: ${label}. Server grading: INCORRECT — the correct order is ${correctLabels}. Explain why that ordering is right before continuing.`,
+            mastery,
           };
     }
 
@@ -188,14 +214,20 @@ export function gradeAction(
       const correctLabels = correctPairs
         .map((p) => `${leftLabel.get(p.leftId) ?? p.leftId} → ${rightLabel.get(p.rightId) ?? p.rightId}`)
         .join("; ");
+      const slug = conceptSlugOf(def);
+      const mastery = slug
+        ? { conceptSlug: slug, kind: "matching" as const, quality: correct ? 5 : 1 }
+        : undefined;
       return correct
         ? {
             verdict: "correct",
             message: `The learner matched: ${label}. Server grading: CORRECT. Affirm and continue.`,
+            mastery,
           }
         : {
             verdict: "incorrect",
             message: `The learner matched: ${label}. Server grading: INCORRECT — the correct matches are: ${correctLabels}. Clear up the mismatches before continuing.`,
+            mastery,
           };
     }
 

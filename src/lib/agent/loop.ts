@@ -53,8 +53,13 @@ export interface RunTurnOptions {
   onUsage?: (usage: unknown) => void | Promise<void>;
   /** The tutor updated its plan (phase + remaining concepts). */
   onPlan?: (plan: unknown) => void | Promise<void>;
-  /** The tutor recorded fuzzy mastery evidence (free-text / self-report). */
-  onEvidence?: (evidence: unknown) => void | Promise<void>;
+  /**
+   * The tutor recorded fuzzy mastery evidence (free-text / self-report). May
+   * return a short string to use as the tool_result content (e.g. the updated
+   * mastery score + next-review date, so the agent can adapt); a void return
+   * falls back to a generic acknowledgement.
+   */
+  onEvidence?: (evidence: unknown) => (string | void) | Promise<string | void>;
   maxModelCalls?: number;
   model?: string;
   maxTokens?: number;
@@ -262,8 +267,9 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
       }
 
       if (tu.name === RECORD_EVIDENCE_TOOL_NAME) {
-        await opts.onEvidence?.(tu.input);
-        const content = "Evidence recorded.";
+        const note = await opts.onEvidence?.(tu.input);
+        const content =
+          typeof note === "string" && note ? note : "Evidence recorded.";
         toolResults.push({ type: "tool_result", tool_use_id: tu.id!, content });
         await persist("user", {
           kind: EventKind.ToolResult,

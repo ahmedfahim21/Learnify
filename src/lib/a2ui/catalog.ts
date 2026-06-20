@@ -54,6 +54,11 @@ export const widgetProps = {
     options: z.array(optionSchema),
     correctOptionId: z.string(),
     explanation: z.string().optional(),
+    /**
+     * Slug of the concept this check assesses. The server grades the answer and
+     * routes the result into the mastery engine (#43); the renderer ignores it.
+     */
+    conceptSlug: z.string().optional(),
   }),
   /** A flippable card; the learner self-rates recall (SM-2 quality 0–5). */
   Flashcard: z.object({
@@ -71,6 +76,8 @@ export const widgetProps = {
      * submission against this (the renderer ignores it). Always provide it.
      */
     correctOrder: z.array(z.string()).optional(),
+    /** Slug of the concept this exercise assesses (routes mastery evidence, #43). */
+    conceptSlug: z.string().optional(),
   }),
   /** Match each left item to its partner on the right. */
   MatchingPairs: z.object({
@@ -82,6 +89,8 @@ export const widgetProps = {
      * renderer ignores it). Always provide it.
      */
     correctPairs: z.array(correctPairSchema).optional(),
+    /** Slug of the concept this exercise assesses (routes mastery evidence, #43). */
+    conceptSlug: z.string().optional(),
   }),
   /** A read-only code block with optional language + emphasized lines. */
   CodeSnippet: z.object({

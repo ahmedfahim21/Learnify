@@ -19,6 +19,7 @@ import {
   gradeAction,
   type LearnerAction,
 } from "@/lib/agent/grading";
+import { applyEvidence, isEvidenceKind } from "@/lib/mastery/engine";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -38,6 +39,13 @@ interface TurnRequestBody {
 function usageField(usage: unknown, key: string): number {
   const value = (usage as Record<string, unknown> | undefined)?.[key];
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+/** A one-line mastery summary fed back to the tutor after recording evidence. */
+function masteryNote(conceptName: string, newScore: number, dueAt: Date): string {
+  const pct = Math.round(newScore * 100);
+  const due = dueAt.toISOString().slice(0, 10);
+  return `[Mastery] "${conceptName}" is now ${pct}%; next review ${due}.`;
 }
 
 const SURFACE_PREFIX = "session";
@@ -60,7 +68,13 @@ export async function POST(
 
   // Confirm the session exists and grab its topic title for the snapshot.
   const [session] = await db
-    .select({ id: sessions.id, topicId: sessions.topicId, plan: sessions.plan })
+    .select({
+      id: sessions.id,
+      userId: sessions.userId,
+      topicId: sessions.topicId,
+      kind: sessions.kind,
+      plan: sessions.plan,
+    })
     .from(sessions)
     .where(eq(sessions.id, sessionId))
     .limit(1);
@@ -136,6 +150,7 @@ export async function POST(
       topicTitle,
       learnerNotes: body.learnerNotes,
       focusConcepts,
+      reviewMode: session.kind === "review",
     });
     const payload: EventPayload = { kind: EventKind.UserMessage, text };
     await insertEvent("user", payload.kind, payload);
@@ -145,7 +160,21 @@ export async function POST(
     // message passes through. The forced-recap directive is appended either way.
     let text: string;
     if (body.action) {
-      text = gradeAction(body.action, collectComponents(stored)).message;
+      const graded = gradeAction(body.action, collectComponents(stored));
+      text = graded.message;
+      // Route a server-graded check into the mastery engine and tell the tutor
+      // the resulting score so it can decide whether to drill or advance (#43).
+      if (graded.mastery) {
+        const result = await applyEvidence({
+          userId: session.userId,
+          topicId: session.topicId,
+          conceptSlug: graded.mastery.conceptSlug,
+          kind: graded.mastery.kind,
+          quality: graded.mastery.quality,
+          sessionId,
+        });
+        if (result) text += ` ${masteryNote(result.conceptName, result.newScore, result.dueAt)}`;
+      }
     } else {
       text = body.message ?? "";
     }
@@ -187,8 +216,35 @@ export async function POST(
               .set({ plan: plan as object })
               .where(eq(sessions.id, sessionId));
           },
-          onEvidence: (evidence) =>
-            insertEvent("system", "evidence", { kind: "evidence", evidence }),
+          onEvidence: async (evidence) => {
+            await insertEvent("system", "evidence", { kind: "evidence", evidence });
+            // Fuzzy evidence (flashcard / free-text / self-report) the tutor
+            // graded itself: route it into the mastery engine if it's tagged
+            // with a concept, and hand the tutor back the updated score (#43).
+            const ev = evidence as {
+              conceptId?: unknown;
+              kind?: unknown;
+              quality?: unknown;
+            };
+            const kind = ev.kind;
+            const quality =
+              typeof ev.quality === "number" ? ev.quality : Number(ev.quality);
+            const conceptSlug =
+              typeof ev.conceptId === "string" ? ev.conceptId : null;
+            if (!isEvidenceKind(kind) || !Number.isFinite(quality) || !conceptSlug) {
+              return;
+            }
+            const result = await applyEvidence({
+              userId: session.userId,
+              topicId: session.topicId,
+              conceptSlug,
+              kind,
+              quality,
+              sessionId,
+            });
+            if (!result) return;
+            return `Recorded. ${masteryNote(result.conceptName, result.newScore, result.dueAt)}`;
+          },
         });
 
         // Persist the turn's token totals (cache_read_input_tokens > 0 on
