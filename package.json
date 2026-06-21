@@ -23,6 +23,7 @@
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "supermemory": "^4.24.12",
     "zod": "^4.4.3",
     "zod-to-json-schema": "^3.25.2"
   },
