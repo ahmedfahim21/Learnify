@@ -20,6 +20,7 @@ import {
   type LearnerAction,
 } from "@/lib/agent/grading";
 import { applyEvidence, isEvidenceKind } from "@/lib/mastery/engine";
+import { distillAndRemember, recallLearnerNotes } from "@/lib/memory";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -146,9 +147,17 @@ export async function POST(
     const focusConcepts = Array.isArray(planFocus)
       ? planFocus.filter((f): f is string => typeof f === "string")
       : undefined;
+    // Recall how this learner learns (Supermemory, or the pgNotes fallback) and
+    // fold it into the volatile snapshot — never the cached system prefix. This
+    // is what lets a session adapt to traits learned in earlier, unrelated
+    // sessions. Best-effort: missing recall just means no extra context.
+    const recalled = await recallLearnerNotes(session.userId, topicTitle);
+    const learnerNotes = [recalled, body.learnerNotes]
+      .filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+      .join("; ");
     const text = renderLearnerSnapshot({
       topicTitle,
-      learnerNotes: body.learnerNotes,
+      learnerNotes: learnerNotes || undefined,
       focusConcepts,
       reviewMode: session.kind === "review",
     });
@@ -244,6 +253,35 @@ export async function POST(
             });
             if (!result) return;
             return `Recorded. ${masteryNote(result.conceptName, result.newScore, result.dueAt)}`;
+          },
+          onEndSession: async () => {
+            // Mark the session closed, then distill how this learner learns from
+            // the full transcript into the memory layer (#44). Re-read events so
+            // the distiller sees this turn too; both steps are best-effort and
+            // must not break stream teardown.
+            try {
+              await db
+                .update(sessions)
+                .set({ status: "completed", endedAt: new Date() })
+                .where(eq(sessions.id, sessionId));
+            } catch (err) {
+              console.warn("[session] failed to mark completed:", err);
+            }
+            const finalRows = await db
+              .select({
+                seq: sessionEvents.seq,
+                role: sessionEvents.role,
+                payload: sessionEvents.payload,
+              })
+              .from(sessionEvents)
+              .where(eq(sessionEvents.sessionId, sessionId))
+              .orderBy(asc(sessionEvents.seq));
+            const finalEvents: StoredEvent[] = finalRows.map((r) => ({
+              seq: r.seq,
+              role: r.role as StoredEvent["role"],
+              payload: r.payload as EventPayload,
+            }));
+            await distillAndRemember(session.userId, topicTitle, finalEvents);
           },
         });
 

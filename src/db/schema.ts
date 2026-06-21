@@ -267,6 +267,28 @@ export const streaks = pgTable("streaks", {
     .defaultNow(),
 });
 
+/**
+ * Plain-Postgres fallback for the tutor's qualitative memory of *how* a learner
+ * learns (#44). When `SUPERMEMORY_API_KEY` is unset, distilled insights
+ * (learning style, interests, misconceptions, what worked) land here instead of
+ * Supermemory; the read path pulls a learner's recent notes into the session
+ * snapshot. Notes are user-scoped and cascade-deleted with the account.
+ */
+export const learnerNotes = pgTable(
+  "learner_notes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("learner_notes_user_idx").on(table.userId, table.createdAt)],
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Topic = typeof topics.$inferSelect;
@@ -285,3 +307,5 @@ export type ReviewEvent = typeof reviewEvents.$inferSelect;
 export type NewReviewEvent = typeof reviewEvents.$inferInsert;
 export type Streak = typeof streaks.$inferSelect;
 export type NewStreak = typeof streaks.$inferInsert;
+export type LearnerNote = typeof learnerNotes.$inferSelect;
+export type NewLearnerNote = typeof learnerNotes.$inferInsert;

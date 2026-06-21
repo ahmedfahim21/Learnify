@@ -60,6 +60,8 @@ export interface RunTurnOptions {
    * falls back to a generic acknowledgement.
    */
   onEvidence?: (evidence: unknown) => (string | void) | Promise<string | void>;
+  /** The tutor ended the session — used to distill memory & mark it complete. */
+  onEndSession?: (reason?: string) => void | Promise<void>;
   maxModelCalls?: number;
   model?: string;
   maxTokens?: number;
@@ -249,6 +251,7 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
           toolUseId: tu.id!,
           content,
         });
+        await opts.onEndSession?.(reason);
         emit({ type: "session_end", reason });
         ended = true;
         continue;
