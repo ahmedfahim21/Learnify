@@ -289,6 +289,75 @@ export const learnerNotes = pgTable(
   (table) => [index("learner_notes_user_idx").on(table.userId, table.createdAt)],
 );
 
+/**
+ * A learning source attached to a topic (#45): a PDF, web article, or YouTube
+ * video. "Learn from anything" — teaching is grounded in the learner's own
+ * sources (with citations, #46) instead of model weights alone.
+ *
+ * Lifecycle mirrors the topic decomposition flow:
+ *   "pending"   — created, ingestion not started
+ *   "ingesting" — fetch/parse/chunk in flight
+ *   "ready"     — text extracted into ordered `source_chunks`
+ *   "failed"    — ingestion failed; `error` carries a friendly reason and the
+ *                 source can be retried (or, for YouTube, a transcript pasted)
+ *
+ * `tokenEstimate` is the rough token cost of feeding this source into a session
+ * (≈ chars / 4); the per-topic budget (`MAX_TOPIC_SOURCE_TOKENS`) is enforced
+ * against the sum of ready sources. PDFs additionally live in Vercel Blob
+ * (`blobUrl`) so their bytes can be base64'd into requests at session time —
+ * Bedrock has no Files API or URL document sources (#45 context).
+ */
+export const sources = pgTable("sources", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  topicId: uuid("topic_id")
+    .notNull()
+    .references(() => topics.id, { onDelete: "cascade" }),
+  // "pdf" | "url" | "youtube"
+  kind: text("kind").notNull(),
+  // Display label: filename, article title, or video title.
+  title: text("title").notNull(),
+  // Original URL for url/youtube sources; null for uploaded PDFs.
+  sourceUrl: text("source_url"),
+  // Vercel Blob URL for an uploaded PDF; re-fetched + base64'd at session time.
+  blobUrl: text("blob_url"),
+  // "pending" | "ingesting" | "ready" | "failed"
+  status: text("status").notNull().default("pending"),
+  // Human-readable failure reason when status = "failed".
+  error: text("error"),
+  // Rough token cost of this source's text (≈ chars / 4), for the topic budget.
+  tokenEstimate: integer("token_estimate").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * One ordered chunk of a source's extracted text, carrying the citation
+ * metadata the grounded-teaching UX (#46) jumps to: `{ page }` for PDFs,
+ * `{ heading }` for articles, `{ startSec, endSec }` for YouTube transcripts.
+ * `idx` is monotonic within a source so chunks reassemble in reading order.
+ */
+export const sourceChunks = pgTable(
+  "source_chunks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    idx: integer("idx").notNull(),
+    content: text("content").notNull(),
+    // Citation locator; shape depends on source kind (see above).
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [unique("source_chunks_source_idx_unique").on(table.sourceId, table.idx)],
+);
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Topic = typeof topics.$inferSelect;
@@ -309,3 +378,7 @@ export type Streak = typeof streaks.$inferSelect;
 export type NewStreak = typeof streaks.$inferInsert;
 export type LearnerNote = typeof learnerNotes.$inferSelect;
 export type NewLearnerNote = typeof learnerNotes.$inferInsert;
+export type Source = typeof sources.$inferSelect;
+export type NewSource = typeof sources.$inferInsert;
+export type SourceChunk = typeof sourceChunks.$inferSelect;
+export type NewSourceChunk = typeof sourceChunks.$inferInsert;

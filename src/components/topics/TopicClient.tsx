@@ -8,6 +8,7 @@ import {
   type GraphConcept,
   type GraphEdge,
 } from "@/components/graph/KnowledgeGraph";
+import { SourcesPanel, type SourceItem } from "@/components/topics/SourcesPanel";
 
 interface SessionSummary {
   id: string;
@@ -22,6 +23,7 @@ export interface TopicView {
   concepts: GraphConcept[];
   edges: GraphEdge[];
   sessions: SessionSummary[];
+  sources: SourceItem[];
 }
 
 const POLL_MS = 2500;
@@ -184,6 +186,8 @@ export function TopicClient({ topic }: { topic: TopicView }) {
           </div>
         </>
       )}
+
+      <SourcesPanel topicId={topic.id} sources={topic.sources} />
 
       {topic.sessions.length > 0 && (
         <div className="flex flex-col gap-2">
