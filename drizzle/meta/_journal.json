@@ -36,6 +36,13 @@
       "when": 1782009480096,
       "tag": "0004_living_blue_marvel",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782096045193,
+      "tag": "0005_orange_namorita",
+      "breakpoints": true
     }
   ]
 }
