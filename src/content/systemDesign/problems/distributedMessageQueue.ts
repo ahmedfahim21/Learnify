@@ -130,7 +130,14 @@ export const distributedMessageQueue: SystemDesignProblem = {
           type: "prose",
           body: "If a partition lived on exactly one broker, that broker's failure would make the partition unavailable and could lose unacknowledged messages entirely. Production message queues replicate each partition across multiple brokers (a replication factor of 3 is typical); one replica is elected leader and handles all reads and writes, while the others stay in sync as followers. If the leader broker fails, one of the in-sync followers is promoted, and producers/consumers are redirected — a partition-level version of the same replication idea used in the Key-Value Store course.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "queue-backpressure",
+            title: "Consumer lag",
+            notice: "Consumers are the service rate, producers the arrival rate. Because the log is durable, exceeding capacity doesn't drop messages — it grows lag. Add workers (up to the partition count) and watch the wait collapse.",
+            params: [{ key: "arrivalRate", value: 380 }, { key: "serviceRate", value: 100 }, { key: "workers", value: 4 }],
+          },
+        ],
     },
   ],
 };

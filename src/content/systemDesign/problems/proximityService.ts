@@ -124,7 +124,14 @@ export const proximityService: SystemDesignProblem = {
           type: "prose",
           body: "If the index is sharded by geohash prefix, a shard covering a dense downtown area can receive far more traffic than a shard covering sparse countryside — the geospatial equivalent of a hot key. The same mitigations apply: finer-grained sharding in dense regions (variable-precision geohashes, giving denser areas more, smaller cells and sparse areas fewer, larger ones), and extra replication for hot shards so their read load spreads across more machines.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "consistent-hashing",
+            title: "Sharding geohash cells",
+            notice: "Even a perfectly even split of *cells* doesn't split *traffic* evenly — a shard holding a dense downtown sees far more of it. This is the hot-key problem from the Distributed Cache course, in spatial form.",
+            params: [{ key: "nodeCount", value: 6 }, { key: "virtualNodesPerNode", value: 12 }],
+          },
+        ],
     },
   ],
 };

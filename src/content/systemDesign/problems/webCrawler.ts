@@ -125,7 +125,14 @@ export const webCrawler: SystemDesignProblem = {
           type: "prose",
           body: "Sharding the frontier by host (not randomly) keeps all of one site's URLs on the same shard, so the per-host politeness delay can be enforced with purely local state on that shard — no cross-shard coordination needed to answer \"have we hit example.com too recently?\". The Bloom filter seen-set shards the same way it would in any distributed cache design (see the Distributed Cache course), typically by a hash of the normalized URL.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "queue-backpressure",
+            title: "Draining the frontier",
+            notice: "Fetchers are the service rate and newly discovered links are the arrival rate. While discovery outpaces fetching the frontier grows without bound — which is why a crawl is shaped by politeness limits, not by how many workers you can afford.",
+            params: [{ key: "arrivalRate", value: 190 }, { key: "serviceRate", value: 50 }, { key: "workers", value: 4 }],
+          },
+        ],
     },
   ],
 };

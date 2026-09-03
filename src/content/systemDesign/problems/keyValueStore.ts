@@ -60,7 +60,15 @@ export const keyValueStore: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "Just as in a distributed cache, keys are placed on a hash ring and owned by ranges of that ring. The refinement a durable store adds: the ring is divided into many more partitions than there are physical nodes, and each node owns several partitions. Rebalancing then means moving whole partitions between nodes — a coarser, easier-to-reason-about unit than individual keys, and one that spreads a rebalance's cost across many nodes at once." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "consistent-hashing",
+            title: "Partitioning the keyspace",
+            intro: "The same ring that balances a distributed cache decides which nodes own which partitions here.",
+            notice: "Raise the virtual-node count and watch the key-share spread tighten. That evenness is what stops one node owning a disproportionate slice of the data.",
+            params: [{ key: "nodeCount", value: 6 }, { key: "virtualNodesPerNode", value: 20 }],
+          },
+        ],
     },
     {
       phase: "high-level",
@@ -117,7 +125,38 @@ export const keyValueStore: SystemDesignProblem = {
           tone: "tradeoff",
           body: "Last-write-wins is simpler to implement than vector clocks but silently drops one of two concurrent writes. Whether that's acceptable depends entirely on the workload — fine for a view counter, unacceptable for a shopping cart.",
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Concurrent writes, and what a vector clock can tell you",
+              columns: 4,
+              rows: 3,
+              nodes: [
+                { id: "c1", label: "Client A writes", detail: "Reaches replica 1 during a partition. It has no way to know client B is writing the same key elsewhere.", icon: "client", col: 0, row: 0 },
+                { id: "c2", label: "Client B writes", detail: "Reaches replica 2 at the same moment. Both writes are accepted — that acceptance is the availability the design chose.", icon: "client", col: 0, row: 2 },
+                { id: "rep1", label: "Replica 1", sublabel: "v: [A:2, B:1]", detail: "Its version vector records how many writes it has seen from each replica.", icon: "database", col: 1, row: 0, accent: "blue" },
+                { id: "rep2", label: "Replica 2", sublabel: "v: [A:1, B:2]", detail: "Neither vector dominates the other — the formal definition of concurrent, as opposed to one simply happening after the other.", icon: "database", col: 1, row: 2, accent: "blue" },
+                { id: "compare", label: "Compare vectors", detail: "If one vector is >= the other in every position, it happened later and wins outright. Otherwise the writes genuinely conflict.", icon: "function", col: 2, row: 1, accent: "amber", shape: "hexagon" },
+                { id: "keep", label: "Keep both", detail: "Surface both siblings for the application to reconcile — the safe default when losing a write is unacceptable.", icon: "shard", col: 3, row: 0, accent: "green" },
+                { id: "lww", label: "Last-write-wins", detail: "Simpler, and silently discards one of the two writes. Fine for a view counter, wrong for a shopping cart.", icon: "worker", col: 3, row: 2, accent: "rose" },
+              ],
+              edges: [
+                { id: "w1", from: "c1", to: "rep1", step: 1 },
+                { id: "w2", from: "c2", to: "rep2", step: 1 },
+                { id: "w3", from: "rep1", to: "compare", step: 2 },
+                { id: "w4", from: "rep2", to: "compare", step: 2 },
+                { id: "w5", from: "compare", to: "keep", step: 3, label: "concurrent" },
+                { id: "w6", from: "compare", to: "lww", step: 4, label: "or drop one", style: "dashed" },
+              ],
+              steps: [
+                { index: 1, caption: "Two clients write the same key to different replicas during a partition. Both are accepted.", nodeIds: ["c1", "c2", "rep1", "rep2"], edgeIds: ["w1", "w2"] },
+                { index: 2, caption: "On reconciliation the version vectors are compared.", nodeIds: ["rep1", "rep2", "compare"], edgeIds: ["w3", "w4"] },
+                { index: 3, caption: "Neither dominates, so these are truly concurrent — keep both as siblings.", nodeIds: ["compare", "keep"], edgeIds: ["w5"] },
+                { index: 4, caption: "Last-write-wins is the simpler alternative, and it silently loses one of the two.", nodeIds: ["compare", "lww"], edgeIds: ["w6"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",

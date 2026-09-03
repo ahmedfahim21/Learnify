@@ -129,7 +129,14 @@ export const fileStorage: SystemDesignProblem = {
           type: "prose",
           body: "At exabyte scale, storage cost dominates the economics of the whole system, and access patterns are heavily skewed: most files are uploaded once and rarely, if ever, opened again. Moving chunks that haven't been accessed in, say, 90 days to a cheaper cold-storage tier (higher retrieval latency, much lower cost per GB) can cut overall storage cost dramatically, since it's applied to the vast majority of stored bytes, while barely affecting the small fraction of actively-used files that stay in the hot tier.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "cache-hit-ratio",
+            title: "Hot tier vs. cold tier",
+            notice: "Treat the hot tier as the cache and cold storage as the origin. Because most stored bytes are almost never read again, even a low hit ratio on *requests* still lets the overwhelming majority of *bytes* live in the cheap tier.",
+            params: [{ key: "hitRatio", value: 0.92 }, { key: "qps", value: 5000 }, { key: "originLatencyMs", value: 250 }],
+          },
+        ],
     },
   ],
 };

@@ -118,7 +118,34 @@ export const newsFeed: SystemDesignProblem = {
           type: "prose",
           body: "Once candidate posts are assembled (via fan-out-on-write, fan-out-on-read, or the hybrid), ranking them is a separate step: a lightweight model scores each candidate on predicted engagement, recency, and diversity (not showing 10 posts from the same person in a row), then the top-scored posts are what actually gets returned. Keeping ranking decoupled from fan-out means the ranking model can be iterated on without touching how posts get delivered to a feed cache in the first place.",
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Ranking sits on top of fan-out, not inside it",
+              columns: 4,
+              rows: 2,
+              nodes: [
+                { id: "cands", label: "Candidate posts", detail: "Whatever fan-out produced — precomputed cache entries plus any followed celebrities' recent posts, merged.", icon: "document", col: 0, row: 0, accent: "blue" },
+                { id: "features", label: "Feature lookup", detail: "Author affinity, post age, past engagement. Cheap, cached signals — anything expensive here shows up directly in feed load latency.", icon: "cache", col: 1, row: 0, accent: "cyan" },
+                { id: "model", label: "Ranking model", detail: "Scores each candidate on predicted engagement. Kept separate from fan-out so it can be retrained and shipped without touching delivery.", icon: "llm", col: 2, row: 0, accent: "purple" },
+                { id: "diversity", label: "Diversity pass", detail: "Stops ten posts from the same author landing in a row. A pure score sort produces feeds people hate.", icon: "function", col: 3, row: 0, accent: "amber" },
+                { id: "page", label: "Feed page", detail: "The final ordered slice returned to the client, with a cursor for the next page.", icon: "mobile", col: 3, row: 1, accent: "green" },
+              ],
+              edges: [
+                { id: "r1", from: "cands", to: "features", step: 1 },
+                { id: "r2", from: "features", to: "model", step: 2 },
+                { id: "r3", from: "model", to: "diversity", step: 3, label: "scored" },
+                { id: "r4", from: "diversity", to: "page", step: 4, route: "vertical-first" },
+              ],
+              steps: [
+                { index: 1, caption: "Fan-out hands ranking a candidate set — it never decides ordering itself.", nodeIds: ["cands", "features"], edgeIds: ["r1"] },
+                { index: 2, caption: "Cheap cached features are gathered for each candidate.", nodeIds: ["features", "model"], edgeIds: ["r2"] },
+                { index: 3, caption: "The model scores them by predicted engagement.", nodeIds: ["model", "diversity"], edgeIds: ["r3"] },
+                { index: 4, caption: "A diversity pass reorders before the page is returned.", nodeIds: ["diversity", "page"], edgeIds: ["r4"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",
@@ -132,7 +159,14 @@ export const newsFeed: SystemDesignProblem = {
           type: "prose",
           body: "An account growing past the fan-out threshold can't just flip a switch — followers who already have that account's old posts cached expect continuity. In practice this is handled gradually: stop new fan-out writes once the threshold is crossed, let existing cached entries age out naturally, and let the read-time merge path pick up the account's new posts going forward. It's a soft transition, not an atomic one.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "queue-backpressure",
+            title: "Fan-out worker throughput",
+            notice: "One celebrity post is a huge burst of arrivals into the fan-out queue. Because feed writes are async, exceeding capacity doesn't fail the post — it delays how long until followers see it. That delay is the real cost of push fan-out.",
+            params: [{ key: "arrivalRate", value: 420 }, { key: "serviceRate", value: 120 }, { key: "workers", value: 4 }],
+          },
+        ],
     },
   ],
 };

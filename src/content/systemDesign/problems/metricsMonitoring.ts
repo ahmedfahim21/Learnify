@@ -123,7 +123,14 @@ export const metricsMonitoring: SystemDesignProblem = {
           tone: "pitfall",
           body: "A classic failure mode: an outage causes retry storms across the fleet, which spikes request-count and error-rate metrics, which increases both ingestion volume and the number of alert rules crossing their thresholds simultaneously — right when engineers most need the monitoring system to be fast and reliable. Provisioning the ingestion and alerting paths with real headroom above steady-state load (not just enough for average traffic) is a deliberate, non-optional design decision here, not an afterthought.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "queue-backpressure",
+            title: "Ingestion under an incident",
+            notice: "Set arrivals near capacity, then nudge them higher — the way a retry storm does during an outage. The buffer's wait time is how stale your dashboards go exactly when you need them most.",
+            params: [{ key: "arrivalRate", value: 340 }, { key: "serviceRate", value: 120 }, { key: "workers", value: 3 }],
+          },
+        ],
     },
   ],
 };

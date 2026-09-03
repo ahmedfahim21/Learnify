@@ -118,7 +118,37 @@ export const rateLimiter: SystemDesignProblem = {
           notice: "Raise capacity without touching refill rate and watch the limiter tolerate a bigger burst at the start, while the long-run accept rate stays governed by the refill rate.",
           params: [{ key: "capacity", value: 20 }, { key: "refillPerSec", value: 10 }, { key: "arrivalPerSec", value: 25 }],
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Token bucket, one request at a time",
+              columns: 4,
+              rows: 2,
+              nodes: [
+                { id: "refill", label: "Refill", sublabel: "rate tokens/sec", detail: "Tokens are added continuously up to the bucket's capacity. This knob alone governs the sustained rate a client can hold indefinitely.", icon: "scheduler", col: 0, row: 0, accent: "green" },
+                { id: "bucket", label: "Bucket", sublabel: "capacity tokens", detail: "Holds at most `capacity` tokens. A full bucket is stored-up burst allowance — the knob that decides how big a spike you tolerate.", icon: "cache", col: 1, row: 0, accent: "cyan" },
+                { id: "req", label: "Request", detail: "Every request tries to spend exactly one token before it is allowed through.", icon: "client", col: 0, row: 1 },
+                { id: "check", label: "Token available?", detail: "Read and decrement have to be atomic — in Redis this is INCR or a small Lua script, never a read-then-write round trip.", icon: "function", col: 2, row: 1, accent: "amber", shape: "hexagon" },
+                { id: "allow", label: "Allow", detail: "Spend one token and forward the request upstream.", icon: "service", col: 3, row: 0, accent: "green", shape: "pill" },
+                { id: "reject", label: "429 + Retry-After", detail: "Reject explicitly, and tell the client when to come back — a silent drop just turns into a retry storm.", icon: "firewall", col: 3, row: 1, accent: "rose", shape: "pill" },
+              ],
+              edges: [
+                { id: "t1", from: "refill", to: "bucket", step: 1, label: "continuously" },
+                { id: "t2", from: "req", to: "check", step: 2 },
+                { id: "t3", from: "bucket", to: "check", step: 3, label: "how many left?", route: "vertical-first" },
+                { id: "t4", from: "check", to: "allow", step: 4, label: "yes: spend one" },
+                { id: "t5", from: "check", to: "reject", step: 5, label: "no" },
+              ],
+              steps: [
+                { index: 1, caption: "Tokens refill continuously, capped at the bucket's capacity.", nodeIds: ["refill", "bucket"], edgeIds: ["t1"] },
+                { index: 2, caption: "A request arrives and needs exactly one token.", nodeIds: ["req", "check"], edgeIds: ["t2"] },
+                { index: 3, caption: "The check reads the bucket — atomically, so two servers can't both spend the last token.", nodeIds: ["bucket", "check"], edgeIds: ["t3"] },
+                { index: 4, caption: "With a token available, spend it and forward the request.", nodeIds: ["check", "allow"], edgeIds: ["t4"] },
+                { index: 5, caption: "With none left, reject explicitly and say when to retry.", nodeIds: ["check", "reject"], edgeIds: ["t5"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",

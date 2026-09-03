@@ -118,7 +118,34 @@ export const distributedCache: SystemDesignProblem = {
           type: "prose",
           body: "Because the ring already gives a deterministic ordering of nodes for any key, replication is nearly free to add: instead of storing a key only at the first node clockwise, store it at the first R nodes clockwise (a replication factor of R). If any one of those R nodes is down, the key is still servable from the others — no separate replica-selection logic needed, since the ring ordering already defines it.",
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Replication follows the ring",
+              columns: 4,
+              rows: 2,
+              nodes: [
+                { id: "k", label: "key", detail: "Hashes to one fixed point on the ring. Everything below follows deterministically from that position.", icon: "generic", col: 0, row: 0, shape: "pill" },
+                { id: "n1", label: "Node B", sublabel: "primary", detail: "First node clockwise from the key. Serves reads and writes for it under normal operation.", icon: "cache", col: 1, row: 0, accent: "green" },
+                { id: "n2", label: "Node C", sublabel: "replica 2", detail: "Next clockwise. Holds a copy purely because of ring order — no replica-placement service decides this.", icon: "cache", col: 2, row: 0, accent: "blue" },
+                { id: "n3", label: "Node D", sublabel: "replica 3", detail: "Third clockwise. With R=3, any two of these can fail and the key is still servable.", icon: "cache", col: 3, row: 0, accent: "blue" },
+                { id: "fail", label: "Node B fails", detail: "Reads fail over to the next replica clockwise. No coordination round is needed — every client can compute the same fallback independently.", icon: "firewall", col: 1, row: 1, accent: "rose" },
+              ],
+              edges: [
+                { id: "v1", from: "k", to: "n1", step: 1, label: "first clockwise" },
+                { id: "v2", from: "n1", to: "n2", step: 2, label: "replicate" },
+                { id: "v3", from: "n2", to: "n3", step: 3, label: "replicate" },
+                { id: "v4", from: "fail", to: "n2", step: 4, label: "reads fail over", route: "vertical-first" },
+              ],
+              steps: [
+                { index: 1, caption: "The key's ring position picks its primary — the first node clockwise.", nodeIds: ["k", "n1"], edgeIds: ["v1"] },
+                { index: 2, caption: "The next R-1 nodes clockwise hold replicas. Ring order *is* the replica set.", nodeIds: ["n1", "n2"], edgeIds: ["v2"] },
+                { index: 3, caption: "With R=3 the key survives two simultaneous node failures.", nodeIds: ["n2", "n3"], edgeIds: ["v3"] },
+                { index: 4, caption: "When the primary dies, every client independently computes the same next replica — no election needed.", nodeIds: ["fail", "n2"], edgeIds: ["v4"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",

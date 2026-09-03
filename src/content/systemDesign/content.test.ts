@@ -43,6 +43,16 @@ describe("authored system design courses", () => {
         expect(edges.length).toBe(slugs.size - 1);
       });
 
+      it("has at least one interactive simulator", () => {
+        // Every course should have something the learner can actually move,
+        // not just read — this is the floor that keeps a course from being
+        // prose with a picture.
+        const sims = problem.chapters.flatMap((c) =>
+          c.blocks.filter((b) => b.type === "simulator"),
+        );
+        expect(sims.length, `${problem.slug} has no simulator`).toBeGreaterThan(0);
+      });
+
       it("has at least one high-level or deep-dive diagram", () => {
         const hasDiagram = problem.chapters.some((c) =>
           c.blocks.some((b) => b.type === "diagram"),

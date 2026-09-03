@@ -49,7 +49,14 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "`generateId(): int64` — no parameters, no network call. Every property that makes an id unique and ordered has to be derivable from information the generating machine already has: the current time, and something that distinguishes this machine from every other machine running the same generator." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "latency-numbers",
+            title: "Why generateId() can't make a network call",
+            notice: "Compare a main-memory reference against a round trip within the same datacenter, then against a cross-region one. Asking a central service for the next id puts one of those on every single write in the system.",
+            params: [{ key: "budgetMs", value: 10 }],
+          },
+        ],
     },
     {
       phase: "data-model",

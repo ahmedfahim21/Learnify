@@ -182,7 +182,36 @@ export const urlShortener: SystemDesignProblem = {
           tone: "tradeoff",
           body: "A write-through cache would keep the cache always warm, but it adds latency to every create — and creates are already the rare, non-critical-path operation. Cache-aside, populated lazily on read, is the right trade-off here.",
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Cache-aside on a redirect",
+              columns: 4,
+              rows: 2,
+              nodes: [
+                { id: "req", label: "GET /a1B2c3", detail: "A redirect request. The only thing it carries is the short code — no auth, no body, nothing to parse.", icon: "browser", col: 0, row: 0 },
+                { id: "svc", label: "API service", detail: "Owns the cache-aside logic: look in the cache, and only on a miss go to the store and populate.", icon: "api", col: 1, row: 0, accent: "blue" },
+                { id: "hit", label: "Cache hit", sublabel: "~1ms", detail: "The overwhelmingly common case. Click distributions are skewed enough that a modest LRU absorbs most traffic.", icon: "cache", col: 2, row: 0, accent: "green", shape: "pill" },
+                { id: "miss", label: "Cache miss", sublabel: "~15ms", detail: "Rare, but this is the path that decides your p99. It costs a store read plus a cache write.", icon: "nosql", col: 2, row: 1, accent: "amber", shape: "pill" },
+                { id: "redirect", label: "301 Location:", detail: "The response is a header, not a body. Nothing here needs serialization, which is part of why this path is so cheap.", icon: "web", col: 3, row: 0, accent: "green" },
+              ],
+              edges: [
+                { id: "c1", from: "req", to: "svc", step: 1 },
+                { id: "c2", from: "svc", to: "hit", step: 2, label: "found" },
+                { id: "c3", from: "svc", to: "miss", step: 3, label: "not found", route: "vertical-first" },
+                { id: "c4", from: "miss", to: "hit", step: 4, label: "populate cache" },
+                { id: "c5", from: "hit", to: "redirect", step: 5 },
+              ],
+              steps: [
+                { index: 1, caption: "A redirect arrives carrying only the short code.", nodeIds: ["req", "svc"], edgeIds: ["c1"] },
+                { index: 2, caption: "The service checks the cache first — this is the path most requests take.", nodeIds: ["svc", "hit"], edgeIds: ["c2"] },
+                { index: 3, caption: "On a miss it falls through to the durable store, ~15x slower.", nodeIds: ["svc", "miss"], edgeIds: ["c3"] },
+                { index: 4, caption: "The loaded mapping is written back into the cache, so the next hit is warm.", nodeIds: ["miss", "hit"], edgeIds: ["c4"] },
+                { index: 5, caption: "Either way the response is the same: a 301 with a Location header.", nodeIds: ["hit", "redirect"], edgeIds: ["c5"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",

@@ -116,7 +116,37 @@ export const videoStreaming: SystemDesignProblem = {
           type: "prose",
           body: "Adaptive bitrate streaming puts the decision entirely on the client: after downloading each few-second chunk, the player measures how long that download took relative to the chunk's playback duration, estimates current bandwidth, and picks the highest-quality rendition it believes it can sustain for the *next* chunk without the buffer running dry. A sudden drop in bandwidth (walking out of WiFi range) shows up as a slower recent chunk download, and the player drops to a lower rendition for the next chunk — no server round-trip or renegotiation needed, since every rendition's chunks are already sitting on the CDN edge.",
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Adaptive bitrate is a client-side decision",
+              columns: 4,
+              rows: 3,
+              nodes: [
+                { id: "p", label: "Player", detail: "Measures how long each chunk took to download relative to its playback duration. That ratio is its bandwidth estimate.", icon: "mobile", col: 0, row: 1, accent: "blue" },
+                { id: "manifest", label: "Manifest", detail: "Lists every rendition and every chunk. The player reads it once and then needs no further negotiation to switch quality.", icon: "document", col: 1, row: 1, accent: "cyan" },
+                { id: "hi", label: "1080p chunks", detail: "Chosen while measured bandwidth comfortably exceeds this rendition's bitrate.", icon: "blob-storage", col: 3, row: 0, accent: "green" },
+                { id: "mid", label: "720p chunks", detail: "The fallback as throughput dips — swapped in between chunks, with no visible interruption.", icon: "blob-storage", col: 3, row: 1, accent: "amber" },
+                { id: "low", label: "360p chunks", detail: "Chosen over stalling. A lower-resolution picture beats a spinning buffer every time.", icon: "blob-storage", col: 3, row: 2, accent: "rose" },
+                { id: "edge", label: "CDN edge", detail: "Holds every rendition already, which is what lets the switch happen with no round trip back to origin.", icon: "cdn", col: 2, row: 1, accent: "green" },
+              ],
+              edges: [
+                { id: "b1", from: "p", to: "manifest", step: 1, label: "read once" },
+                { id: "b2", from: "manifest", to: "edge", step: 2 },
+                { id: "b3", from: "edge", to: "hi", step: 3, label: "bandwidth high" },
+                { id: "b4", from: "edge", to: "mid", step: 4, label: "bandwidth drops" },
+                { id: "b5", from: "edge", to: "low", step: 5, label: "drops further" },
+              ],
+              steps: [
+                { index: 1, caption: "The player reads the manifest once: every rendition, every chunk.", nodeIds: ["p", "manifest"], edgeIds: ["b1"] },
+                { index: 2, caption: "It fetches chunks from the nearest CDN edge, which already holds all renditions.", nodeIds: ["manifest", "edge"], edgeIds: ["b2"] },
+                { index: 3, caption: "With bandwidth to spare it takes the highest rendition it can sustain.", nodeIds: ["edge", "hi"], edgeIds: ["b3"] },
+                { index: 4, caption: "Throughput dips — it steps down for the *next* chunk. No renegotiation, no stall.", nodeIds: ["edge", "mid"], edgeIds: ["b4"] },
+                { index: 5, caption: "Falling further, it keeps stepping down. Degrading quality always beats an empty buffer.", nodeIds: ["edge", "low"], edgeIds: ["b5"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",

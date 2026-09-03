@@ -27,7 +27,14 @@ export const searchAutocomplete: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "Autocomplete requests fire on essentially every keystroke, and a suggestion that arrives late is worse than useless — it flickers in after the user has moved on. That ~100ms round-trip budget (network + server processing) is the single hardest constraint in the design, tighter than almost any read latency target elsewhere in this course, and it rules out anything resembling a live database query per keystroke." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "latency-numbers",
+            title: "What fits in an autocomplete budget?",
+            notice: "Drag the budget down to 100ms. A memory read or an SSD seek disappears into it; a single cross-region round trip eats the whole thing — which is why the trie is served from local RAM and never queries a database.",
+            params: [{ key: "budgetMs", value: 100 }],
+          },
+        ],
     },
     {
       phase: "estimation",

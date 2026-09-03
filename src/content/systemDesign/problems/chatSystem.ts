@@ -38,7 +38,14 @@ export const chatSystem: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "If 50 million users are online at peak, that's 50 million simultaneous open connections the system has to hold — not 50 million requests/sec, but 50 million *stateful, long-lived* connections. A single modern server can hold on the order of hundreds of thousands of WebSocket connections, which means the peak load alone needs on the order of a few hundred connection-serving machines, before any message-throughput capacity is even considered." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "load-balancer",
+            title: "Spreading connections across chat servers",
+            notice: "Connections are long-lived, so an imbalance here doesn't wash out the way it does for stateless requests — a server that lands 2x its share holds that load for hours. Watch the imbalance ratio as you change server count.",
+            params: [{ key: "serverCount", value: 8 }, { key: "requestCount", value: 5000 }],
+          },
+        ],
     },
     {
       phase: "api",
@@ -113,7 +120,34 @@ export const chatSystem: SystemDesignProblem = {
           type: "prose",
           body: "The ordering in the diagram above — persist to the message store before forwarding for live delivery — is deliberate. It means \"the recipient was offline\" and \"the recipient's server crashed mid-delivery\" resolve identically: on reconnect, the client fetches any messages newer than the last one it has, straight from the durable store. There's no separate offline-message queue to keep in sync with the live path — the store is the single source of truth either way.",
         },
-      ],
+        {
+            type: "diagram",
+            diagram: {
+              title: "Persist before push — offline and crash are one path",
+              columns: 4,
+              rows: 2,
+              nodes: [
+                { id: "send", label: "Alice sends", detail: "The send is acknowledged once the message is durable — never once it has been delivered, which may be hours later.", icon: "user", col: 0, row: 0 },
+                { id: "store", label: "Message store", sublabel: "durable, ordered", detail: "The single source of truth. Both live delivery and catch-up-on-reconnect read from exactly this, which is why they need no separate reconciliation.", icon: "database", col: 1, row: 0, accent: "purple" },
+                { id: "online", label: "Recipient online?", detail: "A lookup in the connection registry. The answer only changes *how soon* the message is seen, never *whether* it survives.", icon: "function", col: 2, row: 0, accent: "amber", shape: "hexagon" },
+                { id: "push", label: "Push over socket", detail: "Best-effort live delivery. If it fails — server crash, socket already dead — nothing is lost, because the store already has it.", icon: "stream", col: 3, row: 0, accent: "green" },
+                { id: "catchup", label: "Fetch on reconnect", detail: "The client asks for everything newer than the last message id it holds. This is the same query whether it was offline for a second or a week.", icon: "mobile", col: 3, row: 1, accent: "blue" },
+              ],
+              edges: [
+                { id: "p1", from: "send", to: "store", step: 1, label: "write first" },
+                { id: "p2", from: "store", to: "online", step: 2 },
+                { id: "p3", from: "online", to: "push", step: 3, label: "yes" },
+                { id: "p4", from: "online", to: "catchup", step: 4, label: "no — or push failed", route: "vertical-first" },
+              ],
+              steps: [
+                { index: 1, caption: "The message is written durably before any delivery is attempted.", nodeIds: ["send", "store"], edgeIds: ["p1"] },
+                { index: 2, caption: "Only then does the system ask whether the recipient is currently connected.", nodeIds: ["store", "online"], edgeIds: ["p2"] },
+                { index: 3, caption: "Online: push it down the open socket immediately.", nodeIds: ["online", "push"], edgeIds: ["p3"] },
+                { index: 4, caption: "Offline, or the push failed mid-flight — identical recovery: fetch everything newer on reconnect.", nodeIds: ["online", "catchup"], edgeIds: ["p4"] },
+              ],
+            },
+          },
+        ],
     },
     {
       phase: "bottlenecks",
