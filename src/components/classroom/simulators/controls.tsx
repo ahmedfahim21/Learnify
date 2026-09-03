@@ -17,8 +17,15 @@ export function SimSlider({
   value: number;
   onChange: (value: number) => void;
 }) {
+  // A whole-number param (server count, worker count) reads as noise at
+  // "5.00" — only show decimals when the step can actually produce them.
+  const stepsWhole = (spec.step ?? 1) % 1 === 0;
   const displayValue =
-    spec.kind === "percent" ? `${Math.round(value * 100)}%` : `${formatNumber(value)}${spec.unit ? ` ${spec.unit}` : ""}`;
+    spec.kind === "percent"
+      ? `${Math.round(value * 100)}%`
+      : `${stepsWhole ? value.toLocaleString() : formatNumber(value)}${
+          spec.unit ? ` ${spec.unit}` : ""
+        }`;
 
   return (
     <label className="block space-y-1.5">

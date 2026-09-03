@@ -95,6 +95,24 @@ describe("authored system design courses", () => {
             const validKeys = new Set(spec.params.map((p) => p.key));
             for (const param of block.params ?? []) {
               expect(validKeys.has(param.key), `${problem.slug}: unknown param "${param.key}" for ${block.simulatorId}`).toBe(true);
+              // A value outside the spec's range is silently clamped at render,
+              // which can land the simulator in a degenerate opening state
+              // (e.g. a queue at 99.9% utilisation) that teaches the opposite
+              // of the point the chapter is making.
+              const paramSpec = spec.params.find((p) => p.key === param.key);
+              if (!paramSpec || typeof param.value !== "number") continue;
+              if (paramSpec.min !== undefined) {
+                expect(
+                  param.value,
+                  `${problem.slug}: ${block.simulatorId}.${param.key}=${param.value} is below min ${paramSpec.min} and would be clamped`,
+                ).toBeGreaterThanOrEqual(paramSpec.min);
+              }
+              if (paramSpec.max !== undefined) {
+                expect(
+                  param.value,
+                  `${problem.slug}: ${block.simulatorId}.${param.key}=${param.value} is above max ${paramSpec.max} and would be clamped`,
+                ).toBeLessThanOrEqual(paramSpec.max);
+              }
             }
           }
         }

@@ -102,7 +102,7 @@ export const notificationSystem: SystemDesignProblem = {
           type: "simulator",
           simulatorId: "queue-backpressure",
           notice: "A breaking-news fan-out is a burst of arrivals against a rate-limited provider. Push arrival rate up toward the provider's service rate and watch the wait time curve bend.",
-          params: [{ key: "arrivalRate", value: 4500 }, { key: "serviceRate", value: 5000 }, { key: "workers", value: 1 }],
+          params: [{ key: "arrivalRate", value: 180 }, { key: "serviceRate", value: 200 }, { key: "workers", value: 1 }],
         },
       ],
     },

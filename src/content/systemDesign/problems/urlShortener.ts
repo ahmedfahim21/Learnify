@@ -156,7 +156,7 @@ export const urlShortener: SystemDesignProblem = {
           type: "simulator",
           simulatorId: "cache-hit-ratio",
           notice: "At a 100:1 read:write ratio, even a modest hit ratio removes the vast majority of load from the datastore — drag hit ratio up and watch origin traffic fall.",
-          params: [{ key: "hitRatio", value: 0.85 }, { key: "qps", value: 116000 }, { key: "originLatencyMs", value: 15 }],
+          params: [{ key: "hitRatio", value: 0.85 }, { key: "qps", value: 100000 }, { key: "originLatencyMs", value: 15 }],
         },
       ],
     },
