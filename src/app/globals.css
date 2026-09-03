@@ -1,19 +1,280 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+/* ======================================================================
+   Brand system — ported from the FilDOS design system (via
+   personal-portfolio). Foundation is black-and-white; the six scoops carry
+   all colour, always as an accent (dot, chip, tag, diagram/simulator
+   highlight) — never a large fill, never body text.
+
+   Learnify ships dark-first (the existing classroom is a dark surface), so
+   :root carries the dark palette directly rather than the portfolio's
+   light-default + override — same tokens, same meanings, dark from the start.
+   ====================================================================== */
+@theme {
+  /* ---- Foundation --------------------------------------------------- */
+  --color-ink: #0a0a0a;        /* the canvas */
+  --color-surface: #131417;    /* cards, boxes sitting on the canvas */
+  --color-raised: #191b20;     /* hover / inset wells */
+  --color-fg: #ededed;         /* primary text */
+  --color-mist: #9498a3;       /* secondary text, chrome, placeholders */
+  --color-faint: #6b7080;      /* tertiary: metadata, ticks, markers */
+  --color-line: rgba(255, 255, 255, 0.12); /* 1px borders, hairline rules */
+  --wash-selection: rgba(238, 242, 251, 0.15);
+  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  /* ---- The six scoops (accent only) --------------------------------- */
+  --color-strawberry: #f26d6d;
+  --color-bubblegum: #f286b4;
+  --color-mango: #f9a85c;
+  --color-blueberry: #6e9bee;
+  --color-mint: #4fc9b8;
+  --color-grape: #a585e0;
+
+  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --measure: min(90vw, 76rem);
+  --measure-mid: 60rem;
+  --measure-prose: 44rem;
+
+  /* Hand-drawn squiggle underline — a small tile repeated along x, so the
+     stroke keeps its shape at any link width and repaints on every wrapped
+     line. Ready-coloured Mint for running text. */
+  --squiggle-mint: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath d='M0 4.6 L3 1.4 L6 4.6 L9 1.4 L12 4.6' fill='none' stroke='%234fc9b8' stroke-opacity='0.55' stroke-width='0.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+/* ---- Base -------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+  interpolate-size: allow-keywords;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  background-color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--color-ink);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.65;
+  font-feature-settings: "kern", "liga", "calt";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+
+/* Hierarchy comes from size + tracking, never weight — Learnify's own house
+   style already agreed with this before the port. 400 rather than a lighter
+   weight for the same portability reason as the source system: Helvetica
+   Neue Light only exists on macOS. */
+h1, h2, h3, h4 {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--color-fg);
+  text-wrap: balance;
+}
+
+code, pre, kbd, samp {
+  text-transform: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background-color: var(--wash-selection);
+  color: var(--color-fg);
+}
+
+:focus-visible {
+  outline: 1px solid var(--color-mint);
+  outline-offset: 3px;
+}
+
+/* ---- Reusable primitives ------------------------------------------------ */
+
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  position: relative;
+}
+.wrap-mid {
+  max-width: var(--measure-mid);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  position: relative;
+}
+.wrap-prose {
+  max-width: var(--measure-prose);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  position: relative;
+}
+
+/* Small tracked metadata — the "label" system. Space Mono, for technical
+   text: phase names, counts, difficulty, durations. */
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.label-rule {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.label-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* Square bordered chip (tag / stat / phase marker). Sharp corners on
+   purpose — the whole system speaks in square boxes, not pills. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0;
+  padding: 0.16rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  color: var(--color-mist);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.chip:hover {
+  border-color: var(--color-faint);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+.chip:active {
+  transform: scale(0.96);
+}
+button.chip {
+  background: transparent;
+  cursor: pointer;
+  line-height: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A scoop dot — the smallest unit of colour in the system. Set --scoop. */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--scoop, var(--color-mist));
+  flex: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.rise {
+  animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rise-1 { animation-delay: 0.05s; }
+.rise-2 { animation-delay: 0.1s; }
+.rise-3 { animation-delay: 0.15s; }
+
+.arr {
+  display: inline-block;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+a:hover .arr-r { transform: translateX(3px); }
+a:hover .arr-d { transform: translateY(2px); }
+
+/* The one underlined link style used in running text — Mint is the system's
+   "live"/interactive highlight. Painted as a repeating background so it
+   redraws on every line of a link that wraps. */
+@utility link {
+  color: var(--color-mint);
+  text-decoration: none;
+  background: var(--squiggle-mint) repeat-x 0 100% / 12px 6px;
+  padding-bottom: 6px;
+  opacity: 0.92;
+  transition: opacity 0.15s ease;
+}
+@utility link {
+  &:hover {
+    opacity: 1;
+  }
+}
+
+/* ---- Long-form prose (course chapters) ---------------------------------- */
+.prose {
+  font-size: 0.95rem;
+  line-height: 1.72;
+  color: color-mix(in srgb, var(--color-fg) 88%, transparent);
+  text-wrap: pretty;
+}
+.prose > * + * {
+  margin-top: 1.25em;
+}
+.prose strong {
+  font-weight: 400;
+  color: var(--color-fg);
+}
+.prose em {
+  font-style: italic;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 0.08em 0.35em;
+  border-radius: 0;
+}
+
+/* ---- Reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-1, .rise-2, .rise-3 {
+    animation: none;
+  }
 }
 
 /* SystemDiagram step-walkthrough motion (src/components/classroom/diagram). */
