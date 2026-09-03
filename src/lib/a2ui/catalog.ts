@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SIMULATOR_IDS } from "../sims/ids";
+
 /**
  * The Phase-1 A2UI widget catalog — the single source of truth for:
  *   1. the `present_ui` tool schema the model emits against (strict tool use),
@@ -126,6 +128,19 @@ const diagramStepSchema = z.object({
 });
 
 /**
+ * One control value for {@link widgetProps.Simulator}. A `{key, value}` array,
+ * not `z.record` — `z.record` emits `additionalProperties` in the generated
+ * JSON schema, which strict tool use rejects and which would let arbitrary
+ * keys pass validation. Values are clamped against the simulator's own
+ * declared range at render time (`src/lib/sims/types.ts`); the catalog can't
+ * carry min/max per the strict-tool-safety rule above.
+ */
+const simulatorParamSchema = z.object({
+  key: z.string(),
+  value: z.union([z.number(), z.boolean()]),
+});
+
+/**
  * Per-widget property schemas. Keep these strict and flat — strict tool use
  * forbids unsupported JSON-schema constraints, so no `min`/`max`/`regex`.
  */
@@ -223,6 +238,25 @@ export const widgetProps = {
     /** Slug of the concept this diagram teaches (routes mastery evidence, #43). */
     conceptSlug: z.string().optional(),
   }),
+  /**
+   * A hand-built, parameterised simulator — the "explorable explanation"
+   * counterpart to SystemDiagram. The model picks a simulator by id and
+   * supplies initial parameters plus a "what to notice" prompt; ALL simulation
+   * math lives in our code (`src/lib/sims`), so nothing the model authored is
+   * ever executed — it only selects from a closed enum.
+   */
+  Simulator: z.object({
+    simulatorId: z.enum(SIMULATOR_IDS),
+    title: z.string().optional(),
+    intro: z.string().optional(),
+    /** The observation the learner should make while playing with it. */
+    notice: z.string(),
+    /** Initial control values; unknown keys dropped, missing keys defaulted,
+     *  out-of-range values clamped — see resolveParams in lib/sims/types.ts. */
+    params: z.array(simulatorParamSchema).optional(),
+    /** Slug of the concept this simulator teaches (routes mastery evidence). */
+    conceptSlug: z.string().optional(),
+  }),
   /** A free-text prompt; the learner writes a short answer. */
   FreeResponse: z.object({
     prompt: z.string(),
@@ -261,6 +295,7 @@ export const WIDGET_KIND: Record<WidgetName, WidgetKind> = {
   CodeSnippet: "leaf",
   Diagram: "leaf",
   SystemDiagram: "leaf",
+  Simulator: "leaf",
   FreeResponse: "leaf",
   ProgressMeter: "leaf",
   SessionRecap: "leaf",
@@ -306,3 +341,4 @@ export type DiagramNode = z.infer<typeof diagramNodeSchema>;
 export type DiagramGroup = z.infer<typeof diagramGroupSchema>;
 export type DiagramEdge = z.infer<typeof diagramEdgeSchema>;
 export type DiagramStep = z.infer<typeof diagramStepSchema>;
+export type SimulatorProps = z.infer<typeof widgetProps.Simulator>;

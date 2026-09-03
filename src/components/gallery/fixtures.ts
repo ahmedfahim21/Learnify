@@ -283,6 +283,56 @@ export const GALLERY_FIXTURES: GalleryFixture[] = [
     ]),
   },
   {
+    name: "Simulator (cache-hit-ratio)",
+    message: surface("sim-cache", "sim1", [
+      {
+        id: "sim1",
+        component: "Simulator",
+        properties: {
+          simulatorId: "cache-hit-ratio",
+          notice: "Drag hit ratio from 80% to 90% and watch origin traffic halve \u2014 then from 99% to 99.9% and watch latency barely move.",
+          params: [
+            { key: "hitRatio", value: 0.8 },
+            { key: "qps", value: 5000 },
+          ],
+        },
+      },
+    ]),
+  },
+  {
+    name: "Simulator (load-balancer)",
+    message: surface("sim-lb", "sim2", [
+      {
+        id: "sim2",
+        component: "Simulator",
+        properties: {
+          simulatorId: "load-balancer",
+          notice: "Switch from least-connections to random at high skew and watch the imbalance ratio jump.",
+          params: [
+            { key: "skew", value: 0.6 },
+            { key: "algorithm", value: 2 },
+          ],
+        },
+      },
+    ]),
+  },
+  {
+    name: "Simulator (token-bucket)",
+    message: surface("sim-tb", "sim3", [
+      {
+        id: "sim3",
+        component: "Simulator",
+        properties: {
+          simulatorId: "token-bucket",
+          notice: "Capacity buys burst tolerance; refill rate buys sustained throughput. They're independent knobs \u2014 raise one without the other and see which limit you hit.",
+          params: [
+            { key: "arrivalPerSec", value: 35 },
+          ],
+        },
+      },
+    ]),
+  },
+  {
     name: "Layout (Column + Row)",
     message: surface("layout", "col", [
       {
