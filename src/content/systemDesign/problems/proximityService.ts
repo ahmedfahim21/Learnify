@@ -81,11 +81,7 @@ export const proximityService: SystemDesignProblem = {
             columns: 4,
             rows: 2,
             nodes: [
-              { id: "client", label: "Client app", icon: "mobile", col: 0, row: 0 },
-              { id: "api", label: "Search API", icon: "api", col: 1, row: 0, accent: "blue" },
-              { id: "geoindex", label: "Geohash index", sublabel: "prefix-sorted", icon: "database", col: 2, row: 0, accent: "purple" },
-              { id: "rank", label: "Distance ranker", icon: "function", col: 3, row: 0, accent: "amber" },
-            ],
+              { id: "client", label: "Client app", detail: "A map view that re-queries as the user pans and zooms — which is why this is a high-QPS read path, not an occasional lookup.", icon: "mobile", col: 0, row: 0 },              { id: "api", label: "Search API", detail: "Turns a (lat, lng, radius) into a geohash prefix query, then expands to neighbouring cells to cover the boundary case.", icon: "api", col: 1, row: 0, accent: "blue" },              { id: "geoindex", label: "Geohash index", detail: "Entities indexed by geohash prefix. Because nearby points share a string prefix, an ordinary B-tree answers \"what's near here?\" without a specialised index type.", sublabel: "prefix-sorted", icon: "database", col: 2, row: 0, accent: "purple" },              { id: "rank", label: "Distance ranker", detail: "Computes true distance for each candidate — the geohash gets you a cheap candidate set, not an ordering — and returns the closest N.", icon: "function", col: 3, row: 0, accent: "amber" },            ],
             edges: [
               { id: "e1", from: "client", to: "api", step: 1, label: "lat, lng, radius" },
               { id: "e2", from: "api", to: "geoindex", step: 2, label: "query cell + neighbors" },

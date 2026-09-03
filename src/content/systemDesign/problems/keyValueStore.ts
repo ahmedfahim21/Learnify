@@ -82,12 +82,7 @@ export const keyValueStore: SystemDesignProblem = {
             columns: 4,
             rows: 3,
             nodes: [
-              { id: "client", label: "Client", icon: "client", col: 0, row: 1 },
-              { id: "coordinator", label: "Coordinator node", icon: "service", col: 1, row: 1, accent: "blue" },
-              { id: "r1", label: "Replica 1", icon: "database", col: 3, row: 0, accent: "green" },
-              { id: "r2", label: "Replica 2", icon: "database", col: 3, row: 1, accent: "green" },
-              { id: "r3", label: "Replica 3", icon: "database", col: 3, row: 2, accent: "slate" },
-            ],
+              { id: "client", label: "Client", detail: "Issues put/get against any node in the cluster. It never needs to know which replicas hold the key.", icon: "client", col: 0, row: 1 },              { id: "coordinator", label: "Coordinator node", detail: "Whichever node received the request. It fans the write out to the key's N replicas and counts acknowledgements — it is not a master, just this request's coordinator.", icon: "service", col: 1, row: 1, accent: "blue" },              { id: "r1", label: "Replica 1", detail: "One of N=3 replicas for this key, chosen by walking the hash ring clockwise from the key's position.", icon: "database", col: 3, row: 0, accent: "green" },              { id: "r2", label: "Replica 2", detail: "The second acknowledgement. With W=2 the write is already durable enough to confirm, so the client stops waiting here.", icon: "database", col: 3, row: 1, accent: "green" },              { id: "r3", label: "Replica 3", detail: "Slow or partitioned. The write still succeeds — and this replica catches up later via hinted handoff or read repair, which is exactly the availability the quorum model buys.", icon: "database", col: 3, row: 2, accent: "slate" },            ],
             edges: [
               { id: "e1", from: "client", to: "coordinator", step: 1, label: "put(key, value)" },
               { id: "e2", from: "coordinator", to: "r1", step: 2 },

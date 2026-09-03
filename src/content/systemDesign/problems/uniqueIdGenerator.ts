@@ -81,12 +81,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
             columns: 3,
             rows: 3,
             nodes: [
-              { id: "svc", label: "Write service", icon: "service", col: 0, row: 1 },
-              { id: "gen1", label: "Generator (machine 5)", icon: "worker", col: 1, row: 0, accent: "blue" },
-              { id: "gen2", label: "Generator (machine 12)", icon: "worker", col: 1, row: 2, accent: "green" },
-              { id: "id1", label: "id: [ts|5|seq]", icon: "generic", col: 2, row: 0, shape: "pill", accent: "blue" },
-              { id: "id2", label: "id: [ts|12|seq]", icon: "generic", col: 2, row: 2, shape: "pill", accent: "green" },
-            ],
+              { id: "svc", label: "Write service", detail: "Any service that needs an id before it can write a row. It calls generateId() as a local function — no network hop, which is the entire point.", icon: "service", col: 0, row: 1 },              { id: "gen1", label: "Generator (machine 5)", detail: "Machine 5's generator. Its machine-id bits are baked into every id it produces, so it can never collide with any other machine.", icon: "worker", col: 1, row: 0, accent: "blue" },              { id: "gen2", label: "Generator (machine 12)", detail: "Machine 12's generator, running at the same instant. It has never spoken to machine 5 and never needs to.", icon: "worker", col: 1, row: 2, accent: "green" },              { id: "id1", label: "id: [ts|5|seq]", detail: "Timestamp in the high bits (so ids sort by time), machine id in the middle, per-millisecond sequence in the low bits.", icon: "generic", col: 2, row: 0, shape: "pill", accent: "blue" },              { id: "id2", label: "id: [ts|12|seq]", detail: "Same timestamp, same sequence number — different machine-id bits. That single difference is what makes collision structurally impossible.", icon: "generic", col: 2, row: 2, shape: "pill", accent: "green" },            ],
             edges: [
               { id: "e1", from: "svc", to: "gen1", step: 1, label: "generateId()" },
               { id: "e2", from: "gen1", to: "id1", step: 2 },

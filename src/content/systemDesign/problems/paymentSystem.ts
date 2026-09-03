@@ -81,13 +81,7 @@ export const paymentSystem: SystemDesignProblem = {
             columns: 5,
             rows: 2,
             nodes: [
-              { id: "client", label: "Client", icon: "client", col: 0, row: 0 },
-              { id: "api", label: "Payment API", icon: "api", col: 1, row: 0, accent: "blue" },
-              { id: "idemcheck", label: "Idempotency store", icon: "cache", col: 1, row: 1, accent: "cyan" },
-              { id: "processor", label: "Payment processor", sublabel: "e.g. Stripe", icon: "payment", col: 3, row: 0, accent: "amber" },
-              { id: "ledger", label: "Ledger", icon: "database", col: 4, row: 1, accent: "purple" },
-              { id: "statestore", label: "Payment state store", icon: "database", col: 2, row: 0, accent: "purple" },
-            ],
+              { id: "client", label: "Client", detail: "Generates the idempotency key *before* sending, and reuses it on every retry of the same logical charge. That one discipline is what makes retries safe.", icon: "client", col: 0, row: 0 },              { id: "api", label: "Payment API", detail: "Owns the state machine. Every transition is persisted before the next step, so no failure leaves the system unable to say what happened.", icon: "api", col: 1, row: 0, accent: "blue" },              { id: "idemcheck", label: "Idempotency store", detail: "Maps idempotency key -> the original charge's outcome. A retried key returns that stored outcome instead of charging again.", icon: "cache", col: 1, row: 1, accent: "cyan" },              { id: "processor", label: "Payment processor", detail: "The external payment processor. The only component here that can authoritatively answer \"did this charge actually happen?\" after a timeout.", sublabel: "e.g. Stripe", icon: "payment", col: 3, row: 0, accent: "amber" },              { id: "ledger", label: "Ledger", detail: "Append-only double-entry records. A balance is always the sum of its entries, never a stored mutable number — so a bug can't silently decouple the two.", icon: "database", col: 4, row: 1, accent: "purple" },              { id: "statestore", label: "Payment state store", detail: "pending -> processing -> succeeded/failed, persisted at each hop. Crashing in `processing` is recoverable precisely because that state was written down first.", icon: "database", col: 2, row: 0, accent: "purple" },            ],
             edges: [
               { id: "e1", from: "client", to: "api", step: 1, label: "charge + idempotencyKey" },
               { id: "e2", from: "api", to: "idemcheck", step: 2, label: "seen this key before?" },

@@ -77,14 +77,7 @@ export const fileStorage: SystemDesignProblem = {
             columns: 5,
             rows: 3,
             nodes: [
-              { id: "deviceA", label: "Device A", icon: "client", col: 0, row: 0 },
-              { id: "syncsvc", label: "Sync service", icon: "api", col: 1, row: 0, accent: "blue" },
-              { id: "chunker", label: "Chunker + dedup", icon: "function", col: 2, row: 0, accent: "amber" },
-              { id: "metadata", label: "Metadata store", sublabel: "path -> chunk hashes", icon: "database", col: 3, row: 0, accent: "purple" },
-              { id: "objectstore", label: "Object storage", sublabel: "replicated chunks", icon: "blob-storage", col: 4, row: 0, accent: "green" },
-              { id: "changefeed", label: "Change feed", icon: "stream", col: 3, row: 2, accent: "cyan" },
-              { id: "deviceB", label: "Device B", icon: "client", col: 0, row: 2 },
-            ],
+              { id: "deviceA", label: "Device A", detail: "Where the edit happened. It chunks the file locally and only uploads chunks the server says it doesn't already have.", icon: "client", col: 0, row: 0 },              { id: "syncsvc", label: "Sync service", detail: "Coordinates uploads and publishes change events. The seam between the storage layer and the sync layer.", icon: "api", col: 1, row: 0, accent: "blue" },              { id: "chunker", label: "Chunker + dedup", detail: "Splits files into content-hashed chunks. Two identical files — or one file before and after a small edit — share nearly all chunk hashes, giving dedup and delta sync from one decision.", icon: "function", col: 2, row: 0, accent: "amber" },              { id: "metadata", label: "Metadata store", detail: "Maps a file version to its ordered list of chunk hashes. Small, transactional, and the thing version history is built on.", sublabel: "path -> chunk hashes", icon: "database", col: 3, row: 0, accent: "purple" },              { id: "objectstore", label: "Object storage", detail: "Immutable content-addressed chunks, replicated (or erasure-coded) across machines and racks. Losing a user's file is the worst failure this system can have.", sublabel: "replicated chunks", icon: "blob-storage", col: 4, row: 0, accent: "green" },              { id: "changefeed", label: "Change feed", detail: "The stream other devices subscribe to. Turns \"a file changed\" into a push rather than every device polling.", icon: "stream", col: 3, row: 2, accent: "cyan" },              { id: "deviceB", label: "Device B", detail: "Pulls only the chunks it's missing. A one-line edit to a 2GB file transfers one chunk, not 2GB.", icon: "client", col: 0, row: 2 },            ],
             edges: [
               { id: "e1", from: "deviceA", to: "syncsvc", step: 1, label: "upload changed file" },
               { id: "e2", from: "syncsvc", to: "chunker", step: 2 },

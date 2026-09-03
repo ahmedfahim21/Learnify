@@ -77,12 +77,7 @@ export const rateLimiter: SystemDesignProblem = {
             columns: 4,
             rows: 2,
             nodes: [
-              { id: "client", label: "Client", icon: "client", col: 0, row: 0 },
-              { id: "lb", label: "Load balancer", icon: "load-balancer", col: 1, row: 0, accent: "amber" },
-              { id: "api1", label: "API server A", icon: "service", col: 2, row: 0, accent: "blue" },
-              { id: "api2", label: "API server B", icon: "service", col: 2, row: 1, accent: "blue" },
-              { id: "redis", label: "Shared counter store", sublabel: "Redis, INCR + TTL", icon: "cache", col: 3, row: 0, rowSpan: 2, accent: "cyan" },
-            ],
+              { id: "client", label: "Client", detail: "One API consumer, identified by API key, user id, or IP. The limiter's whole job is deciding whether this specific identity has spent its allowance.", icon: "client", col: 0, row: 0 },              { id: "lb", label: "Load balancer", detail: "Routes each request to whichever API server is free — which is exactly why the counter can't live in any one server's memory.", icon: "load-balancer", col: 1, row: 0, accent: "amber" },              { id: "api1", label: "API server A", detail: "Runs the limiter as middleware in front of every route, so no endpoint can forget to apply it.", icon: "service", col: 2, row: 0, accent: "blue" },              { id: "api2", label: "API server B", detail: "An identical, interchangeable server. The learner's key insight: this one must see the same counter as server A, or the client gets N times its intended limit.", icon: "service", col: 2, row: 1, accent: "blue" },              { id: "redis", label: "Shared counter store", detail: "A single shared counter store. INCR is atomic and sub-millisecond, and a TTL set on first increment makes the window reset itself — no cleanup job needed.", sublabel: "Redis, INCR + TTL", icon: "cache", col: 3, row: 0, rowSpan: 2, accent: "cyan" },            ],
             edges: [
               { id: "e1", from: "client", to: "lb", step: 1 },
               { id: "e2", from: "lb", to: "api1", step: 2, label: "routed to A this time" },

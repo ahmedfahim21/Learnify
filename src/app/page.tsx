@@ -1,31 +1,109 @@
 import Link from "next/link";
 
+import { PROBLEMS } from "@/content/systemDesign";
+import { ChapterBlockRenderer } from "@/components/course/ChapterBlockRenderer";
+
+const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry"] as const;
+
+/** The RAG-style walkthrough from the URL Shortener course, reused verbatim
+ *  on the landing page — the hero demo is a real course diagram, not a mock. */
+const heroDiagram = PROBLEMS.find((p) => p.slug === "url-shortener")
+  ?.chapters.find((c) => c.phase === "high-level")
+  ?.blocks.find((b) => b.type === "diagram");
+
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-8 text-center">
-      <span className="rounded-full border border-white/15 px-3 py-1 text-xs uppercase tracking-widest text-white/60">
-        Phase 1 · foundation
-      </span>
-      <h1 className="text-4xl font-semibold sm:text-5xl">Learnify 2.0</h1>
-      <p className="max-w-xl text-balance text-white/70">
-        An agentic tutor that stops generating static content and starts
-        generating the <em>experience</em> — live adaptive sessions where every
-        screen is streamed as interactive UI and grounded in your sources.
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Link
-          href="/topics"
-          className="rounded-lg border border-white/20 bg-white/10 px-5 py-3 font-medium transition hover:bg-white/15"
-        >
-          Start learning
+    <main className="pb-24">
+      <section className="wrap grid gap-10 pt-16 pb-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
+        <div className="min-w-0 space-y-6 rise">
+          <p className="label">16 courses · animated · interactive</p>
+          <h1 className="text-4xl leading-[1.1] sm:text-5xl">
+            System design, explained by the diagram — not around it.
+          </h1>
+          <p className="max-w-prose text-(--color-mist)">
+            Every course walks one request end to end through an animated architecture
+            diagram, then hands you the sliders: cache hit ratios, queue backpressure,
+            consistent hashing. When you want to be pushed, an adaptive tutor grills you on
+            the same material.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/courses"
+              className="border border-(--color-mint)/50 bg-(--color-mint)/10 px-5 py-2.5 text-(--color-mint) transition-colors hover:bg-(--color-mint)/20"
+            >
+              Browse the courses <span className="arr arr-r">→</span>
+            </Link>
+            <Link
+              href="/courses/url-shortener"
+              className="px-3 py-2.5 text-(--color-mist) transition-colors hover:text-(--color-fg)"
+            >
+              Start with the URL shortener
+            </Link>
+          </div>
+        </div>
+
+        {heroDiagram?.type === "diagram" && (
+          <div className="min-w-0 rise rise-2">
+            <ChapterBlockRenderer block={heroDiagram} blockId="hero-diagram" />
+          </div>
+        )}
+      </section>
+
+      <section className="wrap space-y-6 border-t border-(--color-line) py-14">
+        <div className="label-rule">
+          <span className="label">How it works</span>
+        </div>
+        <div className="grid gap-8 sm:grid-cols-3">
+          {[
+            {
+              title: "Walk the request",
+              body: "Numbered steps light up one hop at a time — client, load balancer, cache, store — with a caption for each. Click any component to ask what it's doing there.",
+            },
+            {
+              title: "Move the numbers",
+              body: "Drag a cache hit ratio from 80% to 90% and watch origin load halve. Push utilisation past 0.8 and watch latency run away. The maths is real, not illustrative.",
+            },
+            {
+              title: "Get grilled",
+              body: "Any chapter hands off to a live tutor that diagnoses what you know, adapts to wrong answers, and schedules what you got shaky for review.",
+            },
+          ].map((feature, i) => (
+            <div key={feature.title} className="space-y-2">
+              <span
+                className="dot"
+                style={{ ["--scoop" as string]: `var(--color-${SCOOPS[i]})` }}
+              />
+              <h2 className="text-lg">{feature.title}</h2>
+              <p className="text-sm text-(--color-mist)">{feature.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="wrap space-y-6 border-t border-(--color-line) py-14">
+        <div className="label-rule">
+          <span className="label">The curriculum</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {PROBLEMS.map((problem, i) => (
+            <Link
+              key={problem.slug}
+              href={`/courses/${problem.slug}`}
+              className="group flex flex-col gap-2 border border-(--color-line) p-4 transition-colors hover:border-(--color-faint) hover:bg-(--color-surface)"
+            >
+              <span
+                className="dot"
+                style={{ ["--scoop" as string]: `var(--color-${SCOOPS[i % SCOOPS.length]})` }}
+              />
+              <span className="text-sm text-(--color-fg)">{problem.title}</span>
+              <span className="label mt-auto">{problem.estimatedMinutes} min</span>
+            </Link>
+          ))}
+        </div>
+        <Link href="/courses" className="link inline-block text-sm">
+          See all 16 with descriptions
         </Link>
-        <Link
-          href="/today"
-          className="rounded-lg border border-white/15 px-5 py-3 font-medium text-white/80 transition hover:border-white/40"
-        >
-          Today
-        </Link>
-      </div>
+      </section>
     </main>
   );
 }

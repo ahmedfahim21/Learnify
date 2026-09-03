@@ -81,13 +81,7 @@ export const chatSystem: SystemDesignProblem = {
             columns: 5,
             rows: 3,
             nodes: [
-              { id: "alice", label: "Alice", icon: "user", col: 0, row: 0 },
-              { id: "server3", label: "Chat server 3", icon: "service", col: 1, row: 0, accent: "blue" },
-              { id: "registry", label: "Connection registry", sublabel: "user -> server", icon: "cache", col: 2, row: 1, accent: "cyan" },
-              { id: "server7", label: "Chat server 7", icon: "service", col: 3, row: 2, accent: "blue" },
-              { id: "bob", label: "Bob", icon: "user", col: 4, row: 2 },
-              { id: "msgstore", label: "Message store", icon: "database", col: 2, row: 2, accent: "purple" },
-            ],
+              { id: "alice", label: "Alice", detail: "The sender, holding an open WebSocket. She gets an ack as soon as the message is durably stored — not when Bob reads it.", icon: "user", col: 0, row: 0 },              { id: "server3", label: "Chat server 3", detail: "The chat server that happens to hold Alice's connection. Unlike a stateless API server, it owns specific live sockets and can't be swapped mid-connection.", icon: "service", col: 1, row: 0, accent: "blue" },              { id: "registry", label: "Connection registry", detail: "Maps user id -> which chat server currently holds their socket. Without it, server 3 has no way to find Bob among hundreds of servers.", sublabel: "user -> server", icon: "cache", col: 2, row: 1, accent: "cyan" },              { id: "server7", label: "Chat server 7", detail: "Holds Bob's socket. It receives the forwarded message and pushes it down the wire.", icon: "service", col: 3, row: 2, accent: "blue" },              { id: "bob", label: "Bob", detail: "The recipient. If he were offline, the message would still be in the store and would arrive on his next connect — same code path.", icon: "user", col: 4, row: 2 },              { id: "msgstore", label: "Message store", detail: "Durable, conversation-partitioned message log. Written before delivery is attempted, which is what makes offline delivery and crash recovery the same problem.", icon: "database", col: 2, row: 2, accent: "purple" },            ],
             edges: [
               { id: "e1", from: "alice", to: "server3", step: 1, label: "send(toBob, \"hi\")" },
               { id: "e2", from: "server3", to: "registry", step: 2, label: "where is Bob?" },

@@ -77,13 +77,7 @@ export const metricsMonitoring: SystemDesignProblem = {
             columns: 5,
             rows: 2,
             nodes: [
-              { id: "agent", label: "Host agent", icon: "monitoring", col: 0, row: 0 },
-              { id: "buffer", label: "Ingestion buffer", icon: "queue", col: 1, row: 0, accent: "amber" },
-              { id: "tsdb", label: "Time-series store", icon: "database", col: 2, row: 0, accent: "purple" },
-              { id: "dashboard", label: "Dashboard", icon: "monitoring", col: 3, row: 0, accent: "blue" },
-              { id: "alertengine", label: "Alert engine", icon: "worker", col: 2, row: 1, accent: "rose" },
-              { id: "notify", label: "Notification system", icon: "notification", col: 4, row: 1, accent: "rose" },
-            ],
+              { id: "agent", label: "Host agent", detail: "Runs on every host, emitting metrics every few seconds. Multiply by fleet size and this alone is 100K+ writes/sec.", icon: "monitoring", col: 0, row: 0 },              { id: "buffer", label: "Ingestion buffer", detail: "Absorbs the write burst and batches it. Without this, an incident's retry storm would hit the store as raw write amplification.", icon: "queue", col: 1, row: 0, accent: "amber" },              { id: "tsdb", label: "Time-series store", detail: "Time-partitioned, column-oriented storage. Points for one series over one range sit physically together, which is what makes chart queries cheap.", icon: "database", col: 2, row: 0, accent: "purple" },              { id: "dashboard", label: "Dashboard", detail: "Range queries for humans. Shares the store with alerting but not the code path, so a heavy dashboard query can't delay a page.", icon: "monitoring", col: 3, row: 0, accent: "blue" },              { id: "alertengine", label: "Alert engine", detail: "Evaluates every configured rule on a schedule. Its latency is what determines how fast you find out something broke.", icon: "worker", col: 2, row: 1, accent: "rose" },              { id: "notify", label: "Notification system", detail: "Hands off to the fan-out system from the Notification System course — an alert is just a notification with a very low tolerance for delay.", icon: "notification", col: 4, row: 1, accent: "rose" },            ],
             edges: [
               { id: "e1", from: "agent", to: "buffer", step: 1, label: "push every ~10s" },
               { id: "e2", from: "buffer", to: "tsdb", step: 2, label: "batched writes" },

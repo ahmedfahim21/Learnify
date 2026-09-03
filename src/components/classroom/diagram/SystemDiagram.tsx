@@ -128,7 +128,10 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
       )}
 
       <div ref={containerRef} className="w-full overflow-hidden">
-        <div style={{ width: layout.width, height: layout.height * scale }}>
+        {/* Reserve the *scaled* box: the inner canvas keeps its natural
+            pixel size (so path `d` strings and offset-path stay valid) while
+            this wrapper takes only the space the transform actually paints. */}
+        <div style={{ width: layout.width * scale, height: layout.height * scale }}>
           <div
             style={{
               width: layout.width,

@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 
 import type { DueConcept, TodaySnapshot } from "@/lib/mastery/engine";
 
+/** Where a due concept links back to. Every topic is materialized from a
+ *  course now, but the column is nullable, so fall back to the catalog. */
+function courseHref(concept: DueConcept | undefined): string {
+  return concept?.problemSlug ? `/courses/${concept.problemSlug}` : "/courses";
+}
+
 /** Group a list of concepts by their topic, preserving first-seen order. */
 function groupByTopic(items: DueConcept[]): {
   topicId: string;
@@ -74,10 +80,10 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
       <header className="flex flex-col gap-3">
         <button
           type="button"
-          onClick={() => router.push("/topics")}
+          onClick={() => router.push("/courses")}
           className="self-start text-sm text-white/50 transition hover:text-white/80"
         >
-          ← All topics
+          ← All courses
         </button>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -122,7 +128,7 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
-                  onClick={() => router.push(`/topics/${group.topicId}`)}
+                  onClick={() => router.push(courseHref(group.concepts[0]))}
                   className="text-left font-medium text-white/90 transition hover:text-white"
                 >
                   {group.topicTitle}
@@ -174,7 +180,7 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
               >
                 <button
                   type="button"
-                  onClick={() => router.push(`/topics/${concept.topicId}`)}
+                  onClick={() => router.push(courseHref(concept))}
                   className="text-left text-sm text-white/70 transition hover:text-white"
                 >
                   {concept.conceptName}

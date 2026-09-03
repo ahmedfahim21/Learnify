@@ -81,13 +81,7 @@ export const searchAutocomplete: SystemDesignProblem = {
             columns: 4,
             rows: 2,
             nodes: [
-              { id: "logs", label: "Query logs", icon: "document", col: 0, row: 1 },
-              { id: "aggregator", label: "Batch aggregator", icon: "worker", col: 1, row: 1, accent: "amber" },
-              { id: "builder", label: "Trie builder", icon: "function", col: 2, row: 1, accent: "amber" },
-              { id: "client", label: "Client", icon: "client", col: 0, row: 0 },
-              { id: "servingnode", label: "Serving node", sublabel: "trie in memory", icon: "service", col: 2, row: 0, accent: "blue" },
-              { id: "snapshot", label: "Trie snapshot store", icon: "blob-storage", col: 3, row: 1, accent: "purple" },
-            ],
+              { id: "logs", label: "Query logs", detail: "Raw search queries. The popularity signal that decides which completions are worth suggesting comes entirely from here.", icon: "document", col: 0, row: 1 },              { id: "aggregator", label: "Batch aggregator", detail: "A batch job counting query frequency over a recent window. Runs on a schedule, deliberately not on the read path.", icon: "worker", col: 1, row: 1, accent: "amber" },              { id: "builder", label: "Trie builder", detail: "Rebuilds the trie and precomputes each node's top-K completions, so a query never walks a subtree at read time.", icon: "function", col: 2, row: 1, accent: "amber" },              { id: "client", label: "Client", detail: "Fires a request on every keystroke — which is why the budget is ~100ms and why nothing here touches a database.", icon: "client", col: 0, row: 0 },              { id: "servingnode", label: "Serving node", detail: "Holds the entire trie in memory and answers from a static snapshot. No locks, no writes, no contention with the build path.", sublabel: "trie in memory", icon: "service", col: 2, row: 0, accent: "blue" },              { id: "snapshot", label: "Trie snapshot store", detail: "The published trie artifact. Serving nodes load it wholesale; swapping snapshots is how new trends ship.", icon: "blob-storage", col: 3, row: 1, accent: "purple" },            ],
             edges: [
               { id: "e1", from: "logs", to: "aggregator", step: 1, label: "periodic batch job" },
               { id: "e2", from: "aggregator", to: "builder", step: 2, label: "popularity counts" },

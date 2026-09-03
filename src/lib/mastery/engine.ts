@@ -204,6 +204,8 @@ export interface DueConcept {
   conceptName: string;
   topicId: string;
   topicTitle: string;
+  /** Course slug the topic was materialized from, for linking back. */
+  problemSlug: string | null;
   /** Stored 0–1 mastery. */
   score: number;
   /** Forgetting-curve-decayed score for display. */
@@ -232,6 +234,7 @@ function joinedSelection() {
     conceptName: concepts.name,
     topicId: topics.id,
     topicTitle: topics.title,
+    problemSlug: topics.problemSlug,
     score: mastery.score,
     lastReviewedAt: mastery.lastReviewedAt,
     dueAt: mastery.dueAt,
@@ -244,6 +247,7 @@ type JoinedRow = {
   conceptName: string;
   topicId: string;
   topicTitle: string;
+  problemSlug: string | null;
   score: number;
   lastReviewedAt: Date | null;
   dueAt: Date | null;
@@ -257,6 +261,7 @@ function toDueConcept(row: JoinedRow, now: Date): DueConcept {
     conceptName: row.conceptName,
     topicId: row.topicId,
     topicTitle: row.topicTitle,
+    problemSlug: row.problemSlug,
     score: row.score,
     displayScore: decayedScore(row.score, row.lastReviewedAt, now),
     dueAt: (row.dueAt ?? now).toISOString(),

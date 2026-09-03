@@ -87,12 +87,7 @@ export const distributedCache: SystemDesignProblem = {
             columns: 4,
             rows: 3,
             nodes: [
-              { id: "key1", label: "key: \"user:42\"", icon: "generic", col: 0, row: 0, shape: "pill" },
-              { id: "nodeA", label: "Node A", icon: "cache", col: 1, row: 0, accent: "blue" },
-              { id: "nodeB", label: "Node B", icon: "cache", col: 2, row: 0, accent: "green" },
-              { id: "nodeC", label: "Node C", icon: "cache", col: 3, row: 0, accent: "amber" },
-              { id: "nodeD", label: "Node D (new)", icon: "cache", col: 2, row: 2, accent: "pink" },
-            ],
+              { id: "key1", label: "key: \"user:42\"", detail: "A single key hashes to one fixed point on the ring. That position never changes, no matter how many nodes come or go — which is the whole trick.", icon: "generic", col: 0, row: 0, shape: "pill" },              { id: "nodeA", label: "Node A", detail: "A cache node, itself just a hash map with LRU eviction. All the distributed-system behaviour comes from where it sits on the ring, not from anything inside it.", icon: "cache", col: 1, row: 0, accent: "blue" },              { id: "nodeB", label: "Node B", detail: "Owns every key between it and the previous node, walking clockwise. Adding Node D steals only part of that arc.", icon: "cache", col: 2, row: 0, accent: "green" },              { id: "nodeC", label: "Node C", detail: "Untouched when D is added. Under naive modulo hashing this node's entire keyset would have been reshuffled instead.", icon: "cache", col: 3, row: 0, accent: "amber" },              { id: "nodeD", label: "Node D (new)", detail: "The newly added node. It takes over only the arc between A and B — roughly 1/N of all keys — leaving every other node's ownership intact.", icon: "cache", col: 2, row: 2, accent: "pink" },            ],
             edges: [
               { id: "e1", from: "key1", to: "nodeB", label: "owned by next node clockwise", step: 1 },
               { id: "e2", from: "nodeD", to: "nodeB", label: "D inserted before B; only B's slice remaps", style: "dashed", step: 2 },

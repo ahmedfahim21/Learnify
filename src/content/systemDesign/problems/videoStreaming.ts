@@ -77,14 +77,7 @@ export const videoStreaming: SystemDesignProblem = {
             columns: 5,
             rows: 3,
             nodes: [
-              { id: "uploader", label: "Uploader", icon: "user", col: 0, row: 0 },
-              { id: "uploadsvc", label: "Upload service", icon: "api", col: 1, row: 0, accent: "blue" },
-              { id: "rawstore", label: "Raw storage", icon: "blob-storage", col: 2, row: 0, accent: "purple" },
-              { id: "transcoder", label: "Transcoding pipeline", icon: "worker", col: 3, row: 0, accent: "amber" },
-              { id: "renditionstore", label: "Rendition storage", icon: "blob-storage", col: 4, row: 0, accent: "purple" },
-              { id: "cdn", label: "CDN edge", icon: "cdn", col: 3, row: 2, accent: "green" },
-              { id: "viewer", label: "Viewer", icon: "mobile", col: 4, row: 2 },
-            ],
+              { id: "uploader", label: "Uploader", detail: "A creator pushing a raw file, often multi-gigabyte. Usually uploads directly to storage via a pre-signed URL rather than through the app server.", icon: "user", col: 0, row: 0 },              { id: "uploadsvc", label: "Upload service", detail: "Accepts the upload and returns immediately with a video id and \"processing\" — it never waits for transcoding.", icon: "api", col: 1, row: 0, accent: "blue" },              { id: "rawstore", label: "Raw storage", detail: "Holds the original file. Kept so renditions can be regenerated if encoding settings change later.", icon: "blob-storage", col: 2, row: 0, accent: "purple" },              { id: "transcoder", label: "Transcoding pipeline", detail: "A horizontally-scaled worker pool producing every bitrate rendition. CPU-bound, and the first thing to fall behind under upload bursts.", icon: "worker", col: 3, row: 0, accent: "amber" },              { id: "renditionstore", label: "Rendition storage", detail: "The encoded chunks and the manifest listing them — what the player actually reads.", icon: "blob-storage", col: 4, row: 0, accent: "purple" },              { id: "cdn", label: "CDN edge", detail: "Edge caches near the viewer. Because bandwidth dwarfs storage at this scale, keeping views off origin is the single biggest cost lever in the design.", icon: "cdn", col: 3, row: 2, accent: "green" },              { id: "viewer", label: "Viewer", detail: "The player decides which rendition to fetch next based on its own measured throughput — adaptive bitrate is a client-side decision.", icon: "mobile", col: 4, row: 2 },            ],
             edges: [
               { id: "e1", from: "uploader", to: "uploadsvc", step: 1 },
               { id: "e2", from: "uploadsvc", to: "rawstore", step: 2 },

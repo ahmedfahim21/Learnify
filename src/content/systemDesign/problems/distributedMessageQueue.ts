@@ -81,13 +81,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
             columns: 5,
             rows: 3,
             nodes: [
-              { id: "producer", label: "Producer", icon: "service", col: 0, row: 1 },
-              { id: "p0", label: "Partition 0", icon: "stream", col: 2, row: 0, accent: "blue" },
-              { id: "p1", label: "Partition 1", icon: "stream", col: 2, row: 1, accent: "blue" },
-              { id: "p2", label: "Partition 2", icon: "stream", col: 2, row: 2, accent: "blue" },
-              { id: "c1", label: "Consumer 1", icon: "worker", col: 4, row: 0, accent: "green" },
-              { id: "c2", label: "Consumer 2", icon: "worker", col: 4, row: 1, accent: "green" },
-            ],
+              { id: "producer", label: "Producer", detail: "Appends messages and moves on. It never learns who consumes them, how many consumers there are, or whether they're keeping up.", icon: "service", col: 0, row: 1 },              { id: "p0", label: "Partition 0", detail: "One partition: an append-only log file. Sequential disk writes are what make this design so much faster than a general-purpose database.", icon: "stream", col: 2, row: 0, accent: "blue" },              { id: "p1", label: "Partition 1", detail: "Partitions are the unit of parallelism. More partitions means more concurrent producers and more consumers that can work in parallel.", icon: "stream", col: 2, row: 1, accent: "blue" },              { id: "p2", label: "Partition 2", detail: "Ordering is guaranteed within this log and nowhere else — which is why the producer's partition key choice decides what stays ordered together.", icon: "stream", col: 2, row: 2, accent: "blue" },              { id: "c1", label: "Consumer 1", detail: "Reads two partitions because the group has fewer consumers than partitions. It tracks its own offset, so it can replay simply by rewinding.", icon: "worker", col: 4, row: 0, accent: "green" },              { id: "c2", label: "Consumer 2", detail: "Reads one partition. Add a third consumer and the group rebalances to one partition each; add a fourth and it sits idle.", icon: "worker", col: 4, row: 1, accent: "green" },            ],
             groups: [{ id: "grp", label: "Consumer group", color: "green" }],
             edges: [
               { id: "e1", from: "producer", to: "p0", step: 1, label: "keyed writes distribute across partitions" },

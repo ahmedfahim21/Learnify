@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Space_Mono } from "next/font/google";
 
 import "./globals.css";
+import { TopNav } from "@/components/nav/TopNav";
 
 // Wordmark, code, technical text: phase labels, counts, durations.
 const spaceMono = Space_Mono({
@@ -28,7 +29,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={spaceMono.variable}>
-      <body>{children}</body>
+      <body>
+        <TopNav />
+        {children}
+      </body>
     </html>
   );
 }

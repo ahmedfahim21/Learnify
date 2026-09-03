@@ -69,6 +69,23 @@ describe("authored system design courses", () => {
         }
       });
 
+      it("gives every diagram node a detail, so clicking it reveals something", () => {
+        // The schema keeps `detail` optional (the live tutor may omit it), but
+        // authored content is the case where a node with nothing to say is a
+        // dead click — the reader shows a detail panel for every node.
+        for (const chapter of problem.chapters) {
+          for (const block of chapter.blocks) {
+            if (block.type !== "diagram") continue;
+            for (const node of block.diagram.nodes) {
+              expect(
+                node.detail?.trim(),
+                `${problem.slug}/${chapter.phase}: node "${node.id}" has no detail`,
+              ).toBeTruthy();
+            }
+          }
+        }
+      });
+
       it("every embedded simulator references a real id and valid param keys", () => {
         for (const chapter of problem.chapters) {
           for (const block of chapter.blocks) {
