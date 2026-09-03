@@ -1,0 +1,145 @@
+import type { SystemDesignProblem } from "../types";
+
+export const paymentSystem: SystemDesignProblem = {
+  slug: "payment-system",
+  title: "Payment System",
+  tagline: "Move money between a buyer, a merchant, and a bank — exactly once, every time, with a full audit trail.",
+  difficulty: 5,
+  estimatedMinutes: 30,
+  tags: ["payments", "consistency", "idempotency"],
+  functionalRequirements: [
+    "Charge a buyer's payment method and credit a merchant for a purchase.",
+    "Handle refunds, tracing back to the original charge.",
+    "Reconcile internal records against the payment processor's records.",
+  ],
+  nonFunctionalRequirements: [
+    "Correctness over latency — a slow-but-correct charge beats a fast-but-wrong one, every time.",
+    "Exactly-once effect — a network retry must never double-charge a customer.",
+    "A complete, immutable audit trail for every state a payment moves through.",
+  ],
+  chapters: [
+    {
+      phase: "requirements",
+      title: "The one property that overrides every other design goal",
+      summary: "In most systems in this course, availability and latency are the dominant pressures. Here, correctness dominates everything.",
+      concepts: [
+        { slug: "payments-scope", name: "Correctness over everything else", summary: "A payment system that's occasionally slow is an inconvenience. A payment system that occasionally double-charges or silently drops a charge is a trust-destroying, possibly legally serious failure — every design decision in this course is weighed against that asymmetry.", difficulty: 1 },
+      ],
+      blocks: [
+        { type: "prose", body: "Almost every other system in this course treats \"eventually consistent, mostly available\" as an acceptable trade-off for speed and scale. A payment system inverts that: a charge that takes an extra 2 seconds is a minor UX issue; a charge that fires twice because of a network retry, or a charge that silently vanishes because of a crashed worker, is a customer-trust and often regulatory problem. Every technique in this course exists to make **exactly-once effect** achievable despite running on the same unreliable networks and machines every other system in this course has to tolerate." },
+      ],
+    },
+    {
+      phase: "estimation",
+      title: "Scale numbers, and where the real cost lives",
+      summary: "Payment volume is usually modest compared to, say, a news feed — the cost here is correctness engineering, not raw throughput.",
+      concepts: [
+        { slug: "payments-estimation", name: "Payment volume is a correctness problem, not a scale problem", summary: "Even a large payments business processes orders of magnitude fewer transactions per second than a social feed processes reads. The engineering effort goes almost entirely into correctness (idempotency, reconciliation, audit trails), not raw throughput.", difficulty: 1 },
+      ],
+      blocks: [
+        { type: "prose", body: "A large e-commerce platform doing 10 million orders a day is about 115 payments/sec on average — modest by the standards of this course's other read-heavy systems. The design effort here isn't about handling millions of requests per second; it's almost entirely about guaranteeing correctness under failure: every write needs to be idempotent, every state transition needs to be auditable, and every external call (to a bank, to a processor) needs a defined behavior for \"I don't know if that succeeded.\"" },
+      ],
+    },
+    {
+      phase: "api",
+      title: "The API",
+      summary: "Every mutating call carries a client-generated idempotency key — the single most important detail in this whole design.",
+      concepts: [
+        { slug: "payments-idempotency-key", name: "Idempotency keys on every charge", summary: "The client generates a unique key before making a charge request; if the same key is submitted twice (e.g. after a timeout-triggered retry), the server recognizes it and returns the original result instead of charging again.", difficulty: 2 },
+      ],
+      blocks: [
+        { type: "prose", body: "`POST /charges { amount, paymentMethodId, idempotencyKey }`. That `idempotencyKey` — generated once by the client and reused on any retry of the *same logical charge* — is the mechanism that turns \"my request timed out, did it go through?\" from a dangerous ambiguity into a safe question: the client just resubmits with the same key, and the server, having recorded that key against the original charge's outcome, returns that same outcome instead of creating a second charge." },
+      ],
+    },
+    {
+      phase: "data-model",
+      title: "The ledger",
+      summary: "An append-only, double-entry ledger is the source of truth — every balance is a computed sum, not a stored, mutable field.",
+      concepts: [
+        { slug: "payments-ledger", name: "Append-only double-entry ledger", summary: "Rather than a mutable 'balance' field that gets incremented and decremented (and can drift or get corrupted), every transaction is recorded as two immutable ledger entries (a debit and a credit) that must always sum to zero — a balance is always the sum of its entries, never a stored, directly-updated number.", difficulty: 4 },
+      ],
+      blocks: [
+        { type: "prose", body: "`ledger_entries(id, account_id, amount, direction, transaction_id, created_at)`, append-only, never updated or deleted. A single payment writes at least two entries — debit the buyer's account, credit the merchant's account (or an intermediate escrow account) — and any correct transaction's entries always sum to exactly zero. This is standard double-entry bookkeeping, borrowed directly into the data model: an account's balance is never a stored number you increment, it's always a *computed* sum over its entries, which makes corruption structurally much harder (a bug can't silently decouple a stored balance from the transaction history, because there is no separate stored balance)." },
+      ],
+    },
+    {
+      phase: "high-level",
+      title: "High-level design",
+      summary: "A payment moves through explicit states, recorded at every step, before ever touching the ledger as final.",
+      concepts: [
+        { slug: "payments-state-machine", name: "The payment state machine", summary: "A payment moves through explicit, persisted states (pending -> processing -> succeeded/failed) rather than being a single atomic operation — this makes every intermediate failure point recoverable and auditable, instead of an ambiguous unknown.", difficulty: 4 },
+      ],
+      blocks: [
+        {
+          type: "prose",
+          body: "A charge is never one atomic step from the system's point of view — it's a state machine: `pending` (request received, not yet sent to the processor) → `processing` (sent to the external payment processor, awaiting response) → `succeeded` or `failed` (processor responded). Persisting each state transition means that if the service crashes while in `processing` — the genuinely dangerous state, since the external call may or may not have gone through — recovery logic can safely query the processor for that idempotency key's actual status and resolve to the correct final state, rather than guessing or blindly retrying (which could double-charge).",
+        },
+        {
+          type: "diagram",
+          diagram: {
+            title: "Payment flow with idempotency and ledger write",
+            columns: 5,
+            rows: 2,
+            nodes: [
+              { id: "client", label: "Client", icon: "client", col: 0, row: 0 },
+              { id: "api", label: "Payment API", icon: "api", col: 1, row: 0, accent: "blue" },
+              { id: "idemcheck", label: "Idempotency store", icon: "cache", col: 1, row: 1, accent: "cyan" },
+              { id: "processor", label: "Payment processor", sublabel: "e.g. Stripe", icon: "payment", col: 3, row: 0, accent: "amber" },
+              { id: "ledger", label: "Ledger", icon: "database", col: 4, row: 1, accent: "purple" },
+              { id: "statestore", label: "Payment state store", icon: "database", col: 2, row: 0, accent: "purple" },
+            ],
+            edges: [
+              { id: "e1", from: "client", to: "api", step: 1, label: "charge + idempotencyKey" },
+              { id: "e2", from: "api", to: "idemcheck", step: 2, label: "seen this key before?" },
+              { id: "e3", from: "api", to: "statestore", step: 3, label: "record: pending", route: "vertical-first" },
+              { id: "e4", from: "api", to: "processor", step: 4, label: "charge request" },
+              { id: "e5", from: "processor", to: "api", step: 5, label: "success" },
+              { id: "e6", from: "api", to: "ledger", step: 6, label: "write debit + credit entries" },
+            ],
+            steps: [
+              { index: 1, caption: "The client submits a charge with a unique idempotency key.", nodeIds: ["client", "api"], edgeIds: ["e1"] },
+              { index: 2, caption: "The API checks whether this key has already been processed.", nodeIds: ["api", "idemcheck"], edgeIds: ["e2"] },
+              { index: 3, caption: "A new payment: its state is recorded as pending before any external call.", nodeIds: ["api", "statestore"], edgeIds: ["e3"] },
+              { index: 4, caption: "The API calls out to the external payment processor.", nodeIds: ["api", "processor"], edgeIds: ["e4"] },
+              { index: 5, caption: "The processor confirms success.", nodeIds: ["processor", "api"], edgeIds: ["e5"] },
+              { index: 6, caption: "Only now is the ledger written — the durable, final record of the money movement.", nodeIds: ["api", "ledger"], edgeIds: ["e6"] },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      phase: "deep-dive",
+      title: "Deep dive: the ambiguous timeout",
+      summary: "The single hardest case in this whole system: the external processor call times out, and you genuinely don't know if it succeeded.",
+      concepts: [
+        { slug: "payments-ambiguous-timeout", name: "Resolving an unknown processor response", summary: "A timeout calling the external processor is fundamentally ambiguous — it might have succeeded, might have failed, might still be in flight. The only safe response is to query the processor's own status endpoint for that idempotency key rather than guessing (retry blindly, or assume failure), until it resolves.", difficulty: 5 },
+      ],
+      blocks: [
+        {
+          type: "callout",
+          tone: "pitfall",
+          body: "The single most dangerous moment in this entire design: your call to the external payment processor times out. You do not know if the charge happened. Blindly retrying risks a double charge if it actually succeeded; blindly marking it failed and letting the customer retry risks the same. There is no clever trick that resolves this from your side alone.",
+        },
+        {
+          type: "prose",
+          body: "The only correct response is to leave the payment in a `processing`/`unknown` state and query the processor's own status-lookup endpoint for that specific idempotency key — every reputable payment processor provides exactly this, because every payment system built on top of them faces this exact problem. The state machine from the high-level design chapter is what makes this recoverable: the payment simply sits in `processing` until a reconciliation job (running periodically, or triggered on next client retry) resolves it definitively to `succeeded` or `failed`, based on the processor's authoritative answer — never based on a guess.",
+        },
+      ],
+    },
+    {
+      phase: "bottlenecks",
+      title: "Where it breaks",
+      summary: "Reconciliation — comparing your ledger against the processor's own records — is the unglamorous process that catches everything else missed.",
+      concepts: [
+        { slug: "payments-reconciliation", name: "Reconciliation as a mandatory background process", summary: "Even a correctly-designed system can drift from the processor's records due to bugs, edge cases, or processor-side issues. A periodic reconciliation job comparing your ledger against the processor's transaction records is the final backstop that catches discrepancies before they become customer-facing problems.", difficulty: 4 },
+      ],
+      blocks: [
+        {
+          type: "prose",
+          body: "No matter how carefully the idempotency and state-machine logic is built, real payment systems run periodic reconciliation: fetching the processor's own record of every transaction in a period and diffing it against the internal ledger. A mismatch — a charge the processor shows as succeeded that your ledger never recorded, or vice versa — is a signal something in the pipeline had a bug or an unhandled edge case, and it's far better to catch that in an automated nightly job than to have it surface as a customer support ticket about a missing or duplicate charge weeks later.",
+        },
+      ],
+    },
+  ],
+};

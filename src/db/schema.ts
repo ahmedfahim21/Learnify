@@ -45,10 +45,24 @@ export const topics = pgTable("topics", {
    *   "failed"      — decomposition failed; can be retried
    */
   status: text("status").notNull().default("new"),
+  /**
+   * "custom" — learner-entered topic, decomposed by the LLM (the original
+   * flow). "curated" — materialized from a hand-authored course in
+   * `src/content/systemDesign` (see `lib/content/materialize.ts`), skipping
+   * decomposition entirely: concepts/edges are inserted directly and status
+   * goes straight to "ready".
+   */
+  kind: text("kind").notNull().default("custom"),
+  /** Slug into the authored course registry for curated topics; null otherwise. */
+  problemSlug: text("problem_slug"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
-});
+},
+  (table) => [
+    unique("topics_user_problem_unique").on(table.userId, table.problemSlug),
+  ],
+);
 
 /**
  * A single concept within a topic's prerequisite graph.
@@ -77,6 +91,13 @@ export const concepts = pgTable(
     orderIndex: integer("order_index").notNull().default(0),
     // 0–1 mastery; populated by the mastery engine (#43).
     mastery: real("mastery").notNull().default(0),
+    /**
+     * System-design interview stage for a curated concept: "requirements" |
+     * "estimation" | "api" | "data-model" | "high-level" | "deep-dive" |
+     * "bottlenecks" (see DESIGN_PHASES in src/content/systemDesign/types.ts).
+     * Null for custom (non-curated) topics.
+     */
+    phase: text("phase"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

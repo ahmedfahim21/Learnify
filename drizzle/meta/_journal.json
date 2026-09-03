@@ -43,6 +43,13 @@
       "when": 1782096045193,
       "tag": "0005_orange_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788457396678,
+      "tag": "0006_special_cyclops",
+      "breakpoints": true
     }
   ]
 }
