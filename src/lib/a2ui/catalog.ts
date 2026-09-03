@@ -34,6 +34,98 @@ const correctPairSchema = z.object({
 });
 
 /**
+ * Closed icon vocabulary for {@link widgetProps.SystemDiagram} nodes. Each name
+ * maps to one vetted icon component in `components/classroom/diagram/icons.ts`.
+ * The enum is the security boundary: the model picks a *name*, never a glyph,
+ * a path, or a URL.
+ */
+export const DIAGRAM_ICONS = [
+  "client", "browser", "mobile", "user",
+  "api", "gateway", "load-balancer", "proxy", "cdn", "dns", "firewall",
+  "service", "worker", "function", "scheduler",
+  "database", "sql", "nosql", "cache", "search-index", "vector-db",
+  "blob-storage", "data-warehouse", "shard", "replica",
+  "queue", "stream",
+  "llm", "embedding", "agent",
+  "auth", "monitoring", "config",
+  "document", "web", "email", "chat", "notification", "payment",
+  "region", "datacenter", "internet", "generic",
+] as const;
+
+/**
+ * Accent vocabulary. Names map to literal Tailwind class bundles in the
+ * renderer's palette — Tailwind v4 here is CSS-first with no config file, so
+ * there is no safelist and an interpolated `border-${color}-400` would silently
+ * render unstyled.
+ */
+export const DIAGRAM_COLORS = [
+  "slate", "blue", "green", "pink", "purple",
+  "amber", "cyan", "rose", "teal", "indigo",
+] as const;
+
+export type DiagramIcon = (typeof DIAGRAM_ICONS)[number];
+export type DiagramColor = (typeof DIAGRAM_COLORS)[number];
+
+/** One labelled box, placed on the diagram's coarse grid by `col`/`row`. */
+const diagramNodeSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  /** Small second line, e.g. "Postgres" or "p99 40ms". */
+  sublabel: z.string().optional(),
+  icon: z.enum(DIAGRAM_ICONS).optional(),
+  /** 0-based grid cell. The renderer maps cells to pixels, so the model only
+   *  ever reasons about composition, never geometry. */
+  col: z.number(),
+  row: z.number(),
+  /** Cells spanned; defaults to 1. Use to widen a tier-spanning box. */
+  colSpan: z.number().optional(),
+  rowSpan: z.number().optional(),
+  /** id of a {@link diagramGroupSchema} this node belongs to. */
+  groupId: z.string().optional(),
+  shape: z.enum(["box", "rounded", "cylinder", "pill", "hexagon"]).optional(),
+  accent: z.enum(DIAGRAM_COLORS).optional(),
+});
+
+/**
+ * A tinted region behind a set of nodes — the "Knowledge Sources" / "Large
+ * Language Models" panels of the reference style. Geometry is optional: with no
+ * rect, the region is the padded bounding box of its member nodes.
+ */
+const diagramGroupSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  color: z.enum(DIAGRAM_COLORS),
+  col: z.number().optional(),
+  row: z.number().optional(),
+  colSpan: z.number().optional(),
+  rowSpan: z.number().optional(),
+});
+
+/** A directed connection between two nodes. */
+const diagramEdgeSchema = z.object({
+  id: z.string(),
+  from: z.string(),
+  to: z.string(),
+  label: z.string().optional(),
+  /** 1-based step number, drawn as a badge at the edge's midpoint. */
+  step: z.number().optional(),
+  style: z.enum(["solid", "dashed"]).optional(),
+  arrow: z.enum(["forward", "both", "none"]).optional(),
+  /** Elbow strategy; "auto" picks one from the relative grid positions. */
+  route: z
+    .enum(["auto", "horizontal-first", "vertical-first", "straight"])
+    .optional(),
+});
+
+/** One frame of the walkthrough: what lights up, and what the learner is told. */
+const diagramStepSchema = z.object({
+  index: z.number(),
+  caption: z.string(),
+  nodeIds: z.array(z.string()),
+  edgeIds: z.array(z.string()),
+});
+
+/**
  * Per-widget property schemas. Keep these strict and flat — strict tool use
  * forbids unsupported JSON-schema constraints, so no `min`/`max`/`regex`.
  */
@@ -106,6 +198,31 @@ export const widgetProps = {
     source: z.string(),
     caption: z.string().optional(),
   }),
+  /**
+   * An architecture diagram with an optional animated step walkthrough — the
+   * primary tool for teaching any request path, data flow, or system topology.
+   *
+   * Pure data: coarse grid coordinates, a closed icon enum, and declared steps.
+   * The renderer draws HTML boxes over an SVG edge layer — no iframe, no CDN,
+   * and nothing the model wrote is ever executed.
+   */
+  SystemDiagram: z.object({
+    title: z.string().optional(),
+    caption: z.string().optional(),
+    /** Grid width in cells. */
+    columns: z.number(),
+    /** Grid height in cells. */
+    rows: z.number(),
+    nodes: z.array(diagramNodeSchema),
+    edges: z.array(diagramEdgeSchema),
+    groups: z.array(diagramGroupSchema).optional(),
+    /** Ordered walkthrough; when present, the step player renders. */
+    steps: z.array(diagramStepSchema).optional(),
+    /** Start the walkthrough playing. Ignored under prefers-reduced-motion. */
+    autoplay: z.boolean().optional(),
+    /** Slug of the concept this diagram teaches (routes mastery evidence, #43). */
+    conceptSlug: z.string().optional(),
+  }),
   /** A free-text prompt; the learner writes a short answer. */
   FreeResponse: z.object({
     prompt: z.string(),
@@ -143,6 +260,7 @@ export const WIDGET_KIND: Record<WidgetName, WidgetKind> = {
   MatchingPairs: "leaf",
   CodeSnippet: "leaf",
   Diagram: "leaf",
+  SystemDiagram: "leaf",
   FreeResponse: "leaf",
   ProgressMeter: "leaf",
   SessionRecap: "leaf",
@@ -182,3 +300,9 @@ export const ComponentSchema = z.discriminatedUnion(
 export type ValidatedComponent = z.infer<typeof ComponentSchema>;
 
 export const WIDGET_NAMES = Object.keys(widgetProps) as WidgetName[];
+
+export type SystemDiagramProps = z.infer<typeof widgetProps.SystemDiagram>;
+export type DiagramNode = z.infer<typeof diagramNodeSchema>;
+export type DiagramGroup = z.infer<typeof diagramGroupSchema>;
+export type DiagramEdge = z.infer<typeof diagramEdgeSchema>;
+export type DiagramStep = z.infer<typeof diagramStepSchema>;

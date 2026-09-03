@@ -15,3 +15,36 @@ body {
   color: var(--foreground);
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+/* SystemDiagram step-walkthrough motion (src/components/classroom/diagram). */
+.a2ui-packet {
+  offset-distance: 0%;
+  animation: a2ui-packet-travel 1400ms linear infinite;
+}
+@keyframes a2ui-packet-travel {
+  from {
+    offset-distance: 0%;
+  }
+  to {
+    offset-distance: 100%;
+  }
+}
+/* Fallback for browsers without CSS motion-path support (Safari < 16). */
+.a2ui-marching-ants {
+  stroke-dasharray: 6 5;
+  animation: a2ui-marching-ants 700ms linear infinite;
+}
+@keyframes a2ui-marching-ants {
+  to {
+    stroke-dashoffset: -22;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .a2ui-packet {
+    animation: none;
+    offset-distance: 50%;
+  }
+  .a2ui-marching-ants {
+    animation: none;
+  }
+}

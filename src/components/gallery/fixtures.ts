@@ -207,6 +207,82 @@ export const GALLERY_FIXTURES: GalleryFixture[] = [
     ]),
   },
   {
+    name: "SystemDiagram (RAG retrieval, animated)",
+    message: surface("system-diagram-rag", "rag", [
+      {
+        id: "rag",
+        component: "SystemDiagram",
+        properties: {
+          title: "Retrieval-augmented generation",
+          caption: "One request, end to end: the server grounds the model's answer in retrieved context before calling it.",
+          columns: 5,
+          rows: 3,
+          nodes: [
+            { id: "user", label: "User", icon: "user", col: 0, row: 1 },
+            { id: "server", label: "Server", icon: "service", col: 1, row: 1, accent: "blue" },
+            { id: "search", label: "Search", icon: "search-index", col: 2, row: 1, accent: "pink", groupId: "sources" },
+            { id: "pdf", label: "PDF", sublabel: "Documents", icon: "document", col: 3, row: 0, accent: "pink", groupId: "sources" },
+            { id: "db", label: "Database", sublabel: "Structured", icon: "database", col: 3, row: 1, accent: "pink", groupId: "sources" },
+            { id: "web", label: "Web search", icon: "web", col: 3, row: 2, accent: "pink", groupId: "sources" },
+            { id: "gpt", label: "GPT", icon: "llm", col: 4, row: 0, accent: "green", groupId: "llms" },
+            { id: "claude", label: "Claude", icon: "llm", col: 4, row: 1, accent: "green", groupId: "llms" },
+            { id: "gemini", label: "Gemini", icon: "llm", col: 4, row: 2, accent: "green", groupId: "llms" },
+          ],
+          groups: [
+            { id: "sources", label: "Knowledge Sources", color: "pink" },
+            { id: "llms", label: "Large Language Models", color: "green" },
+          ],
+          edges: [
+            { id: "e1", from: "user", to: "server", step: 1, label: "Prompt + query" },
+            { id: "e2", from: "server", to: "search", step: 2, label: "Query" },
+            { id: "e3", from: "search", to: "db", step: 3 },
+            { id: "e4", from: "db", to: "search", step: 4, label: "Relevant info", route: "auto" },
+            { id: "e5", from: "search", to: "server", step: 4, label: "Enhanced context" },
+            { id: "e6", from: "server", to: "claude", step: 5 },
+            { id: "e7", from: "claude", to: "user", step: 6, label: "Generated response" },
+          ],
+          steps: [
+            { index: 1, caption: "The user sends a prompt and query to the server.", nodeIds: ["user", "server"], edgeIds: ["e1"] },
+            { index: 2, caption: "The server forwards the query to search.", nodeIds: ["server", "search"], edgeIds: ["e2"] },
+            { index: 3, caption: "Search checks the knowledge sources for relevant material.", nodeIds: ["search", "pdf", "db", "web"], edgeIds: ["e3"] },
+            { index: 4, caption: "Relevant info comes back as enhanced context.", nodeIds: ["db", "search", "server"], edgeIds: ["e4", "e5"] },
+            { index: 5, caption: "The server calls the model with the enhanced context.", nodeIds: ["server", "claude"], edgeIds: ["e6"] },
+            { index: 6, caption: "The generated response streams back to the user.", nodeIds: ["claude", "user"], edgeIds: ["e7"] },
+          ],
+        },
+      },
+    ]),
+  },
+  {
+    name: "SystemDiagram (static composition, no steps)",
+    message: surface("system-diagram-static", "urlshort", [
+      {
+        id: "urlshort",
+        component: "SystemDiagram",
+        properties: {
+          title: "URL shortener \u2014 write path",
+          columns: 4,
+          rows: 2,
+          nodes: [
+            { id: "client", label: "Client", icon: "client", col: 0, row: 0 },
+            { id: "lb", label: "Load balancer", icon: "load-balancer", col: 1, row: 0, accent: "amber" },
+            { id: "api", label: "API service", icon: "api", col: 2, row: 0, accent: "blue" },
+            { id: "cache", label: "Cache", icon: "cache", col: 3, row: 0, accent: "cyan" },
+            { id: "db", label: "Key store", sublabel: "short code -> URL", icon: "nosql", col: 2, row: 1, accent: "purple" },
+            { id: "counter", label: "ID generator", icon: "worker", col: 3, row: 1, accent: "purple" },
+          ],
+          edges: [
+            { id: "e1", from: "client", to: "lb" },
+            { id: "e2", from: "lb", to: "api" },
+            { id: "e3", from: "api", to: "cache", style: "dashed", label: "read-through" },
+            { id: "e4", from: "api", to: "db" },
+            { id: "e5", from: "api", to: "counter" },
+          ],
+        },
+      },
+    ]),
+  },
+  {
     name: "Layout (Column + Row)",
     message: surface("layout", "col", [
       {

@@ -17,6 +17,7 @@ import { MultipleChoiceCheck } from "./widgets/MultipleChoiceCheck";
 import { OrderingExercise } from "./widgets/OrderingExercise";
 import { ProgressMeter } from "./widgets/ProgressMeter";
 import { SessionRecap } from "./widgets/SessionRecap";
+import { SystemDiagram } from "./diagram/SystemDiagram";
 
 /**
  * Hand-rolled A2UI v0.9 renderer — the single boundary between the protocol and
@@ -176,6 +177,9 @@ function renderNode(id: string, ctx: NodeContext): React.ReactNode {
 
     case "Diagram":
       return <Diagram key={id} def={def} ctx={ctx} />;
+
+    case "SystemDiagram":
+      return <SystemDiagram key={id} def={def} ctx={ctx} />;
 
     case "FreeResponse":
       return <FreeResponse key={id} def={def} ctx={ctx} />;

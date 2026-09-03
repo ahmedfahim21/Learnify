@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { ComponentSchema, type ValidatedComponent } from "./catalog";
+import {
+  ComponentSchema,
+  type SystemDiagramProps,
+  type ValidatedComponent,
+} from "./catalog";
+import { validateSystemDiagram } from "./diagram";
 import {
   A2UI_VERSION,
   type ComponentDef,
@@ -90,6 +95,20 @@ export function validatePresentUi(
         );
       }
       childIds.add(childId);
+    }
+  }
+
+  for (const c of components) {
+    if (c.component === "SystemDiagram") {
+      const problems = validateSystemDiagram(
+        c.properties as SystemDiagramProps,
+      );
+      if (problems.length > 0) {
+        throw new A2UIValidationError(
+          `SystemDiagram "${c.id}" is invalid: ${problems.join("; ")}`,
+          [],
+        );
+      }
     }
   }
 
