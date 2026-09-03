@@ -11,7 +11,10 @@ import { resolveParams, type SimulatorSpec } from "@/lib/sims/types";
 import { asString } from "../rendererContext";
 import { SimNotice } from "./controls";
 import { CacheHitRatioSim } from "./sims/CacheHitRatioSim";
+import { ConsistentHashingSim } from "./sims/ConsistentHashingSim";
+import { LatencyNumbersSim } from "./sims/LatencyNumbersSim";
 import { LoadBalancerSim } from "./sims/LoadBalancerSim";
+import { QueueBackpressureSim } from "./sims/QueueBackpressureSim";
 import { TokenBucketSim } from "./sims/TokenBucketSim";
 
 type SimComponent = ComponentType<{
@@ -22,14 +25,20 @@ type SimComponent = ComponentType<{
 /**
  * Simulator id -> render component. Deliberately separate from
  * SIMULATOR_REGISTRY (metadata, no React) so the registry stays importable
- * from Node tests and content validation. An id present in the enum but
- * missing here renders the "not available yet" card below rather than
- * throwing — a bad or not-yet-built id must never take down a lesson.
+ * from Node tests and content validation.
+ *
+ * Exhaustive over SimulatorId — every simulator the model (or authored
+ * content) can name has a renderer, enforced at compile time here and by
+ * `simulators.test.ts`. The unavailable-card fallback below stays as a
+ * runtime guard against an id that somehow escapes both.
  */
-const SIMULATOR_COMPONENTS: Partial<Record<SimulatorId, SimComponent>> = {
+export const SIMULATOR_COMPONENTS: Record<SimulatorId, SimComponent> = {
   "cache-hit-ratio": CacheHitRatioSim,
   "load-balancer": LoadBalancerSim,
   "token-bucket": TokenBucketSim,
+  "consistent-hashing": ConsistentHashingSim,
+  "queue-backpressure": QueueBackpressureSim,
+  "latency-numbers": LatencyNumbersSim,
 };
 
 export function SimulatorWidget({ def }: { def: ComponentDef }) {

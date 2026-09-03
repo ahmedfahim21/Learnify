@@ -74,6 +74,12 @@ const diagramNodeSchema = z.object({
   label: z.string(),
   /** Small second line, e.g. "Postgres" or "p99 40ms". */
   sublabel: z.string().optional(),
+  /**
+   * A sentence or two revealed when the learner selects this node — what it
+   * does, why it's here, what it would cost to remove. This is what makes a
+   * diagram explorable rather than decorative.
+   */
+  detail: z.string().optional(),
   icon: z.enum(DIAGRAM_ICONS).optional(),
   /** 0-based grid cell. The renderer maps cells to pixels, so the model only
    *  ever reasons about composition, never geometry. */
