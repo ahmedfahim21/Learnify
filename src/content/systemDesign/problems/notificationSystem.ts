@@ -104,7 +104,19 @@ export const notificationSystem: SystemDesignProblem = {
           notice: "A breaking-news fan-out is a burst of arrivals against a rate-limited provider. Push arrival rate up toward the provider's service rate and watch the wait time curve bend.",
           params: [{ key: "arrivalRate", value: 180 }, { key: "serviceRate", value: 200 }, { key: "workers", value: 1 }],
         },
-      ],
+        {
+            type: "quiz",
+            question: "Why fan one event into three per-channel queues rather than one shared notification queue?",
+            options: [
+              { id: "a", label: "Three queues are faster than one" },
+              { id: "b", label: "So a slow or failing provider only stalls its own channel" },
+              { id: "c", label: "Because each channel needs a different message format" },
+              { id: "d", label: "To keep notifications ordered across channels" },
+            ],
+            correctOptionId: "b",
+            explanation: "Each provider has its own rate limit, latency and failure modes. Sharing one queue means a backed-up SMS gateway delays every push notification behind it — the classic head-of-line blocking problem. Separate queues let each channel drain, retry and fail on its own terms.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

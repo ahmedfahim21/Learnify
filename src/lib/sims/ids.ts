@@ -11,6 +11,7 @@ export const SIMULATOR_IDS = [
   "consistent-hashing",
   "queue-backpressure",
   "latency-numbers",
+  "back-of-envelope",
 ] as const;
 
 export type SimulatorId = (typeof SIMULATOR_IDS)[number];

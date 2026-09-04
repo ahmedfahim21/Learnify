@@ -60,7 +60,19 @@ export const proximityService: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "A geohash interleaves bits of latitude and longitude into a single string, where each additional character narrows the location to a smaller rectangular cell. Two points near each other usually — though not always, because of edge effects at cell boundaries — share a long common prefix. This turns \"find nearby points\" into \"find rows whose geohash shares this prefix,\" a query a completely ordinary database index (even a plain B-tree) can answer efficiently, without any custom geospatial index type." },
-      ],
+        {
+            type: "quiz",
+            question: "Why can a plain B-tree index answer 'what is near me?' once you store a geohash?",
+            options: [
+              { id: "a", label: "Geohashes are numeric, so range queries are exact" },
+              { id: "b", label: "Nearby points usually share a string prefix, turning proximity into a prefix scan" },
+              { id: "c", label: "The database sorts by distance automatically" },
+              { id: "d", label: "Geohashing removes the need to compare latitude and longitude" },
+            ],
+            correctOptionId: "b",
+            explanation: "A geohash interleaves latitude and longitude bits into one sortable string, so a two-dimensional 'near' query becomes a one-dimensional prefix range an ordinary index handles well. The catch is boundaries: two close points can straddle a cell edge and share no prefix, which is why the search also checks neighbouring cells.",
+          },
+        ],
     },
     {
       phase: "high-level",

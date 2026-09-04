@@ -116,7 +116,19 @@ export const distributedMessageQueue: SystemDesignProblem = {
           tone: "tradeoff",
           body: "Choosing a good partition key is one of the most consequential decisions in using a system like this: too coarse (e.g. one key for everything) recreates the single-writer bottleneck; too fine-grained relative to your ordering needs can spread related events across partitions and lose the ordering guarantee you actually needed.",
         },
-      ],
+        {
+            type: "quiz",
+            question: "You need every event for a given user processed in order. What does that require?",
+            options: [
+              { id: "a", label: "A single partition for the whole topic" },
+              { id: "b", label: "Routing that user's events to the same partition, via a partition key" },
+              { id: "c", label: "Exactly one consumer in the group" },
+              { id: "d", label: "Nothing — the queue guarantees global ordering" },
+            ],
+            correctOptionId: "b",
+            explanation: "Ordering is guaranteed within a partition and nowhere else. Hashing on user id sends that user's events to one partition, so they're read in the order written — while other users' events still spread across partitions for parallelism. One partition for the whole topic would also work, and would throw away all the throughput.",
+          },
+        ],
     },
     {
       phase: "bottlenecks",

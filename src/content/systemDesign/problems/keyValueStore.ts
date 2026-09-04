@@ -106,7 +106,19 @@ export const keyValueStore: SystemDesignProblem = {
             ],
           },
         },
-      ],
+        {
+            type: "quiz",
+            question: "With N=3 replicas, which quorum setting guarantees a read always sees the latest acknowledged write?",
+            options: [
+              { id: "a", label: "W=1, R=1 — fastest on both sides" },
+              { id: "b", label: "W=2, R=2, because W + R > N" },
+              { id: "c", label: "W=3, R=3, the only safe option" },
+              { id: "d", label: "Any setting, as long as writes go to a single leader" },
+            ],
+            correctOptionId: "b",
+            explanation: "W + R > N forces the write set and the read set to overlap on at least one replica, so a read is guaranteed to touch a node holding the newest version. W=3/R=3 also works but gives up all availability — any single node being down blocks every operation.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

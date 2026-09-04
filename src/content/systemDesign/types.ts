@@ -47,7 +47,20 @@ export type ChapterBlock =
       notice: string;
       params?: { key: string; value: number | boolean }[];
     }
-  | { type: "callout"; tone: "note" | "tradeoff" | "pitfall"; body: string };
+  | { type: "callout"; tone: "note" | "tradeoff" | "pitfall"; body: string }
+  /**
+   * A self-graded check. Answered and explained entirely client-side — no LLM
+   * call, no session — so a reader can test themselves mid-chapter without
+   * leaving the page. The adaptive tutor is a separate, once-per-course thing.
+   */
+  | {
+      type: "quiz";
+      question: string;
+      options: { id: string; label: string }[];
+      correctOptionId: string;
+      /** Shown after answering, whichever option was chosen. */
+      explanation: string;
+    };
 
 /** A concept the mastery engine tracks — materialized 1:1 into the `concepts`
  *  table. Every chapter teaches at least one. */

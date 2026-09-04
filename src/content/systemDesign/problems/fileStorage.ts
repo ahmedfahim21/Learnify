@@ -38,7 +38,14 @@ export const fileStorage: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "500 million users averaging 2 GB of stored data each is already 1 exabyte (1 million TB) of raw storage, before accounting for version history or replication overhead. At this scale, the storage layer isn't a database with a blob column — it's a purpose-built distributed object store, the same category of system as Amazon S3, designed from the ground up around exactly this scale." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "back-of-envelope",
+            title: "Petabyte arithmetic",
+            notice: "Files are large and kept forever, so this is the one design in the course where storage — not QPS — is the binding constraint. Watch the multi-year total climb past anything a single machine could hold.",
+            params: [{ key: "dau", value: 20000000 }, { key: "writesPerUserPerDay", value: 5 }, { key: "readWriteRatio", value: 3 }, { key: "bytesPerWrite", value: 1000000 }, { key: "retentionYears", value: 5 }],
+          },
+        ],
     },
     {
       phase: "api",
@@ -60,7 +67,19 @@ export const fileStorage: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "Rather than storing each file as one indivisible blob, files are split into content-defined chunks (e.g. ~4MB), and each chunk is stored keyed by a hash of its own content. `files(path, chunk_hashes[])` then just lists which chunks compose a given file version. Two files with identical content — or the same file before and after a small edit — end up sharing almost all their chunk hashes, which gives you deduplication and efficient delta sync essentially for free from one data-modeling decision." },
-      ],
+        {
+            type: "quiz",
+            question: "You change one line in a 2 GB file. Why does content-addressed chunking mean you upload only a few megabytes?",
+            options: [
+              { id: "a", label: "The file is compressed before upload" },
+              { id: "b", label: "Only chunks whose content hash changed are new; the rest already exist" },
+              { id: "c", label: "The server diffs the old and new file for you" },
+              { id: "d", label: "Large files are always uploaded incrementally by size" },
+            ],
+            correctOptionId: "b",
+            explanation: "Hashing each chunk by its content means unchanged chunks keep the same hash and are already stored. The client only sends what the server doesn't have. The same property gives you deduplication for free: two users storing identical files share the underlying chunks.",
+          },
+        ],
     },
     {
       phase: "high-level",

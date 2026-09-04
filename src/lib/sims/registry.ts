@@ -69,6 +69,19 @@ export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorSpec> = {
     ],
   },
 
+  "back-of-envelope": {
+    id: "back-of-envelope",
+    title: "Back-of-envelope estimation",
+    summary: "Turn a user count into QPS, storage and bandwidth — the arithmetic every design conversation opens with.",
+    params: [
+      { key: "dau", label: "Daily active users", kind: "number", min: 10000, max: 500000000, step: 10000, default: 1000000 },
+      { key: "writesPerUserPerDay", label: "Writes per user / day", kind: "number", min: 1, max: 200, step: 1, default: 2 },
+      { key: "readWriteRatio", label: "Reads per write", kind: "number", min: 1, max: 1000, step: 1, default: 100 },
+      { key: "bytesPerWrite", label: "Bytes per write", kind: "number", min: 100, max: 1000000, step: 100, default: 1000 },
+      { key: "retentionYears", label: "Retention", kind: "number", min: 1, max: 10, step: 1, unit: "years", default: 5 },
+      { key: "peakMultiplier", label: "Peak vs. average", kind: "number", min: 1, max: 10, step: 1, unit: "x", default: 3 },
+    ],
+  },
   "queue-backpressure": {
     id: "queue-backpressure",
     title: "Queueing and backpressure",

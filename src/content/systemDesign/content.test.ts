@@ -43,6 +43,29 @@ describe("authored system design courses", () => {
         expect(edges.length).toBe(slugs.size - 1);
       });
 
+      it("has at least one self-check quiz", () => {
+        // The adaptive tutor is now once per course, so mid-chapter checks
+        // are what keep a reader honest while they're still reading.
+        const quizzes = problem.chapters.flatMap((c) => c.blocks.filter((b) => b.type === "quiz"));
+        expect(quizzes.length, `${problem.slug} has no self-check`).toBeGreaterThan(0);
+      });
+
+      it("has answerable, explained quizzes", () => {
+        for (const chapter of problem.chapters) {
+          for (const block of chapter.blocks) {
+            if (block.type !== "quiz") continue;
+            const ids = block.options.map((o) => o.id);
+            expect(ids.length, `${problem.slug}/${chapter.phase}: quiz needs options`).toBeGreaterThan(1);
+            expect(new Set(ids).size, `${problem.slug}/${chapter.phase}: duplicate option ids`).toBe(ids.length);
+            expect(
+              ids,
+              `${problem.slug}/${chapter.phase}: correctOptionId "${block.correctOptionId}" matches no option`,
+            ).toContain(block.correctOptionId);
+            expect(block.explanation.trim(), `${problem.slug}/${chapter.phase}: quiz has no explanation`).toBeTruthy();
+          }
+        }
+      });
+
       it("has at least one interactive simulator", () => {
         // Every course should have something the learner can actually move,
         // not just read — this is the floor that keeps a course from being

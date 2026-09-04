@@ -38,7 +38,14 @@ export const metricsMonitoring: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "10,000 hosts, each emitting 100 distinct metrics (CPU, memory, disk, per-endpoint latency, ...) every 10 seconds, is 1,000,000 data points every 10 seconds — 100,000 writes/sec sustained, and that's before any burst from an incident (when metrics often get *more* frequent, exactly when the system is under the most stress)." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "back-of-envelope",
+            title: "Fleet-wide ingestion",
+            notice: "Treat each host's metric emission as a write. Even tiny payloads become an enormous sustained write rate once you multiply by hosts and frequency — which is the entire reason downsampling exists.",
+            params: [{ key: "dau", value: 10000 }, { key: "writesPerUserPerDay", value: 200 }, { key: "readWriteRatio", value: 1 }, { key: "bytesPerWrite", value: 100 }, { key: "retentionYears", value: 2 }],
+          },
+        ],
     },
     {
       phase: "api",
@@ -108,7 +115,19 @@ export const metricsMonitoring: SystemDesignProblem = {
           type: "prose",
           body: "Keeping every raw per-second data point forever is both expensive and mostly pointless — almost nobody zooms into second-level detail from six months ago. A standard pattern: keep full resolution for a short recent window (say, the last 7 days), then a background job rolls older data up into coarser aggregates (per-minute, then per-hour, then per-day averages/min/max as it ages further), deleting the original fine-grained points once rolled up. This can cut storage for historical data by two or three orders of magnitude while preserving the shape of long-term trends.",
         },
-      ],
+        {
+            type: "quiz",
+            question: "Why downsample metrics older than a week into coarser aggregates?",
+            options: [
+              { id: "a", label: "Old data is usually wrong and needs smoothing" },
+              { id: "b", label: "Full-resolution history costs enormous storage for detail nobody queries" },
+              { id: "c", label: "The alerting engine cannot read old raw data" },
+              { id: "d", label: "To make dashboards render in a fixed number of points" },
+            ],
+            correctOptionId: "b",
+            explanation: "Per-second resolution matters while you're debugging something that just happened; six months later you want the shape of a trend, not individual samples. Rolling old points into per-minute then per-hour aggregates cuts historical storage by orders of magnitude while preserving what anyone actually looks at.",
+          },
+        ],
     },
     {
       phase: "bottlenecks",

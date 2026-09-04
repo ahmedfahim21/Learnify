@@ -68,7 +68,14 @@ export const urlShortener: SystemDesignProblem = {
           heading: "Sizing the keyspace",
           body: "A short code drawn from `[a-zA-Z0-9]` (62 characters) needs to cover 365 billion possible links with room to spare. 7 characters gives 62^7 ≈ 3.5 trillion combinations — about 10x the 10-year volume, which is a comfortable margin against collisions and format changes.",
         },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "back-of-envelope",
+            title: "Run the numbers yourself",
+            notice: "The chapter assumes 100M new links/day at 100:1 reads. Change the read:write ratio and watch peak reads move while storage stays put — reads decide your cache, writes decide your disk.",
+            params: [{ key: "dau", value: 50000000 }, { key: "writesPerUserPerDay", value: 2 }, { key: "readWriteRatio", value: 100 }, { key: "bytesPerWrite", value: 500 }, { key: "retentionYears", value: 10 }],
+          },
+        ],
     },
     {
       phase: "api",
@@ -158,7 +165,19 @@ export const urlShortener: SystemDesignProblem = {
           notice: "At a 100:1 read:write ratio, even a modest hit ratio removes the vast majority of load from the datastore — drag hit ratio up and watch origin traffic fall.",
           params: [{ key: "hitRatio", value: 0.85 }, { key: "qps", value: 100000 }, { key: "originLatencyMs", value: 15 }],
         },
-      ],
+        {
+            type: "quiz",
+            question: "Why is hashing the long URL and truncating to 7 characters the wrong way to make short codes?",
+            options: [
+              { id: "a", label: "Hashing is too slow to run on every create" },
+              { id: "b", label: "Two different URLs can produce the same truncated hash, and nothing prevents it" },
+              { id: "c", label: "Hashes are not URL-safe characters" },
+              { id: "d", label: "It would make the redirect lookup slower" },
+            ],
+            correctOptionId: "b",
+            explanation: "Truncating a hash throws away exactly the bits that made it collision-resistant. At billions of rows, distinct URLs will collide — and you'd have to detect and retry on every write. A counter-based id sidesteps this: two requests can never be handed the same integer, so collisions are impossible **by construction** rather than merely unlikely.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

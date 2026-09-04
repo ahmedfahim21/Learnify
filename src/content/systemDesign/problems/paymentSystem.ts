@@ -49,7 +49,19 @@ export const paymentSystem: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "`POST /charges { amount, paymentMethodId, idempotencyKey }`. That `idempotencyKey` — generated once by the client and reused on any retry of the *same logical charge* — is the mechanism that turns \"my request timed out, did it go through?\" from a dangerous ambiguity into a safe question: the client just resubmits with the same key, and the server, having recorded that key against the original charge's outcome, returns that same outcome instead of creating a second charge." },
-      ],
+        {
+            type: "quiz",
+            question: "A charge request times out. The client retries with the same idempotency key. What should happen?",
+            options: [
+              { id: "a", label: "A second charge is created, and one is refunded later" },
+              { id: "b", label: "The server returns the original charge's outcome without charging again" },
+              { id: "c", label: "The request is rejected as a duplicate" },
+              { id: "d", label: "The charge is retried only if the first one definitely failed" },
+            ],
+            correctOptionId: "b",
+            explanation: "That's the whole point of the key: the server recorded it against the original outcome, so the retry replays that result instead of moving money twice. Rejecting the retry outright would be safe but useless — the client still wouldn't know what happened, which is exactly the ambiguity the key resolves.",
+          },
+        ],
     },
     {
       phase: "data-model",

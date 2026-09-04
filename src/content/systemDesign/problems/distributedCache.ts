@@ -104,7 +104,19 @@ export const distributedCache: SystemDesignProblem = {
           notice: "Add a node and watch only a small, even slice of keys move — then compare to how much would move under naive modulo hashing (nearly everything).",
           params: [{ key: "nodeCount", value: 5 }, { key: "virtualNodesPerNode", value: 50 }],
         },
-      ],
+        {
+            type: "quiz",
+            question: "You run 10 cache nodes with hash(key) % N routing and add one more. Roughly what fraction of keys end up on a different node?",
+            options: [
+              { id: "a", label: "About 1/11 — only the new node's share moves" },
+              { id: "b", label: "About 10% — one node's worth" },
+              { id: "c", label: "Nearly all of them" },
+              { id: "d", label: "None — modulo hashing is stable" },
+            ],
+            correctOptionId: "c",
+            explanation: "Changing N changes the modulo result for almost every key, so the cache effectively empties itself at the exact moment you're adding capacity — a stampede of misses straight through to the origin. Consistent hashing moves only the ~1/N of keys that the new node takes over.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

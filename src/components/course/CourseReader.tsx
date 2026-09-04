@@ -30,6 +30,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const allConceptSlugs = problem.chapters.flatMap((c) => c.concepts.map((x) => x.slug));
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -121,8 +122,6 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
 
         {problem.chapters.map((chapter, i) => {
           const scoop = SCOOPS[i % SCOOPS.length];
-          const conceptSlugs = chapter.concepts.map((c) => c.slug);
-          const isStarting = starting === conceptSlugs.join(",");
           return (
             <section
               key={chapter.phase}
@@ -151,17 +150,27 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
                 ))}
               </div>
 
-              <button
-                type="button"
-                onClick={() => startPracticing(conceptSlugs)}
-                disabled={isStarting}
-                className="chip border-(--color-mint)/40 text-(--color-mint) disabled:cursor-wait disabled:opacity-60"
-              >
-                {isStarting ? "Starting…" : "Practice this chapter with the tutor →"}
-              </button>
             </section>
           );
         })}
+
+        <section className="max-w-(--measure-prose) space-y-4 border border-(--color-mint)/30 bg-(--color-mint)/[0.04] p-6">
+          <p className="label">Finished reading</p>
+          <h2 className="text-2xl">Now get grilled on it</h2>
+          <p className="text-(--color-mist)">
+            The tutor works through {problem.title} adaptively — it diagnoses what you
+            already know, presses on the parts you answer poorly, and schedules whatever
+            stayed shaky for review.
+          </p>
+          <button
+            type="button"
+            onClick={() => startPracticing(allConceptSlugs)}
+            disabled={Boolean(starting)}
+            className="chip border-(--color-mint)/50 bg-(--color-mint)/10 text-(--color-mint) disabled:cursor-wait disabled:opacity-60"
+          >
+            {starting ? "Starting…" : `Start a tutor session on all ${allConceptSlugs.length} concepts →`}
+          </button>
+        </section>
       </main>
     </div>
   );

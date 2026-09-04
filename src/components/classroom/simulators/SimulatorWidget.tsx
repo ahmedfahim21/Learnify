@@ -10,6 +10,7 @@ import { resolveParams, type SimulatorSpec } from "@/lib/sims/types";
 
 import { asString } from "../rendererContext";
 import { SimNotice } from "./controls";
+import { BackOfEnvelopeSim } from "./sims/BackOfEnvelopeSim";
 import { CacheHitRatioSim } from "./sims/CacheHitRatioSim";
 import { ConsistentHashingSim } from "./sims/ConsistentHashingSim";
 import { LatencyNumbersSim } from "./sims/LatencyNumbersSim";
@@ -39,6 +40,7 @@ export const SIMULATOR_COMPONENTS: Record<SimulatorId, SimComponent> = {
   "consistent-hashing": ConsistentHashingSim,
   "queue-backpressure": QueueBackpressureSim,
   "latency-numbers": LatencyNumbersSim,
+  "back-of-envelope": BackOfEnvelopeSim,
 };
 
 export function SimulatorWidget({ def }: { def: ComponentDef }) {

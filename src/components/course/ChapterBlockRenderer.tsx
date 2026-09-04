@@ -6,6 +6,7 @@ import type { ComponentDef } from "@/lib/a2ui/messages";
 import { Markdown } from "../classroom/Markdown";
 import { SystemDiagram } from "../classroom/diagram/SystemDiagram";
 import { SimulatorWidget } from "../classroom/simulators/SimulatorWidget";
+import { ChapterQuiz } from "./ChapterQuiz";
 
 /** No-op action channel: the course reader is static content, not a live A2UI
  *  surface — a diagram's step player still works (that's local state), but
@@ -74,6 +75,16 @@ export function ChapterBlockRenderer({ block, blockId }: { block: ChapterBlock; 
         </div>
       );
     }
+
+    case "quiz":
+      return (
+        <ChapterQuiz
+          question={block.question}
+          options={block.options}
+          correctOptionId={block.correctOptionId}
+          explanation={block.explanation}
+        />
+      );
 
     default:
       return null;

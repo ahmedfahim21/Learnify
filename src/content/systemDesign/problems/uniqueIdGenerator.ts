@@ -101,7 +101,19 @@ export const uniqueIdGenerator: SystemDesignProblem = {
             ],
           },
         },
-      ],
+        {
+            type: "quiz",
+            question: "Two Snowflake-style generators produce an id in the same millisecond with the same sequence number. What stops them colliding?",
+            options: [
+              { id: "a", label: "They coordinate through a shared lock before issuing" },
+              { id: "b", label: "Their machine-id bits differ, so the full ids differ" },
+              { id: "c", label: "A retry, once the collision is detected" },
+              { id: "d", label: "Nothing — collisions are possible but rare" },
+            ],
+            correctOptionId: "b",
+            explanation: "Uniqueness here is structural, not coordinated. The machine-id bits partition the id space so two machines simply cannot mint the same value — which is what lets each generator run as a purely local function call, with no lock and no network hop on the write path.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

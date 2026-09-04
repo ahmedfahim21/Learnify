@@ -45,6 +45,13 @@ export const chatSystem: SystemDesignProblem = {
             notice: "Connections are long-lived, so an imbalance here doesn't wash out the way it does for stateless requests — a server that lands 2x its share holds that load for hours. Watch the imbalance ratio as you change server count.",
             params: [{ key: "serverCount", value: 8 }, { key: "requestCount", value: 5000 }],
           },
+          {
+            type: "simulator",
+            simulatorId: "back-of-envelope",
+            title: "Message volume and storage",
+            notice: "Messages are small but never deleted, so retention drives storage far more than payload size does. Drag retention from 1 year to 10 and watch the total — this is why chat products tier old messages to cold storage.",
+            params: [{ key: "dau", value: 50000000 }, { key: "writesPerUserPerDay", value: 40 }, { key: "readWriteRatio", value: 5 }, { key: "bytesPerWrite", value: 300 }, { key: "retentionYears", value: 5 }],
+          },
         ],
     },
     {
@@ -106,7 +113,19 @@ export const chatSystem: SystemDesignProblem = {
             ],
           },
         },
-      ],
+        {
+            type: "quiz",
+            question: "Why does a chat server need a connection registry, when a stateless API server needs nothing like it?",
+            options: [
+              { id: "a", label: "To authenticate users before delivering messages" },
+              { id: "b", label: "Because a WebSocket is pinned to one specific server, so senders must find it" },
+              { id: "c", label: "To keep messages ordered within a conversation" },
+              { id: "d", label: "To load balance new connections evenly" },
+            ],
+            correctOptionId: "b",
+            explanation: "Any stateless server can answer any HTTP request, but a live socket exists on exactly one machine. When Alice's server needs to push to Bob, it has to discover which of hundreds of servers is holding Bob's connection — that lookup is the piece a stateless design never needs.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

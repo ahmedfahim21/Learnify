@@ -38,7 +38,14 @@ export const newsFeed: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "If the average user has 200 followers and posts twice a day, that's a modest fan-out load. But a celebrity account with 100 million followers publishing one post means 100 million feed insertions from that single write — several orders of magnitude more than the average case. Designing only for the average and hoping the celebrity case just works is the single most common mistake in this problem." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "back-of-envelope",
+            title: "Feed reads vs. posts",
+            notice: "Feeds are extreme on the read side: people open the app far more often than they post. Push the read:write ratio up and watch peak reads dominate — that asymmetry is the whole argument for precomputing feeds at write time.",
+            params: [{ key: "dau", value: 100000000 }, { key: "writesPerUserPerDay", value: 2 }, { key: "readWriteRatio", value: 500 }, { key: "bytesPerWrite", value: 1000 }, { key: "retentionYears", value: 3 }],
+          },
+        ],
     },
     {
       phase: "api",
@@ -104,7 +111,19 @@ export const newsFeed: SystemDesignProblem = {
             ],
           },
         },
-      ],
+        {
+            type: "quiz",
+            question: "Why do real feed systems skip push fan-out for accounts with tens of millions of followers?",
+            options: [
+              { id: "a", label: "Their posts are less relevant, so they can be delayed" },
+              { id: "b", label: "One post would trigger tens of millions of feed-cache writes" },
+              { id: "c", label: "Celebrity accounts post too frequently to keep up" },
+              { id: "d", label: "Their followers are usually inactive" },
+            ],
+            correctOptionId: "b",
+            explanation: "Push fan-out trades write cost for read speed, and that trade collapses at the extreme: a single celebrity post becomes a write storm across millions of cache entries. Serving those posts at read time instead keeps the write cheap, at the cost of a small merge on each feed load — which is why production systems run both strategies at once.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

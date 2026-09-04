@@ -105,7 +105,19 @@ export const searchAutocomplete: SystemDesignProblem = {
             ],
           },
         },
-      ],
+        {
+            type: "quiz",
+            question: "Why is each trie node's top-K list precomputed at build time instead of computed per query?",
+            options: [
+              { id: "a", label: "Precomputing makes the trie smaller in memory" },
+              { id: "b", label: "Walking the subtree under a prefix per keystroke would blow the ~100ms budget" },
+              { id: "c", label: "Because query popularity never changes" },
+              { id: "d", label: "To let the database do the sorting" },
+            ],
+            correctOptionId: "b",
+            explanation: "A short prefix like 'a' sits above an enormous subtree, and scanning it on every keystroke gets slower as the dataset grows. Caching top-K on each node turns the query into a walk of the prefix length plus one read — bounded by how much the user typed, not by how much data you have.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

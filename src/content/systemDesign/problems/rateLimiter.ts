@@ -92,7 +92,19 @@ export const rateLimiter: SystemDesignProblem = {
             ],
           },
         },
-      ],
+        {
+            type: "quiz",
+            question: "Your API runs on 4 servers, each keeping its own in-process counter for a 100 req/min limit. What does a client actually get?",
+            options: [
+              { id: "a", label: "100 req/min — the load balancer keeps them consistent" },
+              { id: "b", label: "25 req/min, since the limit is divided across servers" },
+              { id: "c", label: "Up to 400 req/min, by spreading requests across all four" },
+              { id: "d", label: "It depends on which algorithm each server uses" },
+            ],
+            correctOptionId: "c",
+            explanation: "Each server independently allows 100, so a client spread across all four gets 4x the intended limit. This is why the counter has to live somewhere every server shares — and why that store needs atomic increments, so two servers can't both read '99' and both allow the request.",
+          },
+        ],
     },
     {
       phase: "deep-dive",

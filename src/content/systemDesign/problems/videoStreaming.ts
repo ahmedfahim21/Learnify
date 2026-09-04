@@ -38,7 +38,14 @@ export const videoStreaming: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "A single 10-minute video encoded at a modest average of 5 Mbps is roughly 375 MB total across all its bitrate variants. Stored once, that's a one-time cost. But if it's viewed a million times, that's potentially 375 TB of bandwidth served — a thousand times the storage cost. This is the number that makes a CDN (caching content at edge locations close to viewers, rather than serving every view from a central origin) close to mandatory at any real scale." },
-      ],
+        {
+            type: "simulator",
+            simulatorId: "back-of-envelope",
+            title: "Where the cost actually is",
+            notice: "Set bytes-per-write high (a video is enormous) and writes-per-user low. Storage is a one-time cost per upload; it's the read side, multiplied by every view, that turns into the bandwidth bill a CDN exists to absorb.",
+            params: [{ key: "dau", value: 2000000 }, { key: "writesPerUserPerDay", value: 1 }, { key: "readWriteRatio", value: 200 }, { key: "bytesPerWrite", value: 500000 }, { key: "retentionYears", value: 5 }],
+          },
+        ],
     },
     {
       phase: "api",
@@ -145,6 +152,18 @@ export const videoStreaming: SystemDesignProblem = {
                 { index: 5, caption: "Falling further, it keeps stepping down. Degrading quality always beats an empty buffer.", nodeIds: ["edge", "low"], edgeIds: ["b5"] },
               ],
             },
+          },
+          {
+            type: "quiz",
+            question: "During adaptive bitrate playback, who decides which quality to fetch next?",
+            options: [
+              { id: "a", label: "The server, based on the viewer's connection type" },
+              { id: "b", label: "The CDN edge, based on regional congestion" },
+              { id: "c", label: "The player, from its own measured download throughput" },
+              { id: "d", label: "It is fixed when playback starts" },
+            ],
+            correctOptionId: "c",
+            explanation: "The player times each chunk's download against its playback duration to estimate bandwidth, then picks the highest rendition it can sustain for the next chunk. Because every rendition already sits on the edge, switching needs no renegotiation — which is what makes the adaptation seamless mid-playback.",
           },
         ],
     },

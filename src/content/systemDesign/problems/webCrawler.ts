@@ -61,7 +61,19 @@ export const webCrawler: SystemDesignProblem = {
       ],
       blocks: [
         { type: "prose", body: "The seen-set needs to answer one question — has this URL been crawled? — billions of times, fast, without storing every URL string in full. A Bloom filter (a bit array plus several hash functions) does exactly this: it can say \"definitely not seen\" with certainty, or \"possibly seen\" with a small, tunable false-positive rate, using a fraction of the memory an exact hash set would need. The cost of a false positive here is just an occasional missed re-crawl of an already-crawled page — an acceptable trade for the memory savings at this scale." },
-      ],
+        {
+            type: "quiz",
+            question: "A Bloom filter says a URL has 'possibly' been seen when it actually hasn't. What is the consequence for the crawler?",
+            options: [
+              { id: "a", label: "A page gets crawled twice, wasting bandwidth" },
+              { id: "b", label: "A page never gets crawled, and is silently missed" },
+              { id: "c", label: "The frontier queue becomes corrupted" },
+              { id: "d", label: "Nothing — false positives are impossible" },
+            ],
+            correctOptionId: "b",
+            explanation: "A Bloom filter can return a false positive but never a false negative, so the failure mode is skipping a page you have not actually fetched. That's an acceptable trade at web scale — missing a small fraction of pages costs far less than the memory an exact set of billions of URLs would need.",
+          },
+        ],
     },
     {
       phase: "high-level",
