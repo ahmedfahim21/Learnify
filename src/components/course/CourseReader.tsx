@@ -79,7 +79,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
 
   return (
     <div className="wrap grid gap-10 py-10 lg:grid-cols-[220px_1fr]">
-      <aside className="lg:sticky lg:top-10 lg:h-fit">
+      <aside className="min-w-0 lg:sticky lg:top-10 lg:h-fit">
         <p className="label mb-3">Chapters</p>
         <nav className="flex flex-col gap-1 border-l border-(--color-line) pl-3">
           {problem.chapters.map((chapter, i) => {
@@ -102,8 +102,8 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
         </nav>
       </aside>
 
-      <main className="max-w-(--measure-prose) space-y-16">
-        <header className="space-y-4 rise">
+      <main className="min-w-0 max-w-(--measure-mid) space-y-16">
+        <header className="max-w-(--measure-prose) space-y-4 rise">
           <p className="label">{problem.tags.join(" · ")}</p>
           <h1 className="text-3xl">{problem.title}</h1>
           <p className="text-(--color-mist)">{problem.tagline}</p>
@@ -138,8 +138,8 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
                   {DESIGN_PHASE_LABELS[chapter.phase]}
                 </span>
               </div>
-              <h2 className="text-2xl">{chapter.title}</h2>
-              <p className="text-(--color-mist)">{chapter.summary}</p>
+              <h2 className="max-w-(--measure-prose) text-2xl">{chapter.title}</h2>
+              <p className="max-w-(--measure-prose) text-(--color-mist)">{chapter.summary}</p>
 
               <div className="space-y-6">
                 {chapter.blocks.map((block, blockIndex) => (

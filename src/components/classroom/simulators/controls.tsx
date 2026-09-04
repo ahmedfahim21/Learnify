@@ -29,7 +29,7 @@ export function SimSlider({
 
   return (
     <label className="block space-y-1.5">
-      <div className="flex items-baseline justify-between text-xs">
+      <div className="flex items-baseline justify-between text-sm">
         <span className="text-white/70">{spec.label}</span>
         <span className="text-white/40">{displayValue}</span>
       </div>
@@ -56,7 +56,7 @@ export function SimToggle({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 text-xs">
+    <label className="flex items-center justify-between gap-3 text-sm">
       <span className="text-white/70">{spec.label}</span>
       <button
         type="button"
@@ -88,7 +88,7 @@ export function SimSelect({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-xs text-white/70">{spec.label}</span>
+      <span className="text-sm text-white/70">{spec.label}</span>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
@@ -106,10 +106,10 @@ export function SimSelect({
 
 export function SimStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="space-y-0.5 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-white/40">{label}</p>
-      <p className="text-lg leading-tight font-medium text-white/90">{value}</p>
-      {hint && <p className="text-[11px] text-white/40">{hint}</p>}
+    <div className="space-y-0.5 border border-white/10 bg-white/[0.02] px-3 py-2.5">
+      <p className="label">{label}</p>
+      <p className="text-xl leading-tight tabular-nums text-white/90">{value}</p>
+      {hint && <p className="text-xs text-white/40">{hint}</p>}
     </div>
   );
 }
@@ -126,7 +126,7 @@ export function SimBars({
   return (
     <div className="space-y-1.5">
       {bars.map((bar) => (
-        <div key={bar.label} className="flex items-center gap-2 text-xs">
+        <div key={bar.label} className="flex items-center gap-2 text-sm">
           <span className="w-20 shrink-0 truncate text-white/50">{bar.label}</span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
             <div
@@ -145,7 +145,7 @@ export function SimBars({
 
 export function SimNotice({ text }: { text: string }) {
   return (
-    <p className="rounded-lg border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-100/90">
+    <p className="border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2 text-sm leading-relaxed text-amber-100/90">
       <span className="font-medium">Notice: </span>
       {text}
     </p>

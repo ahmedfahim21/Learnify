@@ -105,7 +105,7 @@ export function DiagramEdgeLayer({
                 <text
                   textAnchor="middle"
                   dominantBaseline="central"
-                  fontSize={10}
+                  fontSize={12}
                   fontWeight={600}
                   fill={active ? "#0a0a0a" : "rgba(255,255,255,0.6)"}
                 >
@@ -118,7 +118,7 @@ export function DiagramEdgeLayer({
                 x={laid.labelAt.x}
                 y={laid.labelAt.y}
                 textAnchor="middle"
-                fontSize={10}
+                fontSize={12}
                 fill="rgba(255,255,255,0.55)"
                 className="select-none"
               >

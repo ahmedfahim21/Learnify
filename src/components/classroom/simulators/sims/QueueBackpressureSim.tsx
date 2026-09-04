@@ -41,9 +41,10 @@ export function QueueBackpressureSim({
   }, [serviceRate, workers]);
 
   const maxWait = Math.max(...curve.map((p) => p.wait));
+  const round = (n: number) => Math.round(n * 100) / 100;
   const toXY = (rho: number, wait: number) => ({
-    x: (rho / MAX_RHO) * CHART_W,
-    y: CHART_H - Math.min(1, wait / (maxWait || 1)) * CHART_H,
+    x: round((rho / MAX_RHO) * CHART_W),
+    y: round(CHART_H - Math.min(1, wait / (maxWait || 1)) * CHART_H),
   });
 
   const path = curve

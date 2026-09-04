@@ -65,9 +65,9 @@ body {
   background: var(--color-ink);
   color: var(--color-fg);
   font-family: var(--font-sans);
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 400;
-  line-height: 1.65;
+  line-height: 1.7;
   font-feature-settings: "kern", "liga", "calt";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -132,7 +132,7 @@ a {
    text: phase names, counts, difficulty, durations. */
 @utility label {
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   font-weight: 400;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -160,9 +160,9 @@ a {
   gap: 0.35rem;
   border: 1px solid var(--color-line);
   border-radius: 0;
-  padding: 0.16rem 0.6rem;
+  padding: 0.2rem 0.65rem;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.76rem;
   letter-spacing: 0.02em;
   color: var(--color-mist);
   transition:
@@ -246,8 +246,8 @@ a:hover .arr-d { transform: translateY(2px); }
 
 /* ---- Long-form prose (course chapters) ---------------------------------- */
 .prose {
-  font-size: 0.95rem;
-  line-height: 1.72;
+  font-size: 1.05rem;
+  line-height: 1.75;
   color: color-mix(in srgb, var(--color-fg) 88%, transparent);
   text-wrap: pretty;
 }

@@ -28,9 +28,10 @@ export function ChapterBlockRenderer({ block, blockId }: { block: ChapterBlock; 
   switch (block.type) {
     case "prose":
       return (
-        <div className="space-y-2">
-          {block.heading && <h3 className="text-lg font-medium text-white/90">{block.heading}</h3>}
-          <div className="leading-relaxed text-white/80">
+        <div className="max-w-(--measure-prose) space-y-2">
+          {/* Hierarchy from size and colour, not weight — house style. */}
+          {block.heading && <h3 className="text-xl text-(--color-fg)">{block.heading}</h3>}
+          <div className="prose">
             <Markdown text={block.body} />
           </div>
         </div>
@@ -63,9 +64,11 @@ export function ChapterBlockRenderer({ block, blockId }: { block: ChapterBlock; 
     case "callout": {
       const style = CALLOUT_STYLES[block.tone];
       return (
-        <div className={`space-y-1 rounded-xl border ${style.border} ${style.bg} p-4`}>
-          <p className="text-xs font-medium uppercase tracking-widest text-white/50">{style.label}</p>
-          <div className="text-sm leading-relaxed text-white/80">
+        <div
+          className={`max-w-(--measure-prose) space-y-1 border ${style.border} ${style.bg} p-4`}
+        >
+          <p className="label">{style.label}</p>
+          <div className="prose text-[0.98rem]">
             <Markdown text={block.body} />
           </div>
         </div>

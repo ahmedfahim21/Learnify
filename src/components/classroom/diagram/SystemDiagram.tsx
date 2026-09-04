@@ -35,7 +35,13 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
     if (!el) return;
     const observer = new ResizeObserver(([entry]) => {
       const availableWidth = entry.contentRect.width;
-      setScale(availableWidth > 0 ? Math.min(1, availableWidth / layout.width) : 1);
+      if (availableWidth <= 0) return;
+      const fit = availableWidth / layout.width;
+      // Floor keeps a wide diagram legible on a narrow screen — below this
+      // the labels stop being readable, so the figure scrolls sideways
+      // instead of shrinking further. Ceiling stops a 3-node diagram
+      // ballooning to fill a wide column.
+      setScale(Math.max(0.78, Math.min(1.25, fit)));
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -127,7 +133,7 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
         </figcaption>
       )}
 
-      <div ref={containerRef} className="w-full overflow-hidden">
+      <div ref={containerRef} className="w-full overflow-x-auto overflow-y-hidden">
         {/* Reserve the *scaled* box: the inner canvas keeps its natural
             pixel size (so path `d` strings and offset-path stay valid) while
             this wrapper takes only the space the transform actually paints. */}

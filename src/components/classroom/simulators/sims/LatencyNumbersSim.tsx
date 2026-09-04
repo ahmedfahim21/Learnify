@@ -25,8 +25,13 @@ const MIN_NS = 1;
 const MAX_NS = 200_000_000;
 /** Log-scale position 0..1 — linear bars would render everything but the
  *  cross-region round trip as an invisible sliver. */
+// Rounded for the same reason as the ring's coordinates: Math.log10 can
+// differ in the last ULP between Node and the browser, and this feeds a
+// width percentage that React hydrates against.
 const logPosition = (ns: number) =>
-  (Math.log10(ns) - Math.log10(MIN_NS)) / (Math.log10(MAX_NS) - Math.log10(MIN_NS));
+  Math.round(
+    ((Math.log10(ns) - Math.log10(MIN_NS)) / (Math.log10(MAX_NS) - Math.log10(MIN_NS))) * 10000,
+  ) / 10000;
 
 export function LatencyNumbersSim({
   spec,

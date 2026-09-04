@@ -20,10 +20,10 @@ import type {
  * than an auto-layout tool's bezier curves.
  */
 
-export const CELL_W = 168;
-export const CELL_H = 108;
-export const GAP_X = 56;
-export const GAP_Y = 44;
+export const CELL_W = 152;
+export const CELL_H = 118;
+export const GAP_X = 36;
+export const GAP_Y = 48;
 export const PAD = 28;
 /** Extra room above a group's member bbox, reserved for its label chip. */
 const GROUP_PAD = 16;

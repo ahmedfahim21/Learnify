@@ -72,9 +72,9 @@ export function DiagramNodeBox({
           strokeWidth={1.75}
         />
       )}
-      <span className="text-[11px] leading-tight text-white/90">{node.label}</span>
+      <span className="text-[13.5px] leading-tight text-white/90">{node.label}</span>
       {node.sublabel && (
-        <span className="text-[9px] leading-tight text-white/40">{node.sublabel}</span>
+        <span className="text-[11px] leading-tight text-white/40">{node.sublabel}</span>
       )}
       {node.detail && !dimmed && (
         <span

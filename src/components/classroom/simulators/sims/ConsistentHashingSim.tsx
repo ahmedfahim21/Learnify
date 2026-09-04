@@ -20,10 +20,19 @@ const NODE_COLORS = ["#6e9bee", "#4fc9b8", "#f9a85c", "#a585e0", "#f286b4", "#f2
 const nodeName = (i: number) => `node-${String.fromCharCode(65 + i)}`;
 const nodeLabel = (id: string) => id.replace("node-", "Node ");
 
-/** Position on the ring for a 0..1 hash value — 0 at 12 o'clock, clockwise. */
+/** Position on the ring for a 0..1 hash value — 0 at 12 o'clock, clockwise.
+ *
+ *  Coordinates are rounded: Math.sin/cos are only specified to within the
+ *  last ULP, so Node (SSR) and the browser can differ in the final digit,
+ *  and React reads that as a hydration mismatch. Two decimals is far below
+ *  one pixel on a 260px canvas. */
 function ringPoint(unit: number, radius = RADIUS) {
   const angle = unit * Math.PI * 2 - Math.PI / 2;
-  return { x: CENTER + Math.cos(angle) * radius, y: CENTER + Math.sin(angle) * radius };
+  const round = (n: number) => Math.round(n * 100) / 100;
+  return {
+    x: round(CENTER + Math.cos(angle) * radius),
+    y: round(CENTER + Math.sin(angle) * radius),
+  };
 }
 
 export function ConsistentHashingSim({
