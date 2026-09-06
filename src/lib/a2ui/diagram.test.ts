@@ -6,11 +6,8 @@ import {
   GAP_X,
   GAP_Y,
   PAD,
+  handlePair,
   layoutSystemDiagram,
-  pathLength,
-  pointAtLength,
-  pointsToPath,
-  routeEdge,
   validateSystemDiagram,
 } from "./diagram";
 import type { SystemDiagramProps } from "./catalog";
@@ -107,139 +104,43 @@ describe("layoutSystemDiagram", () => {
     expect(layout.width).toBeGreaterThan(PAD * 2 + CELL_W);
     expect(layout.height).toBeGreaterThan(PAD * 2 + CELL_H);
   });
+});
 
-  it("fans out parallel edges between the same pair", () => {
-    const layout = layoutSystemDiagram({
-      columns: 2,
-      rows: 1,
-      nodes: [
-        { id: "a", label: "A", col: 0, row: 0 },
-        { id: "b", label: "B", col: 1, row: 0 },
-      ],
-      edges: [
-        { id: "e1", from: "a", to: "b" },
-        { id: "e2", from: "a", to: "b" },
-        { id: "e3", from: "b", to: "a" },
-      ],
+/** Edge routing itself is React Flow's `smoothstep`; what stays ours is
+ *  choosing which side of each box an edge leaves from and arrives at, since
+ *  that is what makes a diagram readable rather than a tangle. */
+describe("handlePair", () => {
+  const at = (col: number, row: number) => ({ id: `${col}-${row}`, label: "n", col, row });
+
+  it("leaves right and arrives left when the target is along the same row", () => {
+    expect(handlePair(at(0, 0), at(2, 0))).toEqual({ source: "right", target: "left" });
+  });
+
+  it("mirrors that when the target is to the left", () => {
+    expect(handlePair(at(2, 0), at(0, 0))).toEqual({ source: "left", target: "right" });
+  });
+
+  it("leaves bottom and arrives top down a column", () => {
+    expect(handlePair(at(1, 0), at(1, 2))).toEqual({ source: "bottom", target: "top" });
+  });
+
+  it("mirrors that going up a column", () => {
+    expect(handlePair(at(1, 2), at(1, 0))).toEqual({ source: "top", target: "bottom" });
+  });
+
+  it("goes sideways first on a diagonal by default", () => {
+    expect(handlePair(at(0, 0), at(2, 2))).toEqual({ source: "right", target: "top" });
+  });
+
+  it("goes vertically first when the edge asks for it", () => {
+    expect(handlePair(at(0, 0), at(2, 2), "vertical-first")).toEqual({
+      source: "bottom",
+      target: "left",
     });
-    const [e1, e2, e3] = layout.edges;
-    // All three share a pair, so none should land on an identical path.
-    expect(e1.d).not.toBe(e2.d);
-    expect(e2.d).not.toBe(e3.d);
-    expect(e1.d).not.toBe(e3.d);
   });
 
-  it("places a step edge's badge at its geometric midpoint", () => {
-    const layout = layoutSystemDiagram(RAG_DIAGRAM);
-    const edge = layout.edges.find((e) => e.id === "e1")!;
-    expect(edge.badge).toBeDefined();
-    const mid = pointAtLength(edge.points, edge.length / 2);
-    expect(edge.badge!.x).toBeCloseTo(mid.x, 5);
-    expect(edge.badge!.y).toBeCloseTo(mid.y, 5);
-  });
-});
-
-describe("routeEdge — relative grid positions", () => {
-  const box = (id: string, x: number, y: number) => ({ id, x, y, w: CELL_W, h: CELL_H, node: {} as never });
-
-  it("same row, target to the right: straight horizontal, right→left ports", () => {
-    const from = box("a", 0, 0);
-    const to = box("b", 300, 0);
-    const points = routeEdge(from, to, "auto");
-    expect(points).toHaveLength(2);
-    expect(points[0].x).toBe(from.x + from.w); // right port
-    expect(points[1].x).toBe(to.x); // left port
-    expect(points[0].y).toBe(points[1].y);
-  });
-
-  it("same row, target to the left: left→right ports", () => {
-    const from = box("a", 300, 0);
-    const to = box("b", 0, 0);
-    const points = routeEdge(from, to, "auto");
-    expect(points[0].x).toBe(from.x); // left port
-    expect(points[1].x).toBe(to.x + to.w); // right port
-  });
-
-  it("same column, target below: straight vertical, bottom→top ports", () => {
-    const from = box("a", 0, 0);
-    const to = box("b", 0, 300);
-    const points = routeEdge(from, to, "auto");
-    expect(points[0].y).toBe(from.y + from.h);
-    expect(points[1].y).toBe(to.y);
-    expect(points[0].x).toBe(points[1].x);
-  });
-
-  it("same column, target above: top→bottom ports", () => {
-    const from = box("a", 0, 300);
-    const to = box("b", 0, 0);
-    const points = routeEdge(from, to, "auto");
-    expect(points[0].y).toBe(from.y);
-    expect(points[1].y).toBe(to.y + to.h);
-  });
-
-  it("diagonal, auto/horizontal-first: one elbow at the target's centre-x", () => {
-    const from = box("a", 0, 0);
-    const to = box("b", 300, 300);
-    const points = routeEdge(from, to, "auto");
-    expect(points).toHaveLength(3);
-    expect(points[1].x).toBe(to.x + to.w / 2); // turn at target centre-x
-    expect(points[1].y).toBe(points[0].y); // exits horizontally first
-  });
-
-  it("diagonal, vertical-first: one elbow at the target's centre-y", () => {
-    const from = box("a", 0, 0);
-    const to = box("b", 300, 300);
-    const points = routeEdge(from, to, "vertical-first");
-    expect(points).toHaveLength(3);
-    expect(points[1].y).toBe(to.y + to.h / 2);
-    expect(points[1].x).toBe(points[0].x); // exits vertically first
-  });
-
-  it("straight: a single centre-to-centre segment clipped to both boxes", () => {
-    const from = box("a", 0, 0);
-    const to = box("b", 300, 300);
-    const points = routeEdge(from, to, "straight");
-    expect(points).toHaveLength(2);
-    // Endpoints must lie on (or very near) each box's perimeter, not its centre.
-    const onPerimeter = (p: { x: number; y: number }, r: typeof from) =>
-      Math.abs(p.x - r.x) < 1 ||
-      Math.abs(p.x - (r.x + r.w)) < 1 ||
-      Math.abs(p.y - r.y) < 1 ||
-      Math.abs(p.y - (r.y + r.h)) < 1;
-    expect(onPerimeter(points[0], from)).toBe(true);
-    expect(onPerimeter(points[1], to)).toBe(true);
-  });
-
-  it("self-edge: loops out and back to the same box", () => {
-    const from = box("a", 0, 0);
-    const points = routeEdge(from, from, "auto");
-    expect(points.length).toBeGreaterThan(2);
-    expect(points[0].x).not.toBe(points[points.length - 1].x);
-  });
-});
-
-describe("pointsToPath / pathLength / pointAtLength", () => {
-  it("builds a two-point path as a plain line", () => {
-    const d = pointsToPath([{ x: 0, y: 0 }, { x: 100, y: 0 }]);
-    expect(d).toBe("M 0 0 L 100 0");
-  });
-
-  it("computes length as the polyline's straight-segment sum", () => {
-    const length = pathLength([{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }]);
-    expect(length).toBeCloseTo(200, 5);
-  });
-
-  it("finds the midpoint across a multi-segment path", () => {
-    const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }];
-    const mid = pointAtLength(points, 100); // exactly the first corner
-    expect(mid.x).toBeCloseTo(100, 5);
-    expect(mid.y).toBeCloseTo(0, 5);
-  });
-
-  it("clamps to the endpoints outside [0, length]", () => {
-    const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
-    expect(pointAtLength(points, -10)).toEqual({ x: 0, y: 0 });
-    expect(pointAtLength(points, 1000)).toEqual({ x: 100, y: 0 });
+  it("picks the near side when a diagonal runs up and to the left", () => {
+    expect(handlePair(at(3, 3), at(1, 1))).toEqual({ source: "left", target: "bottom" });
   });
 });
 

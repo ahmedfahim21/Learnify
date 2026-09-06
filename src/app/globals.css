@@ -309,3 +309,21 @@ a:hover .arr-d { transform: translateY(2px); }
     animation: none;
   }
 }
+
+/* React Flow: the diagram canvas is a dark surface, and the attribution stays
+   (removing it is a Pro-subscription feature) but sits quietly. */
+.react-flow__attribution {
+  background: transparent !important;
+  font-size: 9px;
+}
+.react-flow__attribution a {
+  color: rgba(255, 255, 255, 0.25);
+}
+.react-flow__controls-button {
+  background: #101216;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  fill: rgba(255, 255, 255, 0.6);
+}
+.react-flow__controls-button:hover {
+  background: #171a20;
+}

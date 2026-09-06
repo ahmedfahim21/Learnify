@@ -1,20 +1,37 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Background,
+  BackgroundVariant,
+  Controls,
+  MarkerType,
+  ReactFlow,
+  type Edge,
+  type Node,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
-import type { ComponentDef } from "@/lib/a2ui/messages";
-import { layoutSystemDiagram } from "@/lib/a2ui/diagram";
 import type { DiagramColor, SystemDiagramProps } from "@/lib/a2ui/catalog";
+import { handlePair, layoutSystemDiagram } from "@/lib/a2ui/diagram";
+import type { ComponentDef } from "@/lib/a2ui/messages";
 
 import { asString, emitAction, type NodeContext } from "../rendererContext";
-import { DiagramEdgeLayer } from "./DiagramEdgeLayer";
-import { DiagramNodeBox } from "./DiagramNodeBox";
 import { DIAGRAM_PALETTE } from "./palette";
 import { StepPlayer } from "./StepPlayer";
+import { SystemDiagramGroupNode, SystemDiagramNode } from "./SystemDiagramNode";
 import { useReducedMotion } from "./useReducedMotion";
 
-/** How long the autoplay walkthrough dwells on each step before advancing. */
 const AUTOPLAY_STEP_MS = 4200;
+
+const NODE_TYPES = { systemNode: SystemDiagramNode, systemGroup: SystemDiagramGroupNode };
+
+/** Stroke for an edge, by the accent of the node it leaves. */
+function edgeStroke(accent: DiagramColor | undefined, active: boolean, dimmed: boolean): string {
+  if (dimmed) return "rgba(255,255,255,0.10)";
+  if (!active) return "rgba(255,255,255,0.35)";
+  return accent ? DIAGRAM_PALETTE[accent].stroke : "#4fc9b8";
+}
 
 export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
   const props = def.properties as unknown as SystemDiagramProps;
@@ -23,40 +40,21 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
 
   const [stepIdx, setStepIdx] = useState(0);
   const [playing, setPlaying] = useState(Boolean(props.autoplay) && !reducedMotion);
-  const [scale, setScale] = useState(1);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const figureRef = useRef<HTMLElement>(null);
-  const steps = props.steps ?? [];
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const availableWidth = entry.contentRect.width;
-      if (availableWidth <= 0) return;
-      const fit = availableWidth / layout.width;
-      // Floor keeps a wide diagram legible on a narrow screen — below this
-      // the labels stop being readable, so the figure scrolls sideways
-      // instead of shrinking further. Ceiling stops a 3-node diagram
-      // ballooning to fill a wide column.
-      setScale(Math.max(0.78, Math.min(1.25, fit)));
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [layout.width]);
+  const steps = useMemo(() => props.steps ?? [], [props.steps]);
+  const activeStep = stepIdx > 0 ? steps.find((s) => s.index === stepIdx) : undefined;
+  const hasActiveStep = Boolean(activeStep);
 
   useEffect(() => {
     if (!playing || steps.length === 0) return;
     const timer = setTimeout(() => {
       setStepIdx((idx) => {
-        const next = idx + 1;
-        if (next > steps.length) {
+        if (idx + 1 > steps.length) {
           setPlaying(false);
           return idx;
         }
-        return next;
+        return idx + 1;
       });
     }, AUTOPLAY_STEP_MS);
     return () => clearTimeout(timer);
@@ -68,125 +66,128 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
     setStepIdx(idx);
   }, []);
 
-  // Arrow keys walk the steps whenever the diagram has focus — the whole
-  // walkthrough is usable without a mouse, and without motion.
-  useEffect(() => {
-    const el = figureRef.current;
-    if (!el || steps.length === 0) return;
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        setStepIdx((i) => Math.min(steps.length, i + 1));
-        setPlaying(false);
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        setStepIdx((i) => Math.max(0, i - 1));
-        setPlaying(false);
-      } else if (event.key === "Escape") {
-        setSelectedNodeId(null);
-      }
-    }
-    el.addEventListener("keydown", onKeyDown);
-    return () => el.removeEventListener("keydown", onKeyDown);
-  }, [steps.length]);
-
-  const activeStep = stepIdx > 0 ? steps.find((s) => s.index === stepIdx) : undefined;
-  const hasActiveStep = Boolean(activeStep);
-  const activeNodeIds = new Set(activeStep?.nodeIds ?? []);
-  const activeEdgeIds = new Set(activeStep?.edgeIds ?? []);
-
-  const edgeAccentById = new Map<string, DiagramColor | undefined>();
-  for (const laid of layout.edges) {
-    edgeAccentById.set(laid.id, layout.nodesById.get(laid.edge.from)?.node.accent);
-  }
-
-  const selectedNode = selectedNodeId ? layout.nodesById.get(selectedNodeId)?.node : undefined;
-  // A node is worth selecting if it can say something (detail) or if the
-  // surface is live and a click means something to the tutor.
   const anyDetail = layout.nodes.some((n) => n.node.detail);
   const selectable = anyDetail || ctx.interactive;
 
-  function handleSelect(nodeId: string, label: string) {
-    setSelectedNodeId((current) => (current === nodeId ? null : nodeId));
-    if (ctx.interactive) {
-      emitAction(ctx, def, "node_click", {
-        nodeId,
-        label: `Clicked diagram node "${label}"`,
-      });
-    }
-  }
+  const flowNodes = useMemo<Node[]>(() => {
+    const activeIds = new Set(activeStep?.nodeIds ?? []);
+    // Groups first so they paint behind their members.
+    const groupNodes: Node[] = layout.groups.map((g) => ({
+      id: `group-${g.id}`,
+      type: "systemGroup",
+      position: { x: g.x, y: g.y },
+      data: { label: g.group.label, color: g.group.color },
+      width: g.w,
+      height: g.h,
+      style: { width: g.w, height: g.h },
+      selectable: false,
+      draggable: false,
+      zIndex: 0,
+    }));
+    const boxes: Node[] = layout.nodes.map((laid) => ({
+      id: laid.id,
+      type: "systemNode",
+      position: { x: laid.x, y: laid.y },
+      width: laid.w,
+      height: laid.h,
+      style: { width: laid.w, height: laid.h },
+      data: {
+        node: laid.node,
+        dimmed: hasActiveStep && !activeIds.has(laid.id),
+        active: hasActiveStep && activeIds.has(laid.id),
+        selected: selectedNodeId === laid.id,
+        selectable,
+      },
+      selectable,
+      draggable: false,
+      zIndex: 1,
+    }));
+    return [...groupNodes, ...boxes];
+  }, [layout, activeStep, hasActiveStep, selectedNodeId, selectable]);
+
+  const flowEdges = useMemo<Edge[]>(() => {
+    const activeIds = new Set(activeStep?.edgeIds ?? []);
+    return props.edges.map((edge) => {
+      const from = layout.nodesById.get(edge.from)?.node;
+      const to = layout.nodesById.get(edge.to)?.node;
+      const handles = from && to ? handlePair(from, to, edge.route) : undefined;
+      const active = hasActiveStep && activeIds.has(edge.id);
+      const dimmed = hasActiveStep && !active;
+      const stroke = edgeStroke(from?.accent, active, dimmed);
+      return {
+        id: edge.id,
+        source: edge.from,
+        target: edge.to,
+        sourceHandle: handles?.source,
+        targetHandle: handles?.target,
+        // smoothstep is React Flow's orthogonal, rounded-corner router — the
+        // ByteByteGo look, without hand-rolling path geometry.
+        type: "smoothstep",
+        pathOptions: { borderRadius: 12 },
+        // Marching ants on the step being explained, in place of the old
+        // custom motion-path packet (and its Safari fallback).
+        animated: active && !reducedMotion,
+        label: edge.step ? `${edge.step}${edge.label ? `  ${edge.label}` : ""}` : edge.label,
+        labelShowBg: true,
+        labelBgPadding: [6, 3] as [number, number],
+        labelBgBorderRadius: 2,
+        labelBgStyle: { fill: "#0a0a0a", fillOpacity: 0.9 },
+        labelStyle: { fill: dimmed ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.75)", fontSize: 12 },
+        style: { stroke, strokeWidth: active ? 2 : 1.5, strokeDasharray: edge.style === "dashed" ? "6 4" : undefined },
+        markerEnd:
+          edge.arrow === "none"
+            ? undefined
+            : { type: MarkerType.ArrowClosed, color: stroke, width: 16, height: 16 },
+        zIndex: 2,
+      };
+    });
+  }, [props.edges, layout, activeStep, hasActiveStep, reducedMotion]);
+
+  const selectedNode = selectedNodeId ? layout.nodesById.get(selectedNodeId)?.node : undefined;
 
   return (
-    <figure
-      ref={figureRef}
-      tabIndex={steps.length > 0 ? 0 : -1}
-      className="space-y-3 rounded-lg border border-white/12 bg-gradient-to-b from-white/[0.04] to-transparent p-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-(--color-mint)"
-    >
+    <figure className="space-y-3 rounded-lg border border-white/12 bg-gradient-to-b from-white/[0.04] to-transparent p-4">
       {props.title && (
         <figcaption className="flex items-baseline justify-between gap-3">
           <span className="text-white/90">{props.title}</span>
           {selectable && anyDetail && (
-            <span className="text-[10px] uppercase tracking-widest text-white/30">
-              click a node
-            </span>
+            <span className="text-[10px] uppercase tracking-widest text-white/30">click a node</span>
           )}
         </figcaption>
       )}
 
-      <div ref={containerRef} className="w-full overflow-x-auto overflow-y-hidden">
-        {/* Reserve the *scaled* box: the inner canvas keeps its natural
-            pixel size (so path `d` strings and offset-path stay valid) while
-            this wrapper takes only the space the transform actually paints. */}
-        <div style={{ width: layout.width * scale, height: layout.height * scale }}>
-          <div
-            style={{
-              width: layout.width,
-              height: layout.height,
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-              position: "relative",
-            }}
-          >
-            {layout.groups.map((g) => {
-              const palette = DIAGRAM_PALETTE[g.group.color];
-              return (
-                <div
-                  key={g.id}
-                  style={{ position: "absolute", left: g.x, top: g.y, width: g.w, height: g.h }}
-                  className={`z-0 rounded-lg border border-dashed ${palette.groupBorder} ${palette.groupBg}`}
-                >
-                  <span
-                    className={`absolute -top-2.5 left-3 border border-white/10 bg-[#0a0a0a] px-2 py-0.5 text-[10px] tracking-wide ${palette.groupText}`}
-                  >
-                    {g.group.label}
-                  </span>
-                </div>
-              );
-            })}
-
-            <DiagramEdgeLayer
-              width={layout.width}
-              height={layout.height}
-              edges={layout.edges}
-              activeEdgeIds={activeEdgeIds}
-              hasActiveStep={hasActiveStep}
-              accentColorOf={(id) => edgeAccentById.get(id)}
-              reducedMotion={reducedMotion}
-            />
-
-            {layout.nodes.map((laid) => (
-              <DiagramNodeBox
-                key={laid.id}
-                laid={laid}
-                dimmed={hasActiveStep && !activeNodeIds.has(laid.id)}
-                active={hasActiveStep && activeNodeIds.has(laid.id)}
-                selected={selectedNodeId === laid.id}
-                selectable={selectable}
-                onSelect={() => handleSelect(laid.id, laid.node.label)}
-              />
-            ))}
-          </div>
-        </div>
+      <div style={{ height: Math.min(layout.height + 40, 520) }} className="w-full">
+        <ReactFlow
+          nodes={flowNodes}
+          edges={flowEdges}
+          nodeTypes={NODE_TYPES}
+          fitView
+          fitViewOptions={{ padding: 0.12 }}
+          minZoom={0.3}
+          maxZoom={1.75}
+          // A diagram, not an editor — and scrolling the page over it must
+          // never zoom it, which is the default that annoys everyone.
+          zoomOnScroll={false}
+          preventScrolling={false}
+          nodesDraggable={false}
+          nodesConnectable={false}
+          edgesFocusable={false}
+          panOnDrag
+          onNodeClick={(_, node) => {
+            if (node.type !== "systemNode") return;
+            setSelectedNodeId((current) => (current === node.id ? null : node.id));
+            if (ctx.interactive) {
+              const label = layout.nodesById.get(node.id)?.node.label ?? node.id;
+              emitAction(ctx, def, "node_click", {
+                nodeId: node.id,
+                label: `Clicked diagram node "${label}"`,
+              });
+            }
+          }}
+        >
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="rgba(255,255,255,0.07)" />
+          <Controls showInteractive={false} className="!border-white/15 !bg-[#101216] !shadow-none" />
+        </ReactFlow>
       </div>
 
       {selectedNode && (
