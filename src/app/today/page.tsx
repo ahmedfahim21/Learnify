@@ -1,4 +1,6 @@
-import { getDemoUserId } from "@/lib/demo";
+import { redirect } from "next/navigation";
+
+import { getCurrentUserId } from "@/lib/session";
 import { getTodaySnapshot } from "@/lib/mastery/engine";
 import { TodayClient } from "@/components/today/TodayClient";
 
@@ -11,7 +13,8 @@ export const dynamic = "force-dynamic";
  * that chat tools structurally lack.
  */
 export default async function TodayPage() {
-  const userId = await getDemoUserId();
+  const userId = await getCurrentUserId();
+  if (!userId) redirect("/signin?next=/today");
   const snapshot = await getTodaySnapshot(userId);
 
   return (

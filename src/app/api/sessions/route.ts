@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { concepts, sessions, topics } from "@/db/schema";
-import { getDemoUserId } from "@/lib/demo";
+import { requireUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
 
@@ -42,7 +42,8 @@ export async function POST(request: Request): Promise<Response> {
     : [];
 
   const db = getDb();
-  const userId = await getDemoUserId();
+  const { userId, response } = await requireUserId();
+  if (response) return response;
 
   // Scope the topic to the demo learner so sessions can't target others' topics.
   const [topic] = await db

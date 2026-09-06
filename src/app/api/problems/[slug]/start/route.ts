@@ -1,4 +1,4 @@
-import { getDemoUserId } from "@/lib/demo";
+import { requireUserId } from "@/lib/session";
 import { materializeProblem } from "@/lib/content/materialize";
 import { getTopicGraph } from "@/lib/concepts";
 import { getProblem } from "@/content/systemDesign";
@@ -25,7 +25,8 @@ export async function POST(
     return Response.json({ error: "unknown course" }, { status: 404 });
   }
 
-  const userId = await getDemoUserId();
+  const { userId, response } = await requireUserId();
+  if (response) return response;
   const { topicId, created } = await materializeProblem(userId, slug);
   const graph = await getTopicGraph(topicId, userId);
 

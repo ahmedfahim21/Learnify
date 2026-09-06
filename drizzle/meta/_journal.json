@@ -50,6 +50,13 @@
       "when": 1788457396678,
       "tag": "0006_special_cyclops",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788722554739,
+      "tag": "0007_cute_jetstream",
+      "breakpoints": true
     }
   ]
 }
