@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -9,7 +9,10 @@ import {
   type SystemDesignProblem,
 } from "@/content/systemDesign/types";
 
+import { useSession } from "@/lib/authClient";
+
 import { ChapterBlockRenderer } from "./ChapterBlockRenderer";
+import { useChapterProgress } from "./useChapterProgress";
 
 const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry", "blueberry"] as const;
 
@@ -26,11 +29,15 @@ const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry"
  */
 export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [activePhase, setActivePhase] = useState(problem.chapters[0]?.phase);
   const [starting, setStarting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const allConceptSlugs = problem.chapters.flatMap((c) => c.concepts.map((x) => x.slug));
+  const phases = useMemo(() => problem.chapters.map((c) => c.phase), [problem]);
+  const { completed } = useChapterProgress(problem.slug, phases, Boolean(session?.user));
+  const readCount = phases.filter((p) => completed.has(p)).length;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -81,7 +88,22 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
   return (
     <div className="wrap grid gap-10 py-10 lg:grid-cols-[220px_1fr]">
       <aside className="min-w-0 lg:sticky lg:top-10 lg:h-fit">
-        <p className="label mb-3">Chapters</p>
+        <div className="mb-3 space-y-2">
+          <p className="label">Chapters</p>
+          {session?.user && (
+            <>
+              <div className="h-0.5 w-full overflow-hidden bg-(--color-line)">
+                <div
+                  className="h-full bg-(--color-mint) transition-[width] duration-500"
+                  style={{ width: `${(readCount / phases.length) * 100}%` }}
+                />
+              </div>
+              <p className="label">
+                {readCount} / {phases.length} read
+              </p>
+            </>
+          )}
+        </div>
         <nav className="flex flex-col gap-1 border-l border-(--color-line) pl-3">
           {problem.chapters.map((chapter, i) => {
             const active = activePhase === chapter.phase;
@@ -95,7 +117,9 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
                     : "border-transparent text-(--color-mist) hover:text-(--color-fg)"
                 }`}
               >
-                <span className="label mr-2">{String(i).padStart(2, "0")}</span>
+                <span className="label mr-2">
+                  {completed.has(chapter.phase) ? "✓" : String(i).padStart(2, "0")}
+                </span>
                 {chapter.title}
               </a>
             );

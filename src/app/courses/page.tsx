@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PROBLEMS } from "@/content/systemDesign";
+import { CourseProgressBadge } from "@/components/course/CourseProgressBadge";
 
 const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry"] as const;
 
@@ -44,6 +45,7 @@ export default function CoursesPage() {
                 <span className="chip">{problem.estimatedMinutes} min</span>
                 <span className="chip">difficulty {problem.difficulty}/5</span>
                 <span className="chip">{problem.chapters.length} chapters</span>
+                <CourseProgressBadge slug={problem.slug} />
               </div>
             </Link>
           );

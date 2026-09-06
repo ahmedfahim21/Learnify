@@ -8,6 +8,7 @@ import { signOut, useSession } from "@/lib/authClient";
 const LINKS = [
   { href: "/courses", label: "Courses" },
   { href: "/today", label: "Today" },
+  { href: "/me", label: "Progress" },
 ];
 
 export function TopNav() {

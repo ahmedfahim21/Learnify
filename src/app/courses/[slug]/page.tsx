@@ -28,5 +28,8 @@ export default async function CoursePage({
   const problem = getProblem(slug);
   if (!problem) notFound();
 
+  // No session read here on purpose: it would opt every course page out of
+  // static generation. Progress is a signed-in-only overlay and loads on the
+  // client instead, so the page itself stays prerendered for everyone.
   return <CourseReader problem={problem} />;
 }
