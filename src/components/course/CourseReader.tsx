@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import {
@@ -186,14 +187,23 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
             already know, presses on the parts you answer poorly, and schedules whatever
             stayed shaky for review.
           </p>
-          <button
-            type="button"
-            onClick={() => startPracticing(allConceptSlugs)}
-            disabled={Boolean(starting)}
-            className="chip border-(--color-mint)/50 bg-(--color-mint)/10 text-(--color-mint) disabled:cursor-wait disabled:opacity-60"
-          >
-            {starting ? "Starting…" : `Start a tutor session on all ${allConceptSlugs.length} concepts →`}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => startPracticing(allConceptSlugs)}
+              disabled={Boolean(starting)}
+              className="chip border-(--color-mint)/50 bg-(--color-mint)/10 text-(--color-mint) disabled:cursor-wait disabled:opacity-60"
+            >
+              {starting ? "Starting…" : `Start a tutor session on all ${allConceptSlugs.length} concepts →`}
+            </button>
+            <Link href={`/courses/${problem.slug}/quiz`} className="chip">
+              or take the written quiz
+            </Link>
+          </div>
+          <p className="label">
+            The tutor adapts and needs an account; the quiz is pre-written, works signed out,
+            and uses no budget.
+          </p>
         </section>
       </main>
     </div>

@@ -394,6 +394,31 @@ export const courseProgress = pgTable(
   ],
 );
 
+/**
+ * Per-user, per-day count of generative-UI turns.
+ *
+ * One row per (user, UTC day). A "generation" is one tutor turn — a POST to
+ * /api/sessions/[id]/turn — which can fan out to several Bedrock calls, so
+ * this is the unit that actually costs money and the unit worth capping.
+ *
+ * Counted in its own table rather than derived from session_events: the check
+ * runs before every turn, and a cheap primary-key read beats a join and count
+ * over an append-only log that grows without bound.
+ */
+export const generationUsage = pgTable(
+  "generation_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    /** UTC day, so the window resets predictably regardless of timezone. */
+    day: date("day").notNull(),
+    used: integer("used").notNull().default(0),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("generation_usage_user_day_unique").on(table.userId, table.day)],
+);
+
+export type GenerationUsage = typeof generationUsage.$inferSelect;
 export type Topic = typeof topics.$inferSelect;
 export type NewTopic = typeof topics.$inferInsert;
 export type Concept = typeof concepts.$inferSelect;

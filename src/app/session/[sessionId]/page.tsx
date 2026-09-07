@@ -1,5 +1,5 @@
-import { asc, eq } from "drizzle-orm";
-import { notFound } from "next/navigation";
+import { and, asc, eq } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
 
 import { getDb } from "@/db";
 import { sessionEvents, sessions, topics } from "@/db/schema";
@@ -9,6 +9,7 @@ import {
   sessionSurfaceId,
 } from "@/lib/agent/replay";
 import type { EventPayload, StoredEvent } from "@/lib/agent/transcript";
+import { getCurrentUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,12 +20,19 @@ export default async function SessionPage({
   params: Promise<{ sessionId: string }>;
 }) {
   const { sessionId } = await params;
+
+  const userId = await getCurrentUserId();
+  if (!userId) redirect(`/signin?next=/session/${sessionId}`);
+
   const db = getDb();
 
+  // Scoped to the caller: a session id alone must not be enough to read
+  // someone else's transcript. 404 rather than 403, so the response doesn't
+  // confirm that an id belonging to another account exists.
   const [session] = await db
     .select({ id: sessions.id, topicId: sessions.topicId, status: sessions.status })
     .from(sessions)
-    .where(eq(sessions.id, sessionId))
+    .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
     .limit(1);
   if (!session) notFound();
 

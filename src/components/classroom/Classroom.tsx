@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import Link from "next/link";
 
 import type { A2UIActionMessage, A2UIServerMessage } from "@/lib/a2ui/messages";
 
@@ -44,6 +45,9 @@ export function Classroom({
     sessionStatus === "completed" ? "completed" : "idle",
   );
   const [error, setError] = useState<string | null>(null);
+  // Running out of budget isn't a failure — it's an expected limit with a
+  // different remedy, so it gets its own state and its own message.
+  const [budgetSpent, setBudgetSpent] = useState(false);
   const startedRef = useRef(false);
 
   const postTurn = useCallback(
@@ -64,6 +68,13 @@ export function Classroom({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
         });
+        if (response.status === 429) {
+          const body = (await response.json().catch(() => ({}))) as { error?: string };
+          setBudgetSpent(true);
+          setError(body.error ?? "You've used today's tutor turns.");
+          setStatus("error");
+          return;
+        }
         if (!response.ok || !response.body) {
           const detail = await response.text().catch(() => "");
           throw new Error(detail || `turn failed (${response.status})`);
@@ -161,7 +172,18 @@ export function Classroom({
         </p>
       )}
 
-      {error && (
+      {error && budgetSpent && (
+        <div className="space-y-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100">
+          <p>{error}</p>
+          {/* No Retry here: retrying can only fail until the window resets, so
+              the only useful action is the one that still works. */}
+          <Link href="/courses" className="underline underline-offset-4">
+            Take a written quiz instead →
+          </Link>
+        </div>
+      )}
+
+      {error && !budgetSpent && (
         <div className="flex items-center justify-between gap-4 rounded-lg border border-red-400/30 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200">
           <span>{error}</span>
           <button

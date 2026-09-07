@@ -64,6 +64,20 @@
       "when": 1788760302990,
       "tag": "0008_neon_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788760819504,
+      "tag": "0009_generation_budget",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788760838169,
+      "tag": "0010_generation_usage_fk",
+      "breakpoints": true
     }
   ]
 }

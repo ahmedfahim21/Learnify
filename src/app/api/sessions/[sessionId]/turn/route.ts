@@ -20,6 +20,8 @@ import {
   type LearnerAction,
 } from "@/lib/agent/grading";
 import { applyEvidence, isEvidenceKind } from "@/lib/mastery/engine";
+import { consumeGeneration } from "@/lib/budget";
+import { requireUserId } from "@/lib/session";
 import { distillAndRemember, recallLearnerNotes } from "@/lib/memory";
 
 export const runtime = "nodejs";
@@ -58,6 +60,9 @@ export async function POST(
   const { sessionId } = await params;
   const surfaceId = `${SURFACE_PREFIX}:${sessionId}`;
 
+  const { userId, response } = await requireUserId();
+  if (response) return response;
+
   let body: TurnRequestBody = {};
   try {
     body = (await request.json()) as TurnRequestBody;
@@ -85,6 +90,29 @@ export async function POST(
       status: 404,
       headers: { "content-type": "application/json" },
     });
+  }
+
+  // This route drives the model, so it has to establish who is asking before
+  // it does anything else. A session id alone must not be enough to run
+  // someone else's tutor — or to spend their budget.
+  if (session.userId !== userId) {
+    return new Response(JSON.stringify({ error: "Session not found" }), {
+      status: 404,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
+  // One turn is one generation. Spending it up front (atomically) means a
+  // burst of concurrent requests can't each pass the check and then all run.
+  const { allowed, state } = await consumeGeneration(userId);
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({
+        error: `You've used all ${state.limit} tutor turns for today. The course quizzes are still open, and this resets at midnight UTC.`,
+        budget: state,
+      }),
+      { status: 429, headers: { "content-type": "application/json" } },
+    );
   }
 
   // Replay the append-only transcript.
