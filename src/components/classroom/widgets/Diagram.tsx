@@ -71,16 +71,16 @@ export function Diagram({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
   }, [def]);
 
   return (
-    <div className="space-y-2 rounded-xl border border-white/15 bg-white/[0.04] p-3">
+    <div className="space-y-2 border border-(--color-line) bg-(--color-raised) p-3">
       <iframe
         ref={frameRef}
         sandbox="allow-scripts"
         srcDoc={srcDoc}
         title="diagram"
         style={{ height }}
-        className="w-full rounded-lg border border-white/10 bg-[#0d0d0d]"
+        className="w-full border border-(--color-line) bg-[#0d0d0d]"
       />
-      {caption && <p className="text-xs text-white/50">{caption}</p>}
+      {caption && <p className="text-xs text-(--color-mist)">{caption}</p>}
     </div>
   );
 }

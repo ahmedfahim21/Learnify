@@ -8,11 +8,11 @@ export function ProgressMeter({ def }: { def: ComponentDef }) {
   const phase = asString(def.properties.phase);
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/15 bg-white/[0.03] p-4">
+    <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs uppercase tracking-widest text-white/40">Progress</p>
+        <p className="text-xs uppercase tracking-widest text-(--color-faint)">Progress</p>
         {phase && (
-          <span className="rounded-full border border-white/15 px-2 py-0.5 text-xs text-white/60">
+          <span className="rounded-full border border-(--color-line) px-2 py-0.5 text-xs text-(--color-mist)">
             {phase}
           </span>
         )}
@@ -24,13 +24,13 @@ export function ProgressMeter({ def }: { def: ComponentDef }) {
           );
           return (
             <div key={index} className="space-y-1">
-              <div className="flex justify-between text-xs text-white/70">
+              <div className="flex justify-between text-xs text-(--color-mist)">
                 <span>{asString(concept.label)}</span>
-                <span className="text-white/40">{pct}%</span>
+                <span className="text-(--color-faint)">{pct}%</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-white/10">
+              <div className="h-2 overflow-hidden rounded-full bg-(--color-raised)">
                 <div
-                  className="h-full rounded-full bg-emerald-400/70"
+                  className="h-full rounded-full bg-(--color-mint)/70"
                   style={{ width: `${pct}%` }}
                 />
               </div>

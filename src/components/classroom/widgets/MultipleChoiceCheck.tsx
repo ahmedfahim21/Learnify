@@ -16,8 +16,8 @@ export function MultipleChoiceCheck({
     : [];
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/15 bg-white/[0.03] p-4">
-      <p className="font-medium">{prompt}</p>
+    <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
+      <p>{prompt}</p>
       <div className="flex flex-col gap-2">
         {options.map((option) => {
           const isChosen = chosen === option.id;
@@ -34,10 +34,10 @@ export function MultipleChoiceCheck({
                   label: option.label,
                 });
               }}
-              className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+              className={`border px-3 py-2 text-left text-sm transition ${
                 isChosen
-                  ? "border-white/60 bg-white/15"
-                  : "border-white/15 hover:border-white/40 hover:bg-white/[0.06]"
+                  ? "border-(--color-line) bg-(--color-raised)"
+                  : "border-(--color-line) hover:border-(--color-faint) hover:bg-(--color-raised)"
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
               {option.label}

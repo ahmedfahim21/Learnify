@@ -21,7 +21,7 @@ export function StepPlayer({
 
   return (
     <div className="space-y-2">
-      <div className="h-0.5 w-full overflow-hidden bg-white/8">
+      <div className="h-0.5 w-full overflow-hidden bg-(--color-raised)">
         <div
           className="h-full bg-(--color-mint) transition-[width] duration-500 ease-out"
           style={{ width: `${progress}%` }}
@@ -34,14 +34,14 @@ export function StepPlayer({
           onClick={() => onStepChange(Math.max(0, stepIdx - 1))}
           disabled={stepIdx === 0}
           aria-label="Previous step"
-          className="border border-white/15 px-2.5 py-1 text-sm text-white/70 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+          className="border border-(--color-line) px-2.5 py-1 text-sm text-(--color-mist) transition-colors hover:border-(--color-faint) hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
         >
           ←
         </button>
         <button
           type="button"
           onClick={onTogglePlay}
-          className="border border-white/20 bg-white/[0.04] px-3 py-1 text-sm text-white/80 transition-colors hover:border-white/40 hover:bg-white/[0.08] hover:text-white"
+          className="border border-(--color-line) bg-(--color-raised) px-3 py-1 text-sm text-(--color-fg) transition-colors hover:border-(--color-faint) hover:bg-(--color-raised) hover:text-white"
         >
           {playing ? "Pause" : stepIdx === steps.length ? "Replay" : "Play"}
         </button>
@@ -50,7 +50,7 @@ export function StepPlayer({
           onClick={() => onStepChange(Math.min(steps.length, stepIdx + 1))}
           disabled={stepIdx === steps.length}
           aria-label="Next step"
-          className="border border-white/15 px-2.5 py-1 text-sm text-white/70 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
+          className="border border-(--color-line) px-2.5 py-1 text-sm text-(--color-mist) transition-colors hover:border-(--color-faint) hover:text-white disabled:cursor-not-allowed disabled:opacity-25"
         >
           →
         </button>
@@ -79,14 +79,14 @@ export function StepPlayer({
 
       <div
         aria-live="polite"
-        className="flex min-h-[2.75rem] items-center gap-3 border border-white/10 bg-white/[0.03] px-3 py-2"
+        className="flex min-h-[2.75rem] items-center gap-3 border border-(--color-line) bg-(--color-raised) px-3 py-2"
       >
         {active && (
           <span className="label shrink-0 text-(--color-mint)">
             {String(active.index).padStart(2, "0")}
           </span>
         )}
-        <p className="text-sm text-white/75">
+        <p className="text-sm text-(--color-mist)">
           {active
             ? active.caption
             : "Play the walkthrough, or step through one request at a time."}

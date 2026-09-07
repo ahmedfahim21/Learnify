@@ -100,7 +100,7 @@ export const paymentSystem: SystemDesignProblem = {
               { id: "e3", from: "api", to: "statestore", step: 3, label: "record: pending", route: "vertical-first" },
               { id: "e4", from: "api", to: "processor", step: 4, label: "charge request" },
               { id: "e5", from: "processor", to: "api", step: 5, label: "success" },
-              { id: "e6", from: "api", to: "ledger", step: 6, label: "write debit + credit entries" },
+              { id: "e6", from: "api", to: "ledger", step: 6, label: "debit + credit" },
             ],
             steps: [
               { index: 1, caption: "The client submits a charge with a unique idempotency key.", nodeIds: ["client", "api"], edgeIds: ["e1"] },

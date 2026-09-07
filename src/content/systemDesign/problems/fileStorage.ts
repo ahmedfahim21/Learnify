@@ -101,7 +101,7 @@ export const fileStorage: SystemDesignProblem = {
               { id: "e1", from: "deviceA", to: "syncsvc", step: 1, label: "upload changed file" },
               { id: "e2", from: "syncsvc", to: "chunker", step: 2 },
               { id: "e3", from: "chunker", to: "objectstore", step: 3, label: "only new chunks" },
-              { id: "e4", from: "chunker", to: "metadata", step: 4, label: "update chunk list for this version" },
+              { id: "e4", from: "chunker", to: "metadata", step: 4, label: "update chunk list" },
               { id: "e5", from: "metadata", to: "changefeed", step: 5 },
               { id: "e6", from: "changefeed", to: "deviceB", step: 6, label: "notify: file changed" },
             ],

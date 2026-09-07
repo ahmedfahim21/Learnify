@@ -38,13 +38,13 @@ function MasteryBar({ score }: { score: number }) {
   const pct = Math.round(Math.min(1, Math.max(0, score)) * 100);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-white/10">
+      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-(--color-raised)">
         <div
-          className="h-full rounded-full bg-emerald-400/70"
+          className="h-full rounded-full bg-(--color-mint)/70"
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="w-9 text-right text-xs text-white/40">{pct}%</span>
+      <span className="w-9 text-right text-xs text-(--color-faint)">{pct}%</span>
     </div>
   );
 }
@@ -81,23 +81,23 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
         <button
           type="button"
           onClick={() => router.push("/courses")}
-          className="self-start text-sm text-white/50 transition hover:text-white/80"
+          className="self-start text-sm text-(--color-mist) transition hover:text-(--color-fg)"
         >
           ← All courses
         </button>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-semibold">Today</h1>
-            <p className="text-white/50">
+            <h1 className="text-3xl">Today</h1>
+            <p className="text-(--color-mist)">
               Your spaced-repetition queue and what still needs work.
             </p>
           </div>
-          <div className="rounded-xl border border-white/15 bg-white/[0.03] px-4 py-2 text-right">
-            <div className="flex items-center gap-1.5 text-2xl font-semibold">
+          <div className="border border-(--color-line) bg-(--color-raised) px-4 py-2 text-right">
+            <div className="flex items-center gap-1.5 text-2xl">
               <span>{activeToday ? "🔥" : "🌙"}</span>
               <span>{current}</span>
             </div>
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-(--color-faint)">
               day streak{longest > current ? ` · best ${longest}` : ""}
             </p>
           </div>
@@ -105,17 +105,17 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
       </header>
 
       {error && (
-        <p className="rounded-lg border border-red-400/30 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200">
+        <p className="border border-(--color-strawberry)/30 bg-(--color-strawberry)/[0.06] px-4 py-3 text-sm text-(--color-strawberry)">
           {error}
         </p>
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs uppercase tracking-widest text-white/40">
+        <h2 className="text-xs uppercase tracking-widest text-(--color-faint)">
           Due for review {snapshot.due.length > 0 && `· ${snapshot.due.length}`}
         </h2>
         {dueGroups.length === 0 ? (
-          <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-8 text-center text-sm text-white/50">
+          <div className="border border-(--color-line) bg-(--color-surface) px-4 py-8 text-center text-sm text-(--color-mist)">
             Nothing due right now. Learn a topic or come back later — concepts
             resurface as they fade.
           </div>
@@ -123,13 +123,13 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
           dueGroups.map((group) => (
             <div
               key={group.topicId}
-              className="flex flex-col gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-4"
+              className="flex flex-col gap-3 border border-(--color-line) bg-(--color-surface) p-4"
             >
               <div className="flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => router.push(courseHref(group.concepts[0]))}
-                  className="text-left font-medium text-white/90 transition hover:text-white"
+                  className="text-left text-(--color-fg) transition hover:text-white"
                 >
                   {group.topicTitle}
                 </button>
@@ -142,7 +142,7 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
                       group.concepts.map((c) => c.conceptId),
                     )
                   }
-                  className="rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium transition hover:bg-white/15 disabled:opacity-50"
+                  className="border border-(--color-line) bg-(--color-raised) px-4 py-2 text-sm transition hover:bg-(--color-raised) disabled:opacity-50"
                 >
                   {busyTopic === group.topicId
                     ? "Starting…"
@@ -155,7 +155,7 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
                     key={concept.conceptId}
                     className="flex items-center justify-between gap-3 py-1.5"
                   >
-                    <span className="text-sm text-white/70">
+                    <span className="text-sm text-(--color-mist)">
                       {concept.conceptName}
                     </span>
                     <MasteryBar score={concept.displayScore} />
@@ -169,10 +169,10 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
 
       {snapshot.weak.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-xs uppercase tracking-widest text-white/40">
+          <h2 className="text-xs uppercase tracking-widest text-(--color-faint)">
             Still shaky
           </h2>
-          <ul className="flex flex-col divide-y divide-white/5 rounded-xl border border-white/10 bg-white/[0.02] px-4">
+          <ul className="flex flex-col divide-y divide-white/5 border border-(--color-line) bg-(--color-surface) px-4">
             {snapshot.weak.map((concept) => (
               <li
                 key={concept.conceptId}
@@ -181,10 +181,10 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
                 <button
                   type="button"
                   onClick={() => router.push(courseHref(concept))}
-                  className="text-left text-sm text-white/70 transition hover:text-white"
+                  className="text-left text-sm text-(--color-mist) transition hover:text-white"
                 >
                   {concept.conceptName}
-                  <span className="ml-2 text-white/35">
+                  <span className="ml-2 text-(--color-faint)">
                     · {concept.topicTitle}
                   </span>
                 </button>

@@ -19,7 +19,7 @@ function renderInline(text: string): ReactNode[] {
       return (
         <code
           key={index}
-          className="rounded bg-white/10 px-1 py-0.5 font-mono text-[0.85em]"
+          className="bg-(--color-raised) px-1 py-0.5 font-mono text-[0.85em]"
         >
           {part.slice(1, -1)}
         </code>
@@ -71,19 +71,19 @@ export function Markdown({ text }: { text: string }) {
       const content = renderInline(heading[2]);
       if (level === 1) {
         blocks.push(
-          <h2 key={key} className="text-xl font-semibold">
+          <h2 key={key} className="text-xl">
             {content}
           </h2>,
         );
       } else if (level === 2) {
         blocks.push(
-          <h3 key={key} className="text-lg font-semibold">
+          <h3 key={key} className="text-lg">
             {content}
           </h3>,
         );
       } else {
         blocks.push(
-          <h4 key={key} className="font-semibold">
+          <h4 key={key}>
             {content}
           </h4>,
         );

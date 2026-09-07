@@ -92,18 +92,18 @@ export function TokenBucketSim({
         <SimSlider spec={specOf("arrivalPerSec")} value={arrivalPerSec} onChange={setArrivalPerSec} />
       </div>
 
-      <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+      <div className="space-y-2 border border-(--color-line) bg-(--color-surface) p-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-white/50">Token level over time</span>
+          <span className="text-xs text-(--color-mist)">Token level over time</span>
           <button
             type="button"
             onClick={() => setRunning((r) => !r)}
-            className="rounded-lg border border-white/20 px-2.5 py-1 text-xs hover:border-white/40 hover:bg-white/[0.06]"
+            className="border border-(--color-line) px-2.5 py-1 text-xs hover:border-(--color-faint) hover:bg-(--color-raised)"
           >
             {running ? "⏸ Pause" : "▶ Run"}
           </button>
         </div>
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-sky-300">
+        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-(--color-blueberry)">
           <path d={path} fill="none" stroke="currentColor" strokeWidth={1.5} />
           <line x1={cursorX} x2={cursorX} y1={0} y2={CHART_H} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
         </svg>

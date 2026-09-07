@@ -17,7 +17,7 @@ import type { DiagramGroup, DiagramNode, SystemDiagramProps } from "./catalog";
 
 export const CELL_W = 152;
 export const CELL_H = 118;
-export const GAP_X = 36;
+export const GAP_X = 56;
 export const GAP_Y = 48;
 export const PAD = 28;
 /** Extra room around a group's member bbox, and above it for the label chip. */
@@ -144,6 +144,9 @@ export function handlePair(
   };
 }
 
+/** Longest edge label that still fits on a path without colliding with a node. */
+export const MAX_EDGE_LABEL = 24;
+
 export function validateSystemDiagram(props: SystemDiagramProps): string[] {
   const problems: string[] = [];
 
@@ -182,6 +185,15 @@ export function validateSystemDiagram(props: SystemDiagramProps): string[] {
     edgeIds.add(edge.id);
     if (!nodeIds.has(edge.from)) problems.push(`edge "${edge.id}" references unknown source node "${edge.from}".`);
     if (!nodeIds.has(edge.to)) problems.push(`edge "${edge.id}" references unknown target node "${edge.to}".`);
+    // An edge label is drawn on the path itself, where the space available is
+    // a column gap — tens of pixels. A sentence there spills across the
+    // neighbouring nodes and makes the diagram unreadable. Long explanation
+    // belongs in the step caption, which has a line to itself.
+    if (edge.label && edge.label.length > MAX_EDGE_LABEL) {
+      problems.push(
+        `edge "${edge.id}" label is ${edge.label.length} characters; keep it to ${MAX_EDGE_LABEL} or fewer and put the explanation in the step caption.`,
+      );
+    }
   }
 
   // Overlapping cells: two nodes claiming the same grid cell read as one box.

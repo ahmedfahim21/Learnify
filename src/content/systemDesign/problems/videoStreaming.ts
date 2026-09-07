@@ -89,9 +89,9 @@ export const videoStreaming: SystemDesignProblem = {
               { id: "e1", from: "uploader", to: "uploadsvc", step: 1 },
               { id: "e2", from: "uploadsvc", to: "rawstore", step: 2 },
               { id: "e3", from: "rawstore", to: "transcoder", step: 3, label: "async job" },
-              { id: "e4", from: "transcoder", to: "renditionstore", step: 4, label: "encoded chunks + manifest" },
-              { id: "e5", from: "renditionstore", to: "cdn", step: 5, label: "pulled into edge on first request" },
-              { id: "e6", from: "viewer", to: "cdn", step: 6, label: "adaptive playback requests" },
+              { id: "e4", from: "transcoder", to: "renditionstore", step: 4, label: "chunks + manifest" },
+              { id: "e5", from: "renditionstore", to: "cdn", step: 5, label: "pulled on first view" },
+              { id: "e6", from: "viewer", to: "cdn", step: 6, label: "adaptive playback" },
             ],
             steps: [
               { index: 1, caption: "A creator uploads a video.", nodeIds: ["uploader", "uploadsvc"], edgeIds: ["e1"] },

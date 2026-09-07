@@ -11,20 +11,20 @@ export function SessionRecap({ def }: { def: ComponentDef }) {
   const nextUp = asString(def.properties.nextUp);
 
   return (
-    <div className="space-y-3 rounded-xl border border-emerald-400/30 bg-emerald-400/[0.06] p-4">
-      <div className="text-white/85">
+    <div className="space-y-3 border border-(--color-mint)/30 bg-(--color-mint)/[0.06] p-4">
+      <div className="text-(--color-fg)">
         <Markdown text={summary} />
       </div>
       {keyPoints.length > 0 && (
-        <ul className="ml-5 list-disc space-y-1 text-sm text-white/80">
+        <ul className="ml-5 list-disc space-y-1 text-sm text-(--color-fg)">
           {keyPoints.map((point, index) => (
             <li key={index}>{point}</li>
           ))}
         </ul>
       )}
       {nextUp && (
-        <p className="text-sm text-white/60">
-          <span className="font-medium text-white/80">Next up:</span> {nextUp}
+        <p className="text-sm text-(--color-mist)">
+          <span className="text-(--color-fg)">Next up:</span> {nextUp}
         </p>
       )}
     </div>

@@ -102,7 +102,7 @@ export const chatSystem: SystemDesignProblem = {
               { id: "e3", from: "server3", to: "msgstore", step: 3, label: "persist first" },
               { id: "e4", from: "registry", to: "server7", step: 4, label: "Bob is on server 7", route: "vertical-first" },
               { id: "e5", from: "server3", to: "server7", step: 4, label: "forward" },
-              { id: "e6", from: "server7", to: "bob", step: 5, label: "push over Bob's WebSocket" },
+              { id: "e6", from: "server7", to: "bob", step: 5, label: "push over socket" },
             ],
             steps: [
               { index: 1, caption: "Alice sends a message over her WebSocket to server 3.", nodeIds: ["alice", "server3"], edgeIds: ["e1"] },

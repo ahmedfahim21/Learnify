@@ -54,19 +54,19 @@ export function LatencyNumbersSim({
           const overBudget = ref.nanoseconds > budgetNs;
           return (
             <div key={ref.id} className="flex items-center gap-2 text-xs">
-              <span className="w-[42%] shrink-0 truncate text-white/60">{ref.label}</span>
-              <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+              <span className="w-[42%] shrink-0 truncate text-(--color-mist)">{ref.label}</span>
+              <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-(--color-raised)">
                 <div
-                  className={`h-full rounded-full ${overBudget ? "bg-rose-400/70" : "bg-emerald-400/60"}`}
+                  className={`h-full rounded-full ${overBudget ? "bg-(--color-strawberry)/70" : "bg-(--color-mint)/60"}`}
                   style={{ width: `${Math.max(1.5, logPosition(ref.nanoseconds) * 100)}%` }}
                 />
               </div>
-              <span className="w-14 shrink-0 text-right tabular-nums text-white/45">
+              <span className="w-14 shrink-0 text-right tabular-nums text-(--color-faint)">
                 {formatNs(ref.nanoseconds)}
               </span>
               <span
                 className={`w-16 shrink-0 text-right tabular-nums ${
-                  overBudget ? "text-rose-300/80" : "text-white/70"
+                  overBudget ? "text-(--color-strawberry)/80" : "text-(--color-mist)"
                 }`}
                 title={`How many fit in a ${budgetMs}ms budget`}
               >
@@ -77,7 +77,7 @@ export function LatencyNumbersSim({
         })}
       </div>
 
-      <p className="text-[11px] text-white/40">
+      <p className="text-[11px] text-(--color-faint)">
         Bars are log-scaled. The right-hand column is how many of each operation fit inside your{" "}
         {budgetMs}ms budget — red means one alone already blows it.
       </p>

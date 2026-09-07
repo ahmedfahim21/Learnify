@@ -92,7 +92,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
             edges: [
               { id: "e1", from: "svc", to: "gen1", step: 1, label: "generateId()" },
               { id: "e2", from: "gen1", to: "id1", step: 2 },
-              { id: "e3", from: "svc", to: "gen2", step: 1, label: "generateId(), same millisecond" },
+              { id: "e3", from: "svc", to: "gen2", step: 1, label: "same millisecond" },
               { id: "e4", from: "gen2", to: "id2", step: 2 },
             ],
             steps: [

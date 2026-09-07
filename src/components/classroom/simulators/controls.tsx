@@ -30,8 +30,8 @@ export function SimSlider({
   return (
     <label className="block space-y-1.5">
       <div className="flex items-baseline justify-between text-sm">
-        <span className="text-white/70">{spec.label}</span>
-        <span className="text-white/40">{displayValue}</span>
+        <span className="text-(--color-mist)">{spec.label}</span>
+        <span className="text-(--color-faint)">{displayValue}</span>
       </div>
       <input
         type="range"
@@ -57,14 +57,14 @@ export function SimToggle({
 }) {
   return (
     <label className="flex items-center justify-between gap-3 text-sm">
-      <span className="text-white/70">{spec.label}</span>
+      <span className="text-(--color-mist)">{spec.label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={value}
         onClick={() => onChange(!value)}
         className={`h-5 w-9 rounded-full border transition-colors ${
-          value ? "border-emerald-400/50 bg-emerald-400/30" : "border-white/20 bg-white/10"
+          value ? "border-(--color-mint)/50 bg-(--color-mint)/30" : "border-(--color-line) bg-(--color-raised)"
         }`}
       >
         <span
@@ -88,11 +88,11 @@ export function SimSelect({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="text-sm text-white/70">{spec.label}</span>
+      <span className="text-sm text-(--color-mist)">{spec.label}</span>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-2 py-1.5 text-sm outline-none focus:border-white/40"
+        className="w-full border border-(--color-line) bg-(--color-raised) px-2 py-1.5 text-sm outline-none focus:border-(--color-line)"
       >
         {(spec.choices ?? []).map((choice) => (
           <option key={choice.value} value={choice.value} className="bg-[#0d0d0d]">
@@ -106,10 +106,10 @@ export function SimSelect({
 
 export function SimStat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="space-y-0.5 border border-white/10 bg-white/[0.02] px-3 py-2.5">
+    <div className="space-y-0.5 border border-(--color-line) bg-(--color-surface) px-3 py-2.5">
       <p className="label">{label}</p>
-      <p className="text-xl leading-tight tabular-nums text-white/90">{value}</p>
-      {hint && <p className="text-xs text-white/40">{hint}</p>}
+      <p className="text-xl leading-tight tabular-nums text-(--color-fg)">{value}</p>
+      {hint && <p className="text-xs text-(--color-faint)">{hint}</p>}
     </div>
   );
 }
@@ -127,14 +127,14 @@ export function SimBars({
     <div className="space-y-1.5">
       {bars.map((bar) => (
         <div key={bar.label} className="flex items-center gap-2 text-sm">
-          <span className="w-20 shrink-0 truncate text-white/50">{bar.label}</span>
-          <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+          <span className="w-20 shrink-0 truncate text-(--color-mist)">{bar.label}</span>
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-(--color-raised)">
             <div
-              className="h-full rounded-full bg-sky-400/70"
+              className="h-full rounded-full bg-(--color-blueberry)/70"
               style={{ width: `${Math.max(2, (bar.value / max) * 100)}%` }}
             />
           </div>
-          <span className="w-14 shrink-0 text-right text-white/40">
+          <span className="w-14 shrink-0 text-right text-(--color-faint)">
             {formatValue ? formatValue(bar.value) : formatNumber(bar.value)}
           </span>
         </div>
@@ -145,8 +145,8 @@ export function SimBars({
 
 export function SimNotice({ text }: { text: string }) {
   return (
-    <p className="border border-amber-400/25 bg-amber-400/[0.06] px-3 py-2 text-sm leading-relaxed text-amber-100/90">
-      <span className="font-medium">Notice: </span>
+    <p className="border border-(--color-mango)/25 bg-(--color-mango)/[0.06] px-3 py-2 text-sm leading-relaxed text-(--color-mango)/90">
+      <span>Notice: </span>
       {text}
     </p>
   );

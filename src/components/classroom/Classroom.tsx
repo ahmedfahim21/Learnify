@@ -146,12 +146,12 @@ export function Classroom({
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
-      <header className="flex items-center justify-between gap-4 border-b border-white/10 pb-4">
+      <header className="flex items-center justify-between gap-4 border-b border-(--color-line) pb-4">
         <div>
-          <p className="text-xs uppercase tracking-widest text-white/40">
+          <p className="text-xs uppercase tracking-widest text-(--color-faint)">
             Live session
           </p>
-          <h1 className="text-2xl font-semibold">{topicTitle}</h1>
+          <h1 className="text-2xl">{topicTitle}</h1>
         </div>
         <StatusBadge status={status} />
       </header>
@@ -163,17 +163,17 @@ export function Classroom({
       />
 
       {status === "streaming" && (
-        <p className="text-sm text-white/40">The tutor is working…</p>
+        <p className="text-sm text-(--color-faint)">The tutor is working…</p>
       )}
 
       {status === "completed" && (
-        <p className="rounded-lg border border-emerald-400/30 bg-emerald-400/[0.06] px-4 py-3 text-sm text-emerald-200">
+        <p className="border border-(--color-mint)/30 bg-(--color-mint)/[0.06] px-4 py-3 text-sm text-(--color-mint)">
           Session complete.
         </p>
       )}
 
       {error && budgetSpent && (
-        <div className="space-y-2 rounded-lg border border-amber-400/30 bg-amber-400/[0.06] px-4 py-3 text-sm text-amber-100">
+        <div className="space-y-2 border border-(--color-mango)/30 bg-(--color-mango)/[0.06] px-4 py-3 text-sm text-(--color-mango)">
           <p>{error}</p>
           {/* No Retry here: retrying can only fail until the window resets, so
               the only useful action is the one that still works. */}
@@ -184,12 +184,12 @@ export function Classroom({
       )}
 
       {error && !budgetSpent && (
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-red-400/30 bg-red-400/[0.06] px-4 py-3 text-sm text-red-200">
+        <div className="flex items-center justify-between gap-4 border border-(--color-strawberry)/30 bg-(--color-strawberry)/[0.06] px-4 py-3 text-sm text-(--color-strawberry)">
           <span>{error}</span>
           <button
             type="button"
             onClick={() => void postTurn({})}
-            className="rounded border border-red-400/40 px-2 py-1 text-xs hover:bg-red-400/10"
+            className="border border-(--color-strawberry)/40 px-2 py-1 text-xs hover:bg-(--color-strawberry)/10"
           >
             Retry
           </button>
@@ -209,7 +209,7 @@ function StatusBadge({ status }: { status: Status }) {
           ? "Error"
           : "Your turn";
   return (
-    <span className="rounded-full border border-white/15 px-3 py-1 text-xs text-white/60">
+    <span className="rounded-full border border-(--color-line) px-3 py-1 text-xs text-(--color-mist)">
       {label}
     </span>
   );

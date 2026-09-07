@@ -10,15 +10,15 @@ export function FreeResponse({ def, ctx }: { def: ComponentDef; ctx: NodeContext
   const locked = submitted || !ctx.interactive;
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/15 bg-white/[0.03] p-4">
-      <p className="font-medium">{prompt}</p>
+    <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
+      <p>{prompt}</p>
       <textarea
         value={text}
         disabled={locked}
         rows={3}
         placeholder={placeholder || "Type your answer…"}
         onChange={(event) => setText(event.target.value)}
-        className="w-full resize-y rounded-lg border border-white/15 bg-white/[0.04] p-3 text-sm outline-none focus:border-white/40 disabled:opacity-60"
+        className="w-full resize-y border border-(--color-line) bg-(--color-raised) p-3 text-sm outline-none focus:border-(--color-line) disabled:opacity-60"
       />
       <button
         type="button"
@@ -30,7 +30,7 @@ export function FreeResponse({ def, ctx }: { def: ComponentDef; ctx: NodeContext
             label: text.trim(),
           });
         }}
-        className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:border-white/40 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+        className="border border-(--color-line) px-3 py-1.5 text-sm hover:border-(--color-faint) hover:bg-(--color-raised) disabled:cursor-not-allowed disabled:opacity-50"
       >
         Submit answer
       </button>

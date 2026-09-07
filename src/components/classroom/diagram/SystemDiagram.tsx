@@ -19,12 +19,14 @@ import type { ComponentDef } from "@/lib/a2ui/messages";
 import { asString, emitAction, type NodeContext } from "../rendererContext";
 import { DIAGRAM_PALETTE } from "./palette";
 import { StepPlayer } from "./StepPlayer";
+import { SystemDiagramEdge } from "./SystemDiagramEdge";
 import { SystemDiagramGroupNode, SystemDiagramNode } from "./SystemDiagramNode";
 import { useReducedMotion } from "./useReducedMotion";
 
 const AUTOPLAY_STEP_MS = 4200;
 
 const NODE_TYPES = { systemNode: SystemDiagramNode, systemGroup: SystemDiagramGroupNode };
+const EDGE_TYPES = { systemEdge: SystemDiagramEdge };
 
 /** Stroke for an edge, by the accent of the node it leaves. */
 function edgeStroke(accent: DiagramColor | undefined, active: boolean, dimmed: boolean): string {
@@ -122,18 +124,14 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
         targetHandle: handles?.target,
         // smoothstep is React Flow's orthogonal, rounded-corner router — the
         // ByteByteGo look, without hand-rolling path geometry.
-        type: "smoothstep",
-        pathOptions: { borderRadius: 12 },
+        type: "systemEdge",
         // Marching ants on the step being explained, in place of the old
         // custom motion-path packet (and its Safari fallback).
         animated: active && !reducedMotion,
-        label: edge.step ? `${edge.step}${edge.label ? `  ${edge.label}` : ""}` : edge.label,
-        labelShowBg: true,
-        labelBgPadding: [6, 3] as [number, number],
-        labelBgBorderRadius: 2,
-        labelBgStyle: { fill: "#0a0a0a", fillOpacity: 0.9 },
-        labelStyle: { fill: dimmed ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.75)", fontSize: 12 },
-        style: { stroke, strokeWidth: active ? 2 : 1.5, strokeDasharray: edge.style === "dashed" ? "6 4" : undefined },
+        // Badge, label and stroke go to the custom edge as separate fields
+        // rather than one concatenated text label — see SystemDiagramEdge.
+        data: { step: edge.step, label: edge.label, stroke, active, dimmed },
+        style: { strokeDasharray: edge.style === "dashed" ? "6 4" : undefined },
         markerEnd:
           edge.arrow === "none"
             ? undefined
@@ -146,12 +144,12 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
   const selectedNode = selectedNodeId ? layout.nodesById.get(selectedNodeId)?.node : undefined;
 
   return (
-    <figure className="space-y-3 rounded-lg border border-white/12 bg-gradient-to-b from-white/[0.04] to-transparent p-4">
+    <figure className="space-y-3 border border-(--color-line) bg-gradient-to-b from-white/[0.04] to-transparent p-4">
       {props.title && (
         <figcaption className="flex items-baseline justify-between gap-3">
-          <span className="text-white/90">{props.title}</span>
+          <span className="text-(--color-fg)">{props.title}</span>
           {selectable && anyDetail && (
-            <span className="text-[10px] uppercase tracking-widest text-white/30">click a node</span>
+            <span className="text-[10px] uppercase tracking-widest text-(--color-faint)">click a node</span>
           )}
         </figcaption>
       )}
@@ -161,6 +159,7 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
           nodes={flowNodes}
           edges={flowEdges}
           nodeTypes={NODE_TYPES}
+          edgeTypes={EDGE_TYPES}
           fitView
           fitViewOptions={{ padding: 0.12 }}
           minZoom={0.3}
@@ -186,15 +185,15 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
           }}
         >
           <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="rgba(255,255,255,0.07)" />
-          <Controls showInteractive={false} className="!border-white/15 !bg-[#101216] !shadow-none" />
+          <Controls showInteractive={false} className="!border-(--color-line) !bg-[#101216] !shadow-none" />
         </ReactFlow>
       </div>
 
       {selectedNode && (
-        <div className="flex items-start gap-3 border-l-2 border-(--color-mint) bg-white/[0.03] px-3 py-2">
+        <div className="flex items-start gap-3 border-l-2 border-(--color-mint) bg-(--color-raised) px-3 py-2">
           <div className="flex-1 space-y-0.5">
-            <p className="text-xs text-white/80">{selectedNode.label}</p>
-            <p className="text-xs leading-relaxed text-white/55">
+            <p className="text-xs text-(--color-fg)">{selectedNode.label}</p>
+            <p className="text-xs leading-relaxed text-(--color-mist)">
               {selectedNode.detail ?? "No further detail for this component."}
             </p>
           </div>
@@ -202,7 +201,7 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
             type="button"
             onClick={() => setSelectedNodeId(null)}
             aria-label="Close detail"
-            className="text-white/30 transition-colors hover:text-white/70"
+            className="text-(--color-faint) transition-colors hover:text-(--color-mist)"
           >
             ×
           </button>
@@ -223,7 +222,7 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
         />
       )}
 
-      {props.caption && <p className="text-xs text-white/45">{asString(props.caption)}</p>}
+      {props.caption && <p className="text-xs text-(--color-faint)">{asString(props.caption)}</p>}
     </figure>
   );
 }

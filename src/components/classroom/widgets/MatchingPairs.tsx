@@ -21,8 +21,8 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/15 bg-white/[0.03] p-4">
-      {prompt && <p className="font-medium">{prompt}</p>}
+    <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
+      {prompt && <p>{prompt}</p>}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2">
           {left.map((item) => {
@@ -33,17 +33,17 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
                 type="button"
                 disabled={locked}
                 onClick={() => setActiveLeft(item.id)}
-                className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+                className={`border px-3 py-2 text-left text-sm transition ${
                   activeLeft === item.id
-                    ? "border-sky-400/70 bg-sky-400/10"
+                    ? "border-(--color-blueberry)/70 bg-(--color-blueberry)/10"
                     : matched
-                      ? "border-emerald-400/40 bg-emerald-400/[0.06]"
-                      : "border-white/15 hover:border-white/40"
+                      ? "border-(--color-mint)/40 bg-(--color-mint)/[0.06]"
+                      : "border-(--color-line) hover:border-(--color-faint)"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item.label}
                 {matched && (
-                  <span className="block text-xs text-emerald-300/80">
+                  <span className="block text-xs text-(--color-mint)/80">
                     → {labelOf.get(pairs[item.id])}
                   </span>
                 )}
@@ -64,15 +64,15 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
                   setPairs((prev) => ({ ...prev, [activeLeft]: item.id }));
                   setActiveLeft(null);
                 }}
-                className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+                className={`border px-3 py-2 text-left text-sm transition ${
                   taken
-                    ? "border-emerald-400/40 bg-emerald-400/[0.06]"
-                    : "border-white/15 hover:border-white/40"
+                    ? "border-(--color-mint)/40 bg-(--color-mint)/[0.06]"
+                    : "border-(--color-line) hover:border-(--color-faint)"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item.label}
                 {taken && (
-                  <span className="block text-xs text-emerald-300/80">
+                  <span className="block text-xs text-(--color-mint)/80">
                     ← {partnerLabel(item.id)}
                   </span>
                 )}
@@ -99,7 +99,7 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
               .join("; ")}`,
           });
         }}
-        className="rounded-lg border border-white/20 px-3 py-1.5 text-sm hover:border-white/40 hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+        className="border border-(--color-line) px-3 py-1.5 text-sm hover:border-(--color-faint) hover:bg-(--color-raised) disabled:cursor-not-allowed disabled:opacity-50"
       >
         Submit matches
       </button>

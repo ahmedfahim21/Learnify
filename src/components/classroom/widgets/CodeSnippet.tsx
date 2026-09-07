@@ -26,10 +26,10 @@ function highlightLine(line: string): React.ReactNode[] {
     }
     const token = match[0];
     let cls = "";
-    if (token.startsWith("//") || token.startsWith("#")) cls = "italic text-white/40";
-    else if (/^["'`]/.test(token)) cls = "text-emerald-300";
-    else if (/^\d/.test(token)) cls = "text-amber-300";
-    else if (CODE_KEYWORDS.has(token)) cls = "text-sky-300";
+    if (token.startsWith("//") || token.startsWith("#")) cls = "italic text-(--color-faint)";
+    else if (/^["'`]/.test(token)) cls = "text-(--color-mint)";
+    else if (/^\d/.test(token)) cls = "text-(--color-mango)";
+    else if (CODE_KEYWORDS.has(token)) cls = "text-(--color-blueberry)";
     nodes.push(
       cls ? (
         <span key={key++} className={cls}>
@@ -59,9 +59,9 @@ export function CodeSnippet({ def }: { def: ComponentDef }) {
   const lines = code.replace(/\n$/, "").split("\n");
 
   return (
-    <figure className="overflow-hidden rounded-xl border border-white/15 bg-[#0d0d0d]">
+    <figure className="overflow-hidden border border-(--color-line) bg-[#0d0d0d]">
       {language && (
-        <div className="border-b border-white/10 px-4 py-1.5 text-xs uppercase tracking-widest text-white/40">
+        <div className="border-b border-(--color-line) px-4 py-1.5 text-xs uppercase tracking-widest text-(--color-faint)">
           {language}
         </div>
       )}
@@ -72,9 +72,9 @@ export function CodeSnippet({ def }: { def: ComponentDef }) {
             return (
               <div
                 key={index}
-                className={`flex ${highlight.has(lineNo) ? "bg-amber-400/10" : ""}`}
+                className={`flex ${highlight.has(lineNo) ? "bg-(--color-mango)/10" : ""}`}
               >
-                <span className="w-10 shrink-0 select-none px-2 text-right text-white/25">
+                <span className="w-10 shrink-0 select-none px-2 text-right text-(--color-faint)">
                   {lineNo}
                 </span>
                 <span className="whitespace-pre px-2">{highlightLine(line)}</span>
@@ -84,7 +84,7 @@ export function CodeSnippet({ def }: { def: ComponentDef }) {
         </code>
       </pre>
       {caption && (
-        <figcaption className="border-t border-white/10 px-4 py-2 text-xs text-white/50">
+        <figcaption className="border-t border-(--color-line) px-4 py-2 text-xs text-(--color-mist)">
           {caption}
         </figcaption>
       )}

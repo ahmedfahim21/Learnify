@@ -138,7 +138,7 @@ function renderNode(id: string, ctx: NodeContext): React.ReactNode {
   switch (def.component) {
     case "Narration":
       return (
-        <div key={id} className="text-white/85">
+        <div key={id} className="text-(--color-fg)">
           <Markdown text={asString(def.properties.text)} />
         </div>
       );
@@ -148,13 +148,13 @@ function renderNode(id: string, ctx: NodeContext): React.ReactNode {
       return (
         <div
           key={id}
-          className="space-y-2 rounded-xl border border-white/15 bg-white/[0.04] p-4"
+          className="space-y-2 border border-(--color-line) bg-(--color-raised) p-4"
         >
-          <h3 className="text-lg font-semibold">
+          <h3 className="text-lg">
             {emoji ? `${emoji} ` : ""}
             {asString(def.properties.title)}
           </h3>
-          <div className="text-white/80">
+          <div className="text-(--color-fg)">
             <Markdown text={asString(def.properties.body)} />
           </div>
         </div>
@@ -212,7 +212,7 @@ function renderNode(id: string, ctx: NodeContext): React.ReactNode {
       return (
         <div
           key={id}
-          className="rounded border border-amber-400/40 bg-amber-400/10 p-2 text-xs text-amber-200"
+          className="border border-(--color-mango)/40 bg-(--color-mango)/10 p-2 text-xs text-(--color-mango)"
         >
           Unknown widget: {def.component}
         </div>

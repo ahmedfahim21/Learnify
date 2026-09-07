@@ -22,7 +22,7 @@ const nodeLabel = (id: string) => id.replace("node-", "Node ");
 
 /** Position on the ring for a 0..1 hash value — 0 at 12 o'clock, clockwise.
  *
- *  Coordinates are rounded: Math.sin/cos are only specified to within the
+ *  Coordinates are : Math.sin/cos are only specified to within the
  *  last ULP, so Node (SSR) and the browser can differ in the final digit,
  *  and React reads that as a hydration mismatch. Two decimals is far below
  *  one pixel on a 260px canvas. */

@@ -65,16 +65,16 @@ export function QueueBackpressureSim({
         <SimSlider spec={specOf("workers")} value={workers} onChange={setWorkers} />
       </div>
 
-      <div className="space-y-2 rounded-lg border border-white/10 bg-white/[0.02] p-3">
+      <div className="space-y-2 border border-(--color-line) bg-(--color-surface) p-3">
         <div className="flex items-baseline justify-between">
-          <span className="text-xs text-white/50">Wait time vs. utilisation</span>
+          <span className="text-xs text-(--color-mist)">Wait time vs. utilisation</span>
           {out.unstable && (
-            <span className="text-xs text-rose-300">
+            <span className="text-xs text-(--color-strawberry)">
               unstable — arrivals exceed total capacity
             </span>
           )}
         </div>
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-sky-300" role="img" aria-label="Queue wait time curve">
+        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-(--color-blueberry)" role="img" aria-label="Queue wait time curve">
           {/* Gridline at rho = 0.8, the point past which the curve runs away. */}
           <line
             x1={(0.8 / MAX_RHO) * CHART_W}
@@ -87,7 +87,7 @@ export function QueueBackpressureSim({
           <path d={path} fill="none" stroke="currentColor" strokeWidth={1.75} />
           <circle cx={here.x} cy={here.y} r={4} fill="#fbbf24" />
         </svg>
-        <div className="flex justify-between text-[10px] text-white/35">
+        <div className="flex justify-between text-[10px] text-(--color-faint)">
           <span>ρ = 0</span>
           <span>ρ = 0.8</span>
           <span>ρ → 1</span>

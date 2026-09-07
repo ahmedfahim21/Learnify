@@ -50,9 +50,9 @@ export function SimulatorWidget({ def }: { def: ComponentDef }) {
 
   if (!spec || !Component) {
     return (
-      <div className="space-y-1 rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-4 text-sm text-amber-100/80">
-        <p className="font-medium">This simulator isn&apos;t available yet.</p>
-        <p className="text-xs text-amber-100/60">({props.simulatorId})</p>
+      <div className="space-y-1 border border-(--color-mango)/30 bg-(--color-mango)/[0.06] p-4 text-sm text-(--color-mango)/80">
+        <p>This simulator isn&apos;t available yet.</p>
+        <p className="text-xs text-(--color-mango)/60">({props.simulatorId})</p>
       </div>
     );
   }
@@ -60,10 +60,10 @@ export function SimulatorWidget({ def }: { def: ComponentDef }) {
   const initial = resolveParams(spec, props.params);
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/15 bg-white/[0.03] p-4">
+    <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
       <div>
-        <p className="font-medium text-white/90">{asString(props.title) || spec.title}</p>
-        <p className="text-xs text-white/50">{asString(props.intro) || spec.summary}</p>
+        <p className="text-(--color-fg)">{asString(props.title) || spec.title}</p>
+        <p className="text-xs text-(--color-mist)">{asString(props.intro) || spec.summary}</p>
       </div>
       <Component spec={spec} initial={initial} />
       <SimNotice text={props.notice} />
