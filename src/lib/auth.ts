@@ -1,68 +1,28 @@
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-
-import { getDb } from "@/db";
-import { authAccounts, authSessions, authVerifications, users } from "@/db/schema";
+import { createNeonAuth } from "@neondatabase/auth/next/server";
 
 /**
- * Better Auth, pointed at the existing `users` table.
+ * Neon's Managed Better Auth.
  *
- * Two deliberate choices:
+ * Neon hosts the auth server and owns the `neon_auth` schema; this module only
+ * holds the client that talks to it. That's the whole reason the previous
+ * self-hosted Better Auth setup (its own config, adapter, and three auth_*
+ * tables) is gone — it's the same library, run by the database provider.
  *
- * 1. Better Auth uses our `users` table as its `user` model rather than
- *    creating its own, so the app keeps a single user identity and every
- *    existing foreign key (topics, mastery, streaks, ...) stays valid. Its ids
- *    are generated as UUIDs to fit that column's type.
- * 2. Construction is lazy and memoised. `getDb()` throws without DATABASE_URL,
- *    and building the app imports modules — so an eagerly-constructed auth
- *    instance would make `next build` require a live database.
+ * OAuth providers are configured in the Neon Console rather than here, so no
+ * client secrets ever reach this repo or its environment.
+ *
+ * Built lazily and memoised: the cookie secret is only present at runtime, and
+ * an eagerly-constructed instance would make `next build` require it.
  */
-
-/** Only register a provider once its credentials actually exist, so the app
- *  runs (and builds) with none, one, or both configured. */
-function socialProviders() {
-  const providers: Record<string, { clientId: string; clientSecret: string }> = {};
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    providers.google = {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    };
-  }
-  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-    providers.github = {
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-    };
-  }
-  return providers;
-}
-
-/** Which providers the sign-in page should offer. Safe to call anywhere —
- *  it reads env presence only, never secrets. */
-export function configuredProviders(): ("google" | "github")[] {
-  return Object.keys(socialProviders()) as ("google" | "github")[];
-}
-
-// Wrapped in a factory so the precise generic type is inferred from the
-// options object — annotating with betterAuth's default generic loses it.
 function createAuth() {
-  return betterAuth({
-    database: drizzleAdapter(getDb(), {
-      provider: "pg",
-      schema: {
-        user: users,
-        session: authSessions,
-        account: authAccounts,
-        verification: authVerifications,
-      },
-    }),
-    socialProviders: socialProviders(),
-    // The `users.id` column is a uuid, so ids minted for every model have to
-    // be UUIDs too (the auth_* tables use text ids, which accept them fine).
-    advanced: { database: { generateId: () => crypto.randomUUID() } },
-    secret: process.env.BETTER_AUTH_SECRET,
-    baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-  });
+  const secret = process.env.NEON_AUTH_COOKIE_SECRET;
+  const baseUrl = process.env.NEON_AUTH_BASE_URL;
+  if (!secret || !baseUrl) {
+    throw new Error(
+      "NEON_AUTH_BASE_URL and NEON_AUTH_COOKIE_SECRET must be set. See .env.example.",
+    );
+  }
+  return createNeonAuth({ baseUrl, cookies: { secret } });
 }
 
 let cached: ReturnType<typeof createAuth> | null = null;
@@ -70,4 +30,27 @@ let cached: ReturnType<typeof createAuth> | null = null;
 export function getAuth(): ReturnType<typeof createAuth> {
   cached ??= createAuth();
   return cached;
+}
+
+/** Whether auth is configured at all, so UI can say so instead of failing. */
+export function isAuthConfigured(): boolean {
+  return Boolean(process.env.NEON_AUTH_BASE_URL && process.env.NEON_AUTH_COOKIE_SECRET);
+}
+
+export const SOCIAL_PROVIDERS = ["google", "github"] as const;
+export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
+
+/**
+ * Which providers the sign-in page offers.
+ *
+ * Neon holds the OAuth credentials in its Console and exposes no endpoint to
+ * enumerate what's enabled, so this can't be detected — it's declared with
+ * NEON_AUTH_PROVIDERS instead, and must match the Console. Listing a provider
+ * that isn't configured there renders a button that can only fail.
+ */
+export function configuredProviders(): SocialProvider[] {
+  const raw = process.env.NEON_AUTH_PROVIDERS;
+  if (!raw) return [...SOCIAL_PROVIDERS];
+  const wanted = raw.split(",").map((p) => p.trim().toLowerCase());
+  return SOCIAL_PROVIDERS.filter((p) => wanted.includes(p));
 }

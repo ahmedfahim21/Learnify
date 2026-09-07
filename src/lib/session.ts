@@ -1,5 +1,3 @@
-import { headers } from "next/headers";
-
 import { getAuth } from "./auth";
 
 /**
@@ -19,14 +17,21 @@ export interface CurrentUser {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  const result = await getAuth().api.getSession({ headers: await headers() });
-  if (!result?.user) return null;
-  return {
-    id: result.user.id,
-    name: result.user.name ?? null,
-    email: result.user.email,
-    image: result.user.image ?? null,
-  };
+  // Neon's server SDK reads the session cookie from the request context
+  // itself, and throws rather than returning null when there is none.
+  try {
+    const result = await getAuth().getSession();
+    const user = result?.data?.user;
+    if (!user) return null;
+    return {
+      id: user.id,
+      name: user.name ?? null,
+      email: user.email,
+      image: user.image ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function getCurrentUserId(): Promise<string | null> {

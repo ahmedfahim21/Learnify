@@ -1,5 +1,4 @@
 import {
-  boolean,
   date,
   index,
   integer,
@@ -21,81 +20,21 @@ import {
  */
 
 /**
- * Learners — also Better Auth's `user` model (see `src/lib/auth.ts`).
+ * Auth lives in Neon's managed `neon_auth` schema — Neon runs Better Auth as a
+ * hosted service and owns the `neon_auth.user` table and its rows.
  *
- * Better Auth is pointed at this existing table rather than given its own, so
- * the whole schema keeps one user identity and every existing foreign key
- * (topics, mastery, streaks, sessions, learner_notes) stays valid. It's
- * configured to generate UUIDs so the ids it mints fit this `uuid` column.
+ * That table is deliberately NOT declared here. drizzle-kit manages everything
+ * in this file, and it must never generate CREATE/ALTER/DROP for a table the
+ * database provider owns. So `user_id` columns below are plain uuids, and the
+ * foreign keys onto `neon_auth.user(id)` are declared in SQL instead — see
+ * drizzle/0008_neon_auth.sql. The database still enforces them; only their
+ * definition lives outside Drizzle.
  */
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull().unique(),
-  name: text("name"),
-  /** Better Auth requires this field; OAuth sign-ins arrive already verified. */
-  emailVerified: boolean("email_verified").notNull().default(false),
-  /** Avatar URL from the OAuth provider. */
-  image: text("image"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
-/**
- * Better Auth's own tables, prefixed `auth_` so nothing collides with the
- * tutoring `sessions` table, which is a completely different concept.
- */
-export const authSessions = pgTable("auth_sessions", {
-  id: text("id").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  token: text("token").notNull().unique(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-/** One row per linked provider identity (google, github). */
-export const authAccounts = pgTable("auth_accounts", {
-  id: text("id").primaryKey(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  accountId: text("account_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
-  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
-  scope: text("scope"),
-  idToken: text("id_token"),
-  password: text("password"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
-/** Short-lived tokens (email verification, OAuth state). */
-export const authVerifications = pgTable("auth_verifications", {
-  id: text("id").primaryKey(),
-  identifier: text("identifier").notNull(),
-  value: text("value").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
 
 /** A subject the user wants to learn, e.g. "Fourier transforms". */
 export const topics = pgTable("topics", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
   title: text("title").notNull(),
   /**
    * Concept-graph lifecycle: a topic is decomposed into a prerequisite DAG of
@@ -197,9 +136,7 @@ export const conceptEdges = pgTable(
 /** A single live tutoring session against a topic. */
 export const sessions = pgTable("sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
   topicId: uuid("topic_id")
     .notNull()
     .references(() => topics.id, { onDelete: "cascade" }),
@@ -268,9 +205,7 @@ export const mastery = pgTable(
   "mastery",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
     conceptId: uuid("concept_id")
       .notNull()
       .references(() => concepts.id, { onDelete: "cascade" }),
@@ -305,9 +240,7 @@ export const mastery = pgTable(
  */
 export const reviewEvents = pgTable("review_events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull(),
   conceptId: uuid("concept_id")
     .notNull()
     .references(() => concepts.id, { onDelete: "cascade" }),
@@ -333,10 +266,7 @@ export const reviewEvents = pgTable("review_events", {
  */
 export const streaks = pgTable("streaks", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .unique()
-    .references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().unique(),
   current: integer("current").notNull().default(0),
   longest: integer("longest").notNull().default(0),
   // YYYY-MM-DD of the last day with activity (date mode keeps it tz-agnostic).
@@ -360,9 +290,7 @@ export const learnerNotes = pgTable(
   "learner_notes",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
     content: text("content").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -451,9 +379,7 @@ export const courseProgress = pgTable(
   "course_progress",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").notNull(),
     /** Slug into the authored course registry. */
     problemSlug: text("problem_slug").notNull(),
     /** One of DESIGN_PHASES — the chapter within that course. */
@@ -468,8 +394,6 @@ export const courseProgress = pgTable(
   ],
 );
 
-export type User = typeof users.$inferSelect;
-export type NewUser = typeof users.$inferInsert;
 export type Topic = typeof topics.$inferSelect;
 export type NewTopic = typeof topics.$inferInsert;
 export type Concept = typeof concepts.$inferSelect;

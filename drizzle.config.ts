@@ -9,6 +9,11 @@ export default {
     // (migrate/push/studio). `generate` works offline from the schema alone.
     url: process.env.DATABASE_URL ?? "",
   },
+  // Neon Auth owns the `neon_auth` schema — its tables are declared in
+  // schema.ts only so our foreign keys and queries are typed. Restricting
+  // drizzle-kit to `public` stops it generating CREATE/ALTER/DROP for a
+  // schema the database provider manages.
+  schemaFilter: ["public"],
   strict: true,
   verbose: true,
 } satisfies Config;

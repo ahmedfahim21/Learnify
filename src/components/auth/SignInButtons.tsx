@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import type { SocialProvider } from "@/lib/auth";
 import { signIn } from "@/lib/authClient";
 
 const LABELS: Record<string, string> = { google: "Continue with Google", github: "Continue with GitHub" };
@@ -10,13 +11,13 @@ export function SignInButtons({
   providers,
   next,
 }: {
-  providers: ("google" | "github")[];
+  providers: SocialProvider[];
   next: string;
 }) {
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function start(provider: "google" | "github") {
+  async function start(provider: SocialProvider) {
     setPending(provider);
     setError(null);
     try {

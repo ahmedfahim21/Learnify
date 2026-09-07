@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { configuredProviders } from "@/lib/auth";
+import { configuredProviders, isAuthConfigured } from "@/lib/auth";
 import { getCurrentUserId } from "@/lib/session";
 import { SignInButtons } from "@/components/auth/SignInButtons";
 
@@ -14,7 +14,7 @@ export default async function SignInPage({
   const { next } = await searchParams;
   if (await getCurrentUserId()) redirect(next ?? "/courses");
 
-  const providers = configuredProviders();
+  const providers = isAuthConfigured() ? configuredProviders() : [];
 
   return (
     <main className="wrap-prose flex min-h-[70vh] flex-col justify-center gap-6 py-16">
@@ -36,10 +36,9 @@ export default async function SignInPage({
         <div className="space-y-2 border border-(--color-mango)/30 bg-(--color-mango)/[0.06] p-4">
           <p className="label">Not configured</p>
           <p className="text-sm text-(--color-mist)">
-            No OAuth provider is set up on this deployment yet. Add{" "}
-            <code>GOOGLE_CLIENT_ID</code>/<code>GOOGLE_CLIENT_SECRET</code> or{" "}
-            <code>GITHUB_CLIENT_ID</code>/<code>GITHUB_CLIENT_SECRET</code> to the environment
-            and restart.
+            Auth isn&apos;t configured on this deployment yet. Set{" "}
+            <code>NEON_AUTH_BASE_URL</code> and <code>NEON_AUTH_COOKIE_SECRET</code> from the
+            Neon Console&apos;s Auth tab, then restart.
           </p>
         </div>
       )}
