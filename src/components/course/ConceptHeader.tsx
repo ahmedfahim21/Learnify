@@ -16,8 +16,8 @@ import { layoutSystemDiagram } from "@/lib/a2ui/diagram";
  * it has no business being a React Flow instance or waiting on hydration.
  */
 
-const BAND_W = 1200;
-const BAND_H = 300;
+/** Padding around the drawing, in the diagram's own units. */
+const PAD = 26;
 
 /** The accent that appears most across a concept's skills — its colour. */
 function dominantAccent(problem: SystemDesignProblem): string {
@@ -46,77 +46,70 @@ function dominantAccent(problem: SystemDesignProblem): string {
 export function ConceptHeaderGraphic({ problem }: { problem: SystemDesignProblem }) {
   const diagram = getPrimaryDiagram(problem);
   const accent = `var(--color-${dominantAccent(problem)})`;
-  const gridId = `grid-${problem.slug}`;
-  const fadeId = `fade-${problem.slug}`;
-
   const layout = diagram ? layoutSystemDiagram(diagram) : null;
 
   return (
-    <div className="relative overflow-hidden border border-(--color-line) bg-(--color-canvas)">
-      <svg viewBox={`0 0 ${BAND_W} ${BAND_H}`} aria-hidden className="block h-32 w-full sm:h-40">
-        <defs>
-          <pattern id={gridId} width={24} height={24} patternUnits="userSpaceOnUse">
-            <circle cx={1} cy={1} r={1} fill="var(--color-line)" />
-          </pattern>
-          {/* The drawing runs off the right edge rather than sitting centred in
-              a box — it reads as a fragment of something larger, which is what
-              a header is. */}
-          <linearGradient id={fadeId} x1="0" x2="1">
-            <stop offset="0.45" stopColor="white" stopOpacity="1" />
-            <stop offset="1" stopColor="white" stopOpacity="0" />
-          </linearGradient>
-          <mask id={`m-${problem.slug}`}>
-            <rect width={BAND_W} height={BAND_H} fill={`url(#${fadeId})`} />
-          </mask>
-        </defs>
-
-        <rect width={BAND_W} height={BAND_H} fill={`url(#${gridId})`} />
-
-        {layout && (
-          <g
-            mask={`url(#m-${problem.slug})`}
-            transform={`translate(${BAND_W * 0.42} ${BAND_H / 2}) scale(${
-              Math.min(1.5, (BAND_H * 0.8) / Math.max(layout.height, 1))
-            }) translate(${-layout.width / 2} ${-layout.height / 2})`}
-          >
-            {diagram?.edges.map((edge) => {
-              const from = layout.nodesById.get(edge.from);
-              const to = layout.nodesById.get(edge.to);
-              if (!from || !to) return null;
-              return (
-                <line
-                  key={edge.id}
-                  x1={from.x + from.w / 2}
-                  y1={from.y + from.h / 2}
-                  x2={to.x + to.w / 2}
-                  y2={to.y + to.h / 2}
-                  stroke="var(--color-faint)"
-                  strokeWidth={2}
-                  opacity={0.45}
-                />
-              );
-            })}
-            {layout.nodes.map((laid) => (
-              <rect
-                key={laid.id}
-                x={laid.x}
-                y={laid.y}
-                width={laid.w}
-                height={laid.h}
-                rx={4}
-                fill="var(--color-node)"
-                stroke={laid.node.accent ? accent : "var(--color-faint)"}
-                strokeWidth={2}
-                opacity={laid.node.accent ? 1 : 0.6}
+    <div
+      className="relative overflow-hidden border border-(--color-line) bg-(--color-canvas)"
+      // The dotted ground and the accent rule belong to the band, not the
+      // drawing. Keeping them in CSS means they span the full width whatever
+      // aspect ratio the container ends up at, while the SVG is free to fit
+      // the diagram without dragging the background around with it.
+      style={{
+        backgroundImage: "radial-gradient(var(--color-line) 1px, transparent 1px)",
+        backgroundSize: "24px 24px",
+      }}
+    >
+      {layout && (
+        // The viewBox is the drawing's own bounds rather than a fixed band, so
+        // the diagram fills the available height at any container width. A
+        // fixed 4:1 band left it floating at 40% scale in a sea of dots.
+        <svg
+          viewBox={`${-PAD} ${-PAD} ${layout.width + PAD * 2} ${layout.height + PAD * 2}`}
+          preserveAspectRatio="xMidYMid meet"
+          aria-hidden
+          className="block h-32 w-full sm:h-44"
+        >
+          {diagram?.edges.map((edge) => {
+            const from = layout.nodesById.get(edge.from);
+            const to = layout.nodesById.get(edge.to);
+            if (!from || !to) return null;
+            return (
+              <line
+                key={edge.id}
+                x1={from.x + from.w / 2}
+                y1={from.y + from.h / 2}
+                x2={to.x + to.w / 2}
+                y2={to.y + to.h / 2}
+                stroke={accent}
+                strokeWidth={3}
+                opacity={0.3}
               />
-            ))}
-          </g>
-        )}
+            );
+          })}
+          {layout.nodes.map((laid, i) => (
+            <rect
+              key={laid.id}
+              x={laid.x}
+              y={laid.y}
+              width={laid.w}
+              height={laid.h}
+              rx={5}
+              // Every box takes the concept's colour, a third of them filled:
+              // an all-grey outline drawing read as absent rather than subtle,
+              // and left every concept looking like every other one.
+              fill={i % 3 === 0 ? accent : "var(--color-node)"}
+              fillOpacity={i % 3 === 0 ? 0.14 : 1}
+              stroke={accent}
+              strokeWidth={3}
+              opacity={laid.node.accent ? 1 : 0.55}
+            />
+          ))}
+        </svg>
+      )}
 
-        {/* A rule in the concept's own colour, so the band is never just grey
-            even for a concept whose diagram is small. */}
-        <rect x={0} y={BAND_H - 4} width={BAND_W * 0.28} height={4} fill={accent} />
-      </svg>
+      {/* Never just grey, even for a concept whose diagram is small. */}
+      <span className="absolute bottom-0 left-0 h-1 w-1/4" style={{ background: accent }} />
     </div>
   );
 }
