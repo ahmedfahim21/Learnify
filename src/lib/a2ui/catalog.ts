@@ -342,6 +342,23 @@ export type ValidatedComponent = z.infer<typeof ComponentSchema>;
 
 export const WIDGET_NAMES = Object.keys(widgetProps) as WidgetName[];
 
+/**
+ * The widgets the server grades itself, against the answer key the model
+ * embedded in the original payload. Everything else is fuzzy and the tutor
+ * judges it.
+ *
+ * Lives with the catalog because two layers need it and neither should own a
+ * second copy: `gradeAction` decides these deterministically, and
+ * `validatePresentUi` refuses to render more than one on a screen.
+ */
+export const GRADED_WIDGETS = [
+  "MultipleChoiceCheck",
+  "OrderingExercise",
+  "MatchingPairs",
+] as const satisfies readonly WidgetName[];
+
+export type GradedWidget = (typeof GRADED_WIDGETS)[number];
+
 export type SystemDiagramProps = z.infer<typeof widgetProps.SystemDiagram>;
 export type DiagramNode = z.infer<typeof diagramNodeSchema>;
 export type DiagramGroup = z.infer<typeof diagramGroupSchema>;

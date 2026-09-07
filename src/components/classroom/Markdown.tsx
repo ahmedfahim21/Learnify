@@ -35,6 +35,17 @@ function renderInline(text: string): ReactNode[] {
   });
 }
 
+/**
+ * Inline-only markdown, for the short prose the model writes into widget
+ * fields — a check's prompt, an option label, a flashcard side. These were
+ * rendered as raw strings, so a tutor writing *active* put asterisks on the
+ * screen. They are single lines by construction, so they get the inline
+ * grammar without the block one wrapping them in paragraphs.
+ */
+export function InlineMarkdown({ text }: { text: string }) {
+  return <>{renderInline(text)}</>;
+}
+
 export function Markdown({ text }: { text: string }) {
   const lines = text.split("\n");
   const blocks: ReactNode[] = [];

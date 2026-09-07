@@ -22,7 +22,7 @@ export default async function SignInPage({
         <p className="label">Sign in</p>
         <h1 className="text-3xl">Keep your progress</h1>
         <p className="text-(--color-mist)">
-          Reading is open to everyone — no account needed. Signing in is what lets Learnify
+          Reading is open to everyone — no account needed. Signing in is what lets Learnify.sd
           remember which chapters you have finished, track what you have mastered, and schedule
           the concepts that got shaky for review.
         </p>

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { ComponentDef } from "@/lib/a2ui/messages";
 import { asString, emitAction, readOptions, type NodeContext } from "../rendererContext";
+import { InlineMarkdown } from "../Markdown";
 export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
   const left = readOptions(def.properties.left);
   const right = readOptions(def.properties.right);
@@ -22,7 +23,7 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
 
   return (
     <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
-      {prompt && <p>{prompt}</p>}
+      {prompt && <p><InlineMarkdown text={prompt} /></p>}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2">
           {left.map((item) => {

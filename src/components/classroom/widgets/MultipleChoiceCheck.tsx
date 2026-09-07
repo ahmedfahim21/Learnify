@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { ComponentDef } from "@/lib/a2ui/messages";
 import { asString, emitAction, type NodeContext } from "../rendererContext";
+import { InlineMarkdown } from "../Markdown";
 export function MultipleChoiceCheck({
   def,
   ctx,
@@ -17,7 +18,9 @@ export function MultipleChoiceCheck({
 
   return (
     <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
-      <p>{prompt}</p>
+      <p>
+        <InlineMarkdown text={prompt} />
+      </p>
       <div className="flex flex-col gap-2">
         {options.map((option) => {
           const isChosen = chosen === option.id;
@@ -40,7 +43,7 @@ export function MultipleChoiceCheck({
                   : "border-(--color-line) hover:border-(--color-faint) hover:bg-(--color-raised)"
               } disabled:cursor-not-allowed disabled:opacity-60`}
             >
-              {option.label}
+              <InlineMarkdown text={option.label} />
             </button>
           );
         })}

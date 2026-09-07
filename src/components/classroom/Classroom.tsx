@@ -56,6 +56,13 @@ export function Classroom({
   // different remedy, so it gets its own state and its own message.
   const [budgetSpent, setBudgetSpent] = useState(false);
   const startedRef = useRef(false);
+  const surfaceEndRef = useRef<HTMLDivElement | null>(null);
+  // How much is on screen. Grows every time the model adds components, which
+  // is the only moment worth scrolling for.
+  const componentCount = Object.values(state.surfaces).reduce(
+    (n, surface) => n + surface.order.length,
+    0,
+  );
 
   const postTurn = useCallback(
     async (body: {
@@ -136,6 +143,29 @@ export function Classroom({
     }
   }, [sessionStatus, initialMessages.length, postTurn]);
 
+  // New content used to arrive below the fold with no indication it had: the
+  // learner answered a question and the screen appeared not to react. Bring
+  // the new material into view once the turn settles, and only then — moving
+  // the page mid-stream would fight the reader.
+  // Seeded with what was on screen at mount, so the first paint — which is
+  // already at the top of the page — does not scroll itself out of view.
+  const scrolledFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (scrolledFor.current === null) {
+      scrolledFor.current = componentCount;
+      return;
+    }
+    if (status === "streaming") return;
+    if (componentCount === scrolledFor.current) return;
+    scrolledFor.current = componentCount;
+    surfaceEndRef.current?.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "end",
+    });
+  }, [componentCount, status]);
+
   const onAction = useCallback(
     (action: A2UIActionMessage) => {
       // Forward the structured interaction so the server can grade checks
@@ -177,6 +207,9 @@ export function Classroom({
       />
 
       {status === "streaming" && <TurnSkeleton />}
+
+      {/* Scroll target: the end of everything rendered so far. */}
+      <div ref={surfaceEndRef} aria-hidden />
 
       {status === "completed" && (
         <p className="border border-(--color-signal)/30 bg-(--color-signal)/[0.06] px-4 py-3 text-sm text-(--color-signal)">

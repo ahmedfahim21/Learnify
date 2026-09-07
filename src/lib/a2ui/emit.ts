@@ -4,6 +4,7 @@ import {
   ComponentSchema,
   type SystemDiagramProps,
   type ValidatedComponent,
+  GRADED_WIDGETS,
 } from "./catalog";
 import { validateSystemDiagram } from "./diagram";
 import {
@@ -110,6 +111,27 @@ export function validatePresentUi(
         );
       }
     }
+  }
+
+  // At most one server-graded check per screen.
+  //
+  // Grading is per action: the learner answers one widget, the server grades
+  // that one, and the next turn replaces the surface. A screen carrying two
+  // checks therefore always stranded one of them — answered or not, it was
+  // scored by nothing and swept away by the next turn, while looking for all
+  // the world like it was still waiting. Rejecting it here means the model
+  // repairs it in the same round trip the catalog uses for anything else,
+  // rather than the learner discovering it.
+  const gradedOnScreen = components.filter((c) =>
+    (GRADED_WIDGETS as readonly string[]).includes(c.component),
+  );
+  if (gradedOnScreen.length > 1) {
+    throw new A2UIValidationError(
+      `A screen may contain at most one graded check; this one has ${gradedOnScreen.length} (${gradedOnScreen
+        .map((c) => `"${c.id}"`)
+        .join(", ")}). Keep one and ask the rest on later turns — only the check the learner answers gets graded.`,
+      [],
+    );
   }
 
   const topLevelCount = components.filter((c) => !childIds.has(c.id)).length;

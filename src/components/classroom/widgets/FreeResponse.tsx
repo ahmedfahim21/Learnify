@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { ComponentDef } from "@/lib/a2ui/messages";
 import { asString, emitAction, type NodeContext } from "../rendererContext";
+import { InlineMarkdown } from "../Markdown";
 export function FreeResponse({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -11,7 +12,7 @@ export function FreeResponse({ def, ctx }: { def: ComponentDef; ctx: NodeContext
 
   return (
     <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
-      <p>{prompt}</p>
+      <p><InlineMarkdown text={prompt} /></p>
       <textarea
         value={text}
         disabled={locked}

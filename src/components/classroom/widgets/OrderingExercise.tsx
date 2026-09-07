@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import type { ComponentDef } from "@/lib/a2ui/messages";
 import { asString, emitAction, readOptions, type NodeContext } from "../rendererContext";
+import { InlineMarkdown } from "../Markdown";
 export function OrderingExercise({
   def,
   ctx,
@@ -38,7 +39,9 @@ export function OrderingExercise({
 
   return (
     <div className="space-y-3 border border-(--color-line) bg-(--color-raised) p-4">
-      <p>{asString(def.properties.prompt)}</p>
+      <p>
+        <InlineMarkdown text={asString(def.properties.prompt)} />
+      </p>
       <ol className="space-y-2">
         {order.map((id, index) => (
           <li

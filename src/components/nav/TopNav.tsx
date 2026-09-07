@@ -19,17 +19,38 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-(--color-line) bg-(--color-ink)/85 backdrop-blur">
       <div className="wrap flex h-14 items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <svg viewBox="0 0 28 16" aria-hidden className="h-4 w-7">
-            <line x1="5" y1="8" x2="14" y2="8" stroke="var(--color-faint)" strokeWidth="1.5" />
-            <line x1="14" y1="8" x2="23" y2="8" stroke="var(--color-faint)" strokeWidth="1.5" />
-            <rect x="1" y="5" width="6" height="6" rx="1" fill="var(--color-ink)" stroke="var(--color-signal)" strokeWidth="1.5" />
-            <rect x="11" y="5" width="6" height="6" rx="1" fill="var(--color-ink)" stroke="var(--color-deep)" strokeWidth="1.5" />
-            <rect x="21" y="5" width="6" height="6" rx="1" fill="var(--color-ink)" stroke="var(--color-warn)" strokeWidth="1.5" />
+        <Link href="/" className="group flex items-center gap-2.5">
+          {/* The mark is a screen being composed, not an architecture diagram:
+              a frame with a filled block, two rules and an outlined block laid
+              out inside it. The diagrams are one widget in the catalog — what
+              the thing actually does is assemble a layout. */}
+          <svg viewBox="0 0 20 20" aria-hidden className="h-[18px] w-[18px]">
+            <rect
+              x="0.75"
+              y="0.75"
+              width="18.5"
+              height="18.5"
+              rx="2.5"
+              fill="var(--color-node)"
+              stroke="var(--color-line)"
+              strokeWidth="1.5"
+            />
+            <rect x="4" y="4.5" width="8" height="2.5" rx="1" fill="var(--color-signal)" />
+            <rect x="4" y="8.5" width="5" height="1.5" rx="0.75" fill="var(--color-faint)" />
+            <rect x="4" y="12.5" width="3.5" height="3.5" rx="1" fill="var(--color-deep)" />
+            <rect
+              x="10.5"
+              y="12.5"
+              width="5.5"
+              height="3.5"
+              rx="1"
+              fill="none"
+              stroke="var(--color-warn)"
+              strokeWidth="1.5"
+            />
           </svg>
-          <span className="flex items-baseline gap-2">
-            <span className="text-(--color-fg)">Learnify</span>
-            <span className="label hidden sm:inline">system design</span>
+          <span className="text-(--color-fg)">
+            Learnify<span className="text-(--color-signal)">.sd</span>
           </span>
         </Link>
         <nav className="flex items-center gap-1">

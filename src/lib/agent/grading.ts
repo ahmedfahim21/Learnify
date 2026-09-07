@@ -13,7 +13,8 @@
  * (and to drive `record_evidence`).
  */
 
-import type { WidgetName } from "../a2ui/catalog";
+// Re-exported so callers already importing the grader keep working.
+export { GRADED_WIDGETS, type GradedWidget } from "../a2ui/catalog";
 import type { ComponentDef } from "../a2ui/messages";
 import type { ValidatePresentUiInput } from "../a2ui/emit";
 import type { EvidenceKind } from "../mastery/update";
@@ -130,20 +131,6 @@ function fallbackLabel(action: LearnerAction): string {
     ? label
     : "(the learner interacted)";
 }
-
-/**
- * The widgets `gradeAction` decides for itself, against the answer key the
- * model embedded in the original payload. Everything else is fuzzy and the
- * tutor judges it. Exported so the UI can say which is which without keeping
- * a second, driftable list.
- */
-export const GRADED_WIDGETS = [
-  "MultipleChoiceCheck",
-  "OrderingExercise",
-  "MatchingPairs",
-] as const satisfies readonly WidgetName[];
-
-export type GradedWidget = (typeof GRADED_WIDGETS)[number];
 
 /**
  * Grade a learner action against the component that produced it. Returns the

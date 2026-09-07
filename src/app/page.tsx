@@ -78,7 +78,7 @@ export default function Home() {
             <span className="text-(--color-signal)">its own interface.</span>
           </h1>
           <p className="max-w-prose text-lg leading-relaxed text-(--color-mist)">
-            Learnify teaches system design without a chat box. The model never returns prose to
+            Learnify.sd teaches system design without a chat box. The model never returns prose to
             display — it calls a tool that emits declarative UI, which is validated against a
             fixed catalog before the browser sees it. The renderer interprets that data and
             executes none of it.
