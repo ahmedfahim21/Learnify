@@ -3,9 +3,11 @@ import Link from "next/link";
 import { getPrimaryDiagram, PROBLEMS } from "@/content/systemDesign";
 import { QUIZ_BANK } from "@/content/systemDesign/quizzes";
 import { A2UI_LOOP } from "@/content/site/architecture";
-import { WIDGET_NAMES } from "@/lib/a2ui/catalog";
+import { WIDGET_KIND, WIDGET_NAMES, type WidgetName } from "@/lib/a2ui/catalog";
+import { GRADED_WIDGETS } from "@/lib/agent/grading";
 import { SIMULATOR_IDS } from "@/lib/sims/ids";
 import { DiagramThumbnail } from "@/components/course/DiagramThumbnail";
+import { WidgetGlyph } from "@/components/site/WidgetGlyph";
 import { ChapterBlockRenderer } from "@/components/course/ChapterBlockRenderer";
 
 const ACCENTS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
@@ -16,6 +18,27 @@ const blocks = PROBLEMS.flatMap((p) => p.chapters.flatMap((c) => c.blocks));
 const QUESTION_COUNT =
   Object.values(QUIZ_BANK).reduce((n, q) => n + q.length, 0) +
   blocks.filter((b) => b.type === "quiz").length;
+
+/** One line per widget, saying what the tutor reaches for it to do. */
+const WIDGET_ROLE: Record<WidgetName, string> = {
+  Narration: "Explains, in prose",
+  ExplanationCard: "Isolates one idea",
+  MultipleChoiceCheck: "Asks, with distractors",
+  Flashcard: "Recall, self-rated",
+  OrderingExercise: "Put a sequence right",
+  MatchingPairs: "Connect two columns",
+  CodeSnippet: "Shows the code",
+  Diagram: "Sketches a relationship",
+  SystemDiagram: "Walks a request path",
+  Simulator: "Hands over the knobs",
+  FreeResponse: "Asks you to write it",
+  ProgressMeter: "Where you stand",
+  SessionRecap: "What the session covered",
+  Row: "Side by side",
+  Column: "Stacked",
+};
+
+const GRADED = new Set<string>(GRADED_WIDGETS);
 
 const GUARANTEES = [
   {
@@ -123,17 +146,34 @@ export default function Home() {
           <span className="label">The catalog</span>
         </div>
         <p className="max-w-(--measure-prose) text-(--color-mist)">
-          The vocabulary the tutor composes from. Adding a widget threads it through the tool
-          schema, server validation and the renderer at once — the catalog is the single source
-          of truth for all three.
+          The whole vocabulary the tutor composes from — every screen it can build is some
+          arrangement of these. Adding one threads it through the tool schema, server validation
+          and the renderer at once, because all three read the same definition.
         </p>
-        <div className="flex flex-wrap gap-2">
+        <ul className="grid gap-px border border-(--color-line) bg-(--color-line) sm:grid-cols-2 lg:grid-cols-3">
           {WIDGET_NAMES.map((name) => (
-            <span key={name} className="chip">
-              {name}
-            </span>
+            <li key={name} className="flex items-center gap-4 bg-(--color-ink) px-4 py-4">
+              <WidgetGlyph name={name} />
+              <div className="min-w-0 space-y-0.5">
+                <p className="flex flex-wrap items-baseline gap-2">
+                  <span className="font-mono text-sm text-(--color-fg)">{name}</span>
+                  {GRADED.has(name) && (
+                    <span className="label text-(--color-deep)">graded</span>
+                  )}
+                  {WIDGET_KIND[name] === "container" && (
+                    <span className="label">layout</span>
+                  )}
+                </p>
+                <p className="text-sm text-(--color-mist)">{WIDGET_ROLE[name]}</p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
+        <p className="max-w-(--measure-prose) text-sm text-(--color-mist)">
+          The three marked <span className="text-(--color-deep)">graded</span> are scored by the
+          server against the answer key in the model&rsquo;s own payload, so the tutor is told
+          whether you were right rather than deciding it.
+        </p>
       </section>
 
       <section className="wrap space-y-8 border-t border-(--color-line) py-16">

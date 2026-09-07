@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { collectComponents, gradeAction, type LearnerAction } from "./grading";
+import { collectComponents, GRADED_WIDGETS, gradeAction, type LearnerAction } from "./grading";
 import { EventKind, type StoredEvent } from "./transcript";
 import { PRESENT_UI_TOOL_NAME } from "./tools";
 import type { ComponentDef } from "../a2ui/messages";
+import { WIDGET_NAMES } from "../a2ui/catalog";
 
 function mcq(overrides: Partial<ComponentDef["properties"]> = {}): ComponentDef {
   return {
@@ -257,5 +258,41 @@ describe("gradeAction — fuzzy and unknown interactions", () => {
     const result = gradeAction({ componentId: "ghost", name: "select" }, {});
     expect(result.verdict).toBe("ungraded");
     expect(result.message).toBe("(the learner interacted)");
+  });
+});
+
+describe("GRADED_WIDGETS", () => {
+  // The list is a claim about gradeAction's switch, and the landing page reads
+  // it. Drive both directions off the real function so neither can drift.
+  const ungraded = WIDGET_NAMES.filter((n) => !(GRADED_WIDGETS as readonly string[]).includes(n));
+
+  it.each(GRADED_WIDGETS)("%s is graded by the server", (name) => {
+    // A payload that cannot match any answer key, so a widget that is really
+    // graded must return "incorrect" rather than falling through to ungraded.
+    const def = {
+      id: "c1",
+      component: name,
+      properties: {
+        prompt: "?",
+        options: [{ id: "a", label: "A" }],
+        correctOptionId: "a",
+        items: ["x", "y"],
+        correctOrder: ["x", "y"],
+        left: [{ id: "l", label: "L" }],
+        right: [{ id: "r", label: "R" }],
+        correctPairs: [{ leftId: "l", rightId: "r" }],
+      },
+    } as unknown as ComponentDef;
+    const result = gradeAction(
+      { componentId: "c1", name: "submit", payload: { optionId: "zzz", order: ["y", "x"], pairs: [] } },
+      { c1: def },
+    );
+    expect(result.verdict).toBe("incorrect");
+  });
+
+  it.each(ungraded)("%s is left to the tutor", (name) => {
+    const def = { id: "c1", component: name, properties: {} } as unknown as ComponentDef;
+    const result = gradeAction({ componentId: "c1", name: "select", payload: { label: "x" } }, { c1: def });
+    expect(result.verdict).toBe("ungraded");
   });
 });
