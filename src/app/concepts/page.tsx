@@ -9,17 +9,17 @@ import { DifficultyPips } from "@/components/course/DifficultyPips";
 const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
 
 export const metadata = {
-  title: "Courses",
-  description: "The full curated system-design interview curriculum — animated diagrams, explorable simulators, an adaptive AI tutor.",
+  title: "Concepts",
+  description: "The full curated system-design curriculum — animated diagrams, explorable simulators, an adaptive AI tutor.",
 };
 
-/** The course catalog — a static server component reading the authored
+/** The concept catalog — a static server component reading the authored
  *  registry directly, no DB round trip, fully cacheable. */
 export default function CoursesPage() {
   return (
     <main className="wrap py-16">
       <header className="mb-12 max-w-(--measure-prose) space-y-3">
-        <p className="label">Courses</p>
+        <p className="label">Concepts</p>
         <h1 className="text-3xl">The system design curriculum</h1>
         <p className="text-(--color-mist)">
           Sixteen courses covering the canonical interview problems — each one an animated
@@ -36,10 +36,10 @@ export default function CoursesPage() {
           return (
             <Link
               key={problem.slug}
-              href={`/courses/${problem.slug}`}
+              href={`/concepts/${problem.slug}`}
               className="group flex flex-col gap-3 border border-(--color-line) p-5 transition-colors hover:border-(--color-faint) hover:bg-(--color-surface)"
             >
-              {/* The course's own architecture, so the catalog reads as a set
+              {/* The concept's own architecture, so the catalog reads as a set
                   of shapes rather than a wall of paragraphs. */}
               {diagram && (
                 <div className="-mx-5 -mt-5 mb-1 border-b border-(--color-line) bg-(--color-canvas) px-5 py-4">

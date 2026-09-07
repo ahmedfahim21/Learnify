@@ -14,7 +14,7 @@ interface Summary {
 /**
  * Per-course completion on the catalog cards.
  *
- * Fetched client-side so /courses stays statically prerendered, and rendered
+ * Fetched client-side so /concepts stays statically prerendered, and rendered
  * as nothing at all when signed out — an empty "0/7" for every visitor is
  * noise, not information.
  */

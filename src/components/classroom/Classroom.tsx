@@ -177,7 +177,7 @@ export function Classroom({
           <p>{error}</p>
           {/* No Retry here: retrying can only fail until the window resets, so
               the only useful action is the one that still works. */}
-          <Link href="/courses" className="underline underline-offset-4">
+          <Link href="/concepts" className="underline underline-offset-4">
             Take a written quiz instead →
           </Link>
         </div>

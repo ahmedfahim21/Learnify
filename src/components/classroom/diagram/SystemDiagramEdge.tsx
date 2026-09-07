@@ -59,18 +59,21 @@ export function SystemDiagramEdge({
           >
             {step !== undefined && (
               <span
-                className="flex h-5 w-5 items-center justify-center rounded-full border text-[10px] tabular-nums"
+                className="flex h-[22px] w-[22px] items-center justify-center rounded-full border text-[11px] tabular-nums shadow-sm"
                 style={{
                   borderColor: stroke,
+                  borderWidth: 1.5,
+                  // Filled when active, solid-surface otherwise — a badge on a
+                  // pale canvas needs its own ground to stay legible.
                   color: active ? "var(--color-ink)" : stroke,
-                  background: active ? stroke : "var(--color-ink)",
+                  background: active ? stroke : "var(--color-node)",
                 }}
               >
                 {step}
               </span>
             )}
             {label && (
-              <span className="max-w-[130px] truncate bg-(--color-ink)/90 px-1.5 py-0.5 text-[10px] leading-tight text-(--color-mist)">
+              <span className="max-w-[120px] truncate bg-(--color-node) px-1.5 py-0.5 text-[10px] leading-tight text-(--color-mist)">
                 {label}
               </span>
             )}

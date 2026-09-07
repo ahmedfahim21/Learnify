@@ -7,7 +7,7 @@ import { signOut, useSession } from "@/lib/authClient";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const LINKS = [
-  { href: "/courses", label: "Courses" },
+  { href: "/concepts", label: "Concepts" },
   { href: "/today", label: "Today" },
   { href: "/me", label: "Progress" },
 ];

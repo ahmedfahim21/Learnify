@@ -192,17 +192,18 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
               type="button"
               onClick={() => startPracticing(allConceptSlugs)}
               disabled={Boolean(starting)}
-              className="chip border-(--color-signal)/50 bg-(--color-signal)/10 text-(--color-signal) disabled:cursor-wait disabled:opacity-60"
+              className="btn"
             >
-              {starting ? "Starting…" : `Start a tutor session on all ${allConceptSlugs.length} concepts →`}
+              {starting ? "Starting…" : `Practise all ${allConceptSlugs.length} skills`}
+              <span className="arr arr-r">→</span>
             </button>
-            <Link href={`/courses/${problem.slug}/quiz`} className="chip">
-              or take the written quiz
+            <Link href={`/concepts/${problem.slug}/quiz`} className="btn-quiet">
+              Take the written quiz
             </Link>
           </div>
-          <p className="label">
-            The tutor adapts and needs an account; the quiz is pre-written, works signed out,
-            and uses no budget.
+          <p className="text-sm text-(--color-mist)">
+            The tutor adapts and needs an account. The quiz is pre-written, works signed out,
+            and uses none of your daily budget.
           </p>
         </section>
       </main>

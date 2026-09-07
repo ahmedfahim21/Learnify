@@ -250,6 +250,64 @@ button.chip {
   line-height: inherit;
 }
 
+/* Actions. Distinct from .chip, which is a mono metadata tag — an action is
+   prose the reader is meant to click, so it sets in the sans face at a normal
+   sentence case, and the primary one carries fill so it outranks its
+   alternative instead of matching it. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--color-signal);
+  border-radius: var(--radius);
+  background: var(--color-signal);
+  color: var(--color-ink);
+  padding: 0.5rem 0.95rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.btn:hover {
+  background: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
+  border-color: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
+}
+.btn:active {
+  transform: scale(0.99);
+}
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-mist);
+  padding: 0.5rem 0.95rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+.btn-quiet:hover {
+  border-color: var(--color-faint);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

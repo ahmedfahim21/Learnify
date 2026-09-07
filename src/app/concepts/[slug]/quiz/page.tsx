@@ -41,7 +41,7 @@ export default async function CourseQuizPage({
   return (
     <main className="wrap-prose space-y-8 py-12">
       <header className="space-y-3">
-        <Link href={`/courses/${slug}`} className="label">
+        <Link href={`/concepts/${slug}`} className="label">
           ← {problem.title}
         </Link>
         <h1 className="text-3xl">Quiz</h1>

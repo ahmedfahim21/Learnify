@@ -69,7 +69,7 @@ export function CourseQuiz({
             >
               Try again
             </button>
-            <Link href={`/courses/${slug}`} className="chip">
+            <Link href={`/concepts/${slug}`} className="chip">
               Back to the course
             </Link>
           </div>
@@ -82,7 +82,7 @@ export function CourseQuiz({
             </div>
             {missed.map((q) => (
               <div key={q.id} className="space-y-2 border-l-2 border-(--color-alert) bg-(--color-surface) px-4 py-3">
-                <Link href={`/courses/${slug}#chapter-${q.phase}`} className="label">
+                <Link href={`/concepts/${slug}#chapter-${q.phase}`} className="label">
                   {DESIGN_PHASE_LABELS[q.phase]} →
                 </Link>
                 <p className="text-(--color-fg)">{q.question}</p>

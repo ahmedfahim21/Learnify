@@ -15,10 +15,13 @@ import type { DiagramGroup, DiagramNode, SystemDiagramProps } from "./catalog";
  * diagram language wants, so none of that geometry lives here.
  */
 
+/* Gaps are wide relative to the cells on purpose: an edge carries a numbered
+   badge and a short label, so the run between two boxes has to be longer than
+   that label, not merely long enough to draw an arrow. */
 export const CELL_W = 152;
 export const CELL_H = 118;
-export const GAP_X = 56;
-export const GAP_Y = 48;
+export const GAP_X = 104;
+export const GAP_Y = 82;
 export const PAD = 28;
 /** Extra room around a group's member bbox, and above it for the label chip. */
 const GROUP_PAD = 16;

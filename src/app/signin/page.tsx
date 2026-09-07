@@ -12,7 +12,7 @@ export default async function SignInPage({
   searchParams: Promise<{ next?: string }>;
 }) {
   const { next } = await searchParams;
-  if (await getCurrentUserId()) redirect(next ?? "/courses");
+  if (await getCurrentUserId()) redirect(next ?? "/concepts");
 
   const providers = isAuthConfigured() ? configuredProviders() : [];
 
@@ -29,7 +29,7 @@ export default async function SignInPage({
       </div>
 
       {providers.length > 0 ? (
-        <SignInButtons providers={providers} next={next ?? "/courses"} />
+        <SignInButtons providers={providers} next={next ?? "/concepts"} />
       ) : (
         // Dead UI is worse than absent UI: with no credentials configured the
         // buttons could only fail, so say why instead of rendering them.

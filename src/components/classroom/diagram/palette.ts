@@ -115,7 +115,9 @@ export const DIAGRAM_PALETTE: Record<DiagramColor, DiagramPaletteEntry> = {
 
 /** Neutral default for nodes/edges without an explicit accent. */
 export const DIAGRAM_NEUTRAL = {
-  border: "border-white/20",
-  text: "text-white/70",
-  stroke: "var(--diagram-indigo)",
+  // Tokens, not white-based opacities: a white-on-white border is invisible
+  // in light mode, which left un-accented nodes looking like bare text.
+  border: "border-(--color-faint)",
+  text: "text-(--color-mist)",
+  stroke: "var(--color-faint)",
 };

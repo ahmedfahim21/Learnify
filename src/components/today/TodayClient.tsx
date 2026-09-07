@@ -8,7 +8,7 @@ import type { DueConcept, TodaySnapshot } from "@/lib/mastery/engine";
 /** Where a due concept links back to. Every topic is materialized from a
  *  course now, but the column is nullable, so fall back to the catalog. */
 function courseHref(concept: DueConcept | undefined): string {
-  return concept?.problemSlug ? `/courses/${concept.problemSlug}` : "/courses";
+  return concept?.problemSlug ? `/concepts/${concept.problemSlug}` : "/concepts";
 }
 
 /** Group a list of concepts by their topic, preserving first-seen order. */
@@ -80,7 +80,7 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
       <header className="flex flex-col gap-3">
         <button
           type="button"
-          onClick={() => router.push("/courses")}
+          onClick={() => router.push("/concepts")}
           className="self-start text-sm text-(--color-mist) transition hover:text-(--color-fg)"
         >
           ← All courses

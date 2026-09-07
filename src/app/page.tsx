@@ -6,8 +6,8 @@ import { DiagramThumbnail } from "@/components/course/DiagramThumbnail";
 
 const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
 
-/** The RAG-style walkthrough from the URL Shortener course, reused verbatim
- *  on the landing page — the hero demo is a real course diagram, not a mock. */
+/** The walkthrough from the URL Shortener concept, reused verbatim on the
+ *  landing page — the hero demo is a real diagram, not a mock. */
 const heroDiagram = PROBLEMS.find((p) => p.slug === "url-shortener")
   ?.chapters.find((c) => c.phase === "high-level")
   ?.blocks.find((b) => b.type === "diagram");
@@ -17,25 +17,25 @@ export default function Home() {
     <main className="pb-24">
       <section className="wrap grid gap-10 pt-16 pb-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
         <div className="min-w-0 space-y-6 rise">
-          <p className="label">16 courses · animated · interactive</p>
+          <p className="label">16 concepts · animated · interactive</p>
           <h1 className="text-4xl leading-[1.1] sm:text-5xl">
             System design, explained by the diagram — not around it.
           </h1>
           <p className="max-w-prose text-(--color-mist)">
-            Every course walks one request end to end through an animated architecture
+            Every concept walks one request end to end through an animated architecture
             diagram, then hands you the sliders: cache hit ratios, queue backpressure,
             consistent hashing. When you want to be pushed, an adaptive tutor grills you on
             the same material.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/courses"
+              href="/concepts"
               className="border border-(--color-signal)/50 bg-(--color-signal)/10 px-5 py-2.5 text-(--color-signal) transition-colors hover:bg-(--color-signal)/20"
             >
-              Browse the courses <span className="arr arr-r">→</span>
+              Browse the concepts <span className="arr arr-r">→</span>
             </Link>
             <Link
-              href="/courses/url-shortener"
+              href="/concepts/url-shortener"
               className="px-3 py-2.5 text-(--color-mist) transition-colors hover:text-(--color-fg)"
             >
               Start with the URL shortener
@@ -91,7 +91,7 @@ export default function Home() {
             return (
               <Link
                 key={problem.slug}
-                href={`/courses/${problem.slug}`}
+                href={`/concepts/${problem.slug}`}
                 className="group flex flex-col gap-2 border border-(--color-line) transition-colors hover:border-(--color-faint) hover:bg-(--color-surface)"
               >
                 {diagram && (
@@ -111,7 +111,7 @@ export default function Home() {
             );
           })}
         </div>
-        <Link href="/courses" className="link inline-block text-sm">
+        <Link href="/concepts" className="link inline-block text-sm">
           See all 16 with descriptions
         </Link>
       </section>
