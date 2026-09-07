@@ -13,6 +13,7 @@ import {
 import { useSession } from "@/lib/authClient";
 
 import { ChapterBlockRenderer } from "./ChapterBlockRenderer";
+import { ChapterCompleter } from "./ChapterCompleter";
 import { useChapterProgress } from "./useChapterProgress";
 
 const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert", "signal"] as const;
@@ -37,7 +38,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const allConceptSlugs = problem.chapters.flatMap((c) => c.concepts.map((x) => x.slug));
   const phases = useMemo(() => problem.chapters.map((c) => c.phase), [problem]);
-  const { completed } = useChapterProgress(problem.slug, phases, Boolean(session?.user));
+  const { completed, markRead } = useChapterProgress(problem.slug, Boolean(session?.user));
   const readCount = phases.filter((p) => completed.has(p)).length;
 
   useEffect(() => {
@@ -175,6 +176,14 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
                 ))}
               </div>
 
+              <ChapterCompleter
+                problemSlug={problem.slug}
+                phase={chapter.phase}
+                skills={chapter.concepts}
+                completed={completed.has(chapter.phase)}
+                signedIn={Boolean(session?.user)}
+                onComplete={() => void markRead(chapter.phase)}
+              />
             </section>
           );
         })}

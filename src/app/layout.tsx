@@ -4,7 +4,6 @@ import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 
 import "./globals.css";
 import { TopNav } from "@/components/nav/TopNav";
-import { THEME_STORAGE_KEY } from "@/components/theme/theme";
 
 // IBM Plex: an engineering typeface for an engineering subject, and the
 // clearest break from the design system this one was inspired by. Loaded at
@@ -40,22 +39,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    // suppressHydrationWarning because the boot script below sets data-theme
-    // before React hydrates, so the server's markup deliberately differs.
-    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`} suppressHydrationWarning>
-      <head>
-        {/* Resolves the theme before first paint — a stored choice, else the
-            system preference — so no one sees a flash of the wrong one. It
-            always writes a concrete value, which is what lets CSS and
-            Tailwind's `dark:` variant key off the attribute alone. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem(${JSON.stringify(
-              THEME_STORAGE_KEY,
-            )});if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="light";}})();`,
-          }}
-        />
-      </head>
+    <html lang="en" className={`${plexSans.variable} ${plexMono.variable}`}>
       <body>
         <TopNav />
         {children}

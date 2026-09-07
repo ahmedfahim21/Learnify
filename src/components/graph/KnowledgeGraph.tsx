@@ -12,7 +12,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
-import type { KnowledgeGraph as GraphData, KnowledgeNode } from "@/lib/progress";
+import type { KnowledgeGraph as GraphData, KnowledgeNode, SkillState } from "@/lib/progress";
 
 const NODE_W = 178;
 const NODE_H = 62;
@@ -20,19 +20,21 @@ const COL_GAP = 90;
 const ROW_GAP = 22;
 
 /**
- * Mastery -> colour. Grey means "never assessed", which is a different and
- * more useful signal than "scored zero" — an untouched concept should read as
- * unknown, not as failed.
+ * State -> colour. Three distinct states rather than a continuous ramp,
+ * because "I have read this but never been tested on it" is a genuinely
+ * different thing from "I scored badly", and a gradient blurs them together.
  */
-function masteryColor(score: number | null): string {
-  if (score === null) return "var(--color-faint)";
-  const hue = 40 + score * 80; // amber -> green
-  return `hsl(${hue} 70% 55%)`;
-}
+const STATE_COLOR: Record<SkillState, string> = {
+  read: "var(--color-faint)",
+  practised: "var(--color-warn)",
+  mastered: "var(--color-deep)",
+  unseen: "var(--color-line)",
+};
 
-function masteryLabel(score: number | null): string {
-  if (score === null) return "not assessed";
-  return `${Math.round(score * 100)}% mastered`;
+function stateLabel(node: KnowledgeNode): string {
+  if (node.state === "read") return "read, not yet tested";
+  if (node.score === null) return node.state;
+  return `${Math.round(node.score * 100)}% mastered`;
 }
 
 export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
@@ -70,7 +72,7 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
       });
       courseNodes.forEach((node, row) => {
         flowNodes.push({
-          id: node.conceptId,
+          id: node.id,
           position: { x: col * (NODE_W + COL_GAP), y: row * (NODE_H + ROW_GAP) },
           data: { label: node.name },
           width: NODE_W,
@@ -80,7 +82,7 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
             width: NODE_W,
             height: NODE_H,
             background: "var(--color-node)",
-            border: `1px solid ${masteryColor(node.score)}`,
+            border: `1px solid ${STATE_COLOR[node.state]}`,
             borderRadius: 0,
             color: "var(--color-fg)",
             fontSize: 12,
@@ -108,7 +110,7 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
     return { nodes: flowNodes, edges: flowEdges };
   }, [graph]);
 
-  const byId = useMemo(() => new Map(graph.nodes.map((n) => [n.conceptId, n])), [graph.nodes]);
+  const byId = useMemo(() => new Map(graph.nodes.map((n) => [n.id, n])), [graph.nodes]);
 
   return (
     <div className="space-y-3">
@@ -140,12 +142,23 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
         <div className="space-y-1 border-l-2 border-(--color-signal) bg-(--color-surface) px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-(--color-fg)">{selected.name}</p>
-            <span className="label">{masteryLabel(selected.score)}</span>
+            <span className="label">{stateLabel(selected)}</span>
           </div>
           <p className="text-sm text-(--color-mist)">{selected.summary}</p>
         </div>
       ) : (
-        <p className="label">Click a concept for detail · one column per course</p>
+        <div className="flex flex-wrap items-center gap-4">
+          {(["read", "practised", "mastered"] as const).map((state) => (
+            <span key={state} className="label flex items-center gap-1.5">
+              <span
+                className="h-2.5 w-2.5 border"
+                style={{ borderColor: STATE_COLOR[state] }}
+              />
+              {state === "read" ? "read" : state}
+            </span>
+          ))}
+          <span className="label">· click a skill for detail</span>
+        </div>
       )}
     </div>
   );

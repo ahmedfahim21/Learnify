@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { signOut, useSession } from "@/lib/authClient";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const LINKS = [
   { href: "/concepts", label: "Concepts" },
@@ -20,12 +19,20 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-(--color-line) bg-(--color-ink)/85 backdrop-blur">
       <div className="wrap flex h-14 items-center justify-between">
-        <Link href="/" className="flex items-baseline gap-2">
-          <span className="text-(--color-fg)">Learnify</span>
-          <span className="label hidden sm:inline">system design</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <svg viewBox="0 0 28 16" aria-hidden className="h-4 w-7">
+            <line x1="5" y1="8" x2="14" y2="8" stroke="var(--color-faint)" strokeWidth="1.5" />
+            <line x1="14" y1="8" x2="23" y2="8" stroke="var(--color-faint)" strokeWidth="1.5" />
+            <rect x="1" y="5" width="6" height="6" rx="1" fill="var(--color-ink)" stroke="var(--color-signal)" strokeWidth="1.5" />
+            <rect x="11" y="5" width="6" height="6" rx="1" fill="var(--color-ink)" stroke="var(--color-deep)" strokeWidth="1.5" />
+            <rect x="21" y="5" width="6" height="6" rx="1" fill="var(--color-ink)" stroke="var(--color-warn)" strokeWidth="1.5" />
+          </svg>
+          <span className="flex items-baseline gap-2">
+            <span className="text-(--color-fg)">Learnify</span>
+            <span className="label hidden sm:inline">system design</span>
+          </span>
         </Link>
         <nav className="flex items-center gap-1">
-          <ThemeToggle />
           {LINKS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (

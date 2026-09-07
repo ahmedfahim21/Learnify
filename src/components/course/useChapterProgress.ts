@@ -3,18 +3,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Marks a chapter read once the learner has actually scrolled past it.
+ * Chapter completion, recorded only on an explicit acknowledgement.
  *
- * "Past it" rather than "saw it": the section's bottom has to leave the top of
- * the viewport, so skimming a heading on the way down doesn't count and a
- * chapter can't be completed without the content having been on screen.
+ * Scroll position used to drive this, which measured the wrong thing: a fast
+ * scroll marked a chapter read without any of it being taken in, and a slow
+ * reader who stopped mid-chapter got no credit. Completion is now something
+ * the reader does — answer the chapter's check, or acknowledge a refresher —
+ * so the number on the progress page reflects engagement rather than travel.
  *
- * Anonymous readers get no-ops — the API would 401, and nagging someone to
+ * Anonymous readers get no-ops: the API would 401, and nagging someone to
  * sign in mid-read is worse than quietly not tracking.
  */
 export function useChapterProgress(
   problemSlug: string,
-  phases: string[],
   enabled: boolean,
 ) {
   const [completed, setCompleted] = useState<Set<string>>(() => new Set());
@@ -68,25 +69,6 @@ export function useChapterProgress(
     [enabled, problemSlug],
   );
 
-  useEffect(() => {
-    if (!enabled) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          const scrolledPast = !entry.isIntersecting && entry.boundingClientRect.top < 0;
-          if (scrolledPast) {
-            void markRead(entry.target.id.replace("chapter-", ""));
-          }
-        }
-      },
-      { threshold: 0 },
-    );
-    for (const phase of phases) {
-      const el = document.getElementById(`chapter-${phase}`);
-      if (el) observer.observe(el);
-    }
-    return () => observer.disconnect();
-  }, [enabled, phases, markRead]);
 
   return { completed, markRead };
 }

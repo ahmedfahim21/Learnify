@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { concepts, courseProgress, mastery, topics } from "@/db/schema";
@@ -57,73 +57,111 @@ export async function getCourseProgress(userId: string): Promise<CourseProgressS
   });
 }
 
+export type SkillState = "mastered" | "practised" | "read" | "unseen";
+
 export interface KnowledgeNode {
-  conceptId: string;
+  /** Stable across sessions: the course slug plus the skill slug. */
+  id: string;
   slug: string;
   name: string;
   summary: string;
-  phase: string | null;
-  /** 0–1, or null when this concept has never been assessed. */
+  phase: string;
+  /** 0–1 from the mastery engine, or null when never assessed. */
   score: number | null;
-  problemSlug: string | null;
+  state: SkillState;
+  problemSlug: string;
   courseTitle: string;
 }
 
 export interface KnowledgeGraph {
   nodes: KnowledgeNode[];
-  /** Prerequisite edges, by concept id. */
   edges: { from: string; to: string }[];
 }
 
 /**
- * Every concept this learner has materialized, with its mastery score.
+ * Everything this learner has touched, as a graph.
  *
- * Only courses they've actually started appear — a graph pre-populated with
- * all 16 courses would say nothing about what they know.
+ * Built from the authored curriculum rather than from materialized DB rows,
+ * because reading a concept materializes nothing — a learner can finish every
+ * chapter of six concepts without ever starting a tutor session, and a graph
+ * that ignored all of that would be empty for exactly the people using the
+ * product most.
+ *
+ * A skill therefore appears once its chapter has been completed (`read`), and
+ * is upgraded to `practised` or `mastered` when the mastery engine has an
+ * actual score for it. Untouched skills are left out entirely: a graph
+ * pre-populated with the whole curriculum says nothing about anyone.
  */
 export async function getKnowledgeGraph(userId: string): Promise<KnowledgeGraph> {
   const db = getDb();
-  const rows = await db
-    .select({
-      conceptId: concepts.id,
-      slug: concepts.slug,
-      name: concepts.name,
-      summary: concepts.summary,
-      phase: concepts.phase,
-      orderIndex: concepts.orderIndex,
-      problemSlug: topics.problemSlug,
-      courseTitle: topics.title,
-      score: mastery.score,
-    })
-    .from(concepts)
-    .innerJoin(topics, eq(concepts.topicId, topics.id))
-    .leftJoin(
-      mastery,
-      and(eq(mastery.conceptId, concepts.id), eq(mastery.userId, userId)),
-    )
-    .where(eq(topics.userId, userId))
-    .orderBy(topics.title, concepts.orderIndex);
 
-  const nodes: KnowledgeNode[] = rows.map((r) => ({
-    conceptId: r.conceptId,
-    slug: r.slug,
-    name: r.name,
-    summary: r.summary,
-    phase: r.phase,
-    score: r.score,
-    problemSlug: r.problemSlug,
-    courseTitle: r.courseTitle,
-  }));
+  const [progressRows, masteryRows] = await Promise.all([
+    db
+      .select({ problemSlug: courseProgress.problemSlug, phase: courseProgress.phase })
+      .from(courseProgress)
+      .where(eq(courseProgress.userId, userId)),
+    // Scores live against materialized concepts, so they are keyed back to the
+    // authored content by (course slug, skill slug).
+    db
+      .select({
+        problemSlug: topics.problemSlug,
+        conceptSlug: concepts.slug,
+        score: mastery.score,
+      })
+      .from(mastery)
+      .innerJoin(concepts, eq(mastery.conceptId, concepts.id))
+      .innerJoin(topics, eq(concepts.topicId, topics.id))
+      .where(eq(mastery.userId, userId)),
+  ]);
 
-  const edgeRows = await db.execute<{ from_concept_id: string; to_concept_id: string }>(sql`
-    SELECT ce.from_concept_id, ce.to_concept_id
-    FROM concept_edges ce
-    JOIN topics t ON t.id = ce.topic_id
-    WHERE t.user_id = ${userId}
-  `);
+  const readPhases = new Map<string, Set<string>>();
+  for (const row of progressRows) {
+    const set = readPhases.get(row.problemSlug) ?? new Set<string>();
+    set.add(row.phase);
+    readPhases.set(row.problemSlug, set);
+  }
 
-  return {
-    nodes,
-    edges: (edgeRows.rows ?? []).map((e) => ({ from: e.from_concept_id, to: e.to_concept_id })),
-  };
+  const scores = new Map<string, number>();
+  for (const row of masteryRows) {
+    if (row.problemSlug) scores.set(`${row.problemSlug}:${row.conceptSlug}`, row.score);
+  }
+
+  const nodes: KnowledgeNode[] = [];
+  const edges: { from: string; to: string }[] = [];
+
+  for (const problem of PROBLEMS) {
+    const read = readPhases.get(problem.slug);
+    const included: string[] = [];
+
+    for (const chapter of problem.chapters) {
+      const chapterRead = read?.has(chapter.phase) ?? false;
+      for (const skill of chapter.concepts) {
+        const key = `${problem.slug}:${skill.slug}`;
+        const score = scores.get(key) ?? null;
+        if (!chapterRead && score === null) continue;
+
+        nodes.push({
+          id: key,
+          slug: skill.slug,
+          name: skill.name,
+          summary: skill.summary,
+          phase: chapter.phase,
+          score,
+          state:
+            score === null ? "read" : score >= 0.8 ? "mastered" : "practised",
+          problemSlug: problem.slug,
+          courseTitle: problem.title,
+        });
+        included.push(key);
+      }
+    }
+
+    // A chain through whatever of this concept was actually reached, so the
+    // graph shows the path taken rather than the path on offer.
+    for (let i = 1; i < included.length; i++) {
+      edges.push({ from: included[i - 1], to: included[i] });
+    }
+  }
+
+  return { nodes, edges };
 }

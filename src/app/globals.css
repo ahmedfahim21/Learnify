@@ -10,16 +10,10 @@
    in a systems diagram rather than for desserts, a primary that is signal
    azure rather than mint, and a small radius rather than hard-square corners.
 
-   Light is the base — it is what renders with no stored choice and with
-   JavaScript off. Dark is the override below, keyed off `data-theme` on
-   <html>, which the boot script in layout.tsx always resolves to a concrete
-   value (stored choice, else system preference) before first paint.
+   Light only, deliberately: one canvas to design against means the accents,
+   the diagram strokes and the code surfaces each have exactly one job, and
+   nothing has to hold contrast in two directions at once.
    ====================================================================== */
-/* Tailwind's `dark:` variant is keyed to the attribute rather than the media
-   query, because the boot script in layout.tsx always resolves a concrete
-   theme onto <html> — so this is reliable for both an explicit choice and a
-   system-preference default. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @theme {
   /* ---- Foundation: light is the base, as in the source system ------- */
@@ -71,43 +65,6 @@
   --diagram-rose: #e11d48;
   --diagram-teal: #0d9488;
   --diagram-indigo: #4f46e5;
-}
-
-/* ---- Dark ---------------------------------------------------------------
-   The same system inverted. Accents are brightened because the light values
-   hold contrast on white and go muddy on ink. */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --color-ink: #0a0a0a;
-  --color-surface: #131417;
-  --color-raised: #191b20;
-  --color-fg: #ededed;
-  --color-mist: #9498a3;
-  --color-faint: #6b7080;
-  --color-line: rgba(255, 255, 255, 0.12);
-  --color-canvas: #0d0d0d;
-  --color-node: #101216;
-  --wash-selection: rgba(238, 242, 251, 0.15);
-  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.55);
-
-  --color-signal: #4da3ff;
-  --color-flow: #9b8cff;
-  --color-deep: #3fc9c0;
-  --color-warn: #f0a44a;
-  --color-alert: #f2685f;
-  --color-accent: #ef7fae;
-
-  --diagram-slate: #94a3b8;
-  --diagram-blue: #60a5fa;
-  --diagram-green: #34d399;
-  --diagram-pink: #f472b6;
-  --diagram-purple: #c084fc;
-  --diagram-amber: #fbbf24;
-  --diagram-cyan: #22d3ee;
-  --diagram-rose: #fb7185;
-  --diagram-teal: #2dd4bf;
-  --diagram-indigo: #818cf8;
 }
 
 /* ---- Base -------------------------------------------------------------- */
