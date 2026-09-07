@@ -4,7 +4,7 @@ import type { ChapterBlock } from "@/content/systemDesign/types";
 import type { ComponentDef } from "@/lib/a2ui/messages";
 
 import { Markdown } from "../classroom/Markdown";
-import { SystemDiagram } from "../classroom/diagram/SystemDiagram";
+import { SystemDiagram, type DiagramVariant } from "../classroom/diagram/SystemDiagram";
 import { SimulatorWidget } from "../classroom/simulators/SimulatorWidget";
 import { ChapterQuiz } from "./ChapterQuiz";
 
@@ -25,7 +25,16 @@ const CALLOUT_STYLES: Record<string, { border: string; bg: string; label: string
   pitfall: { border: "border-rose-400/25", bg: "bg-rose-400/[0.06]", label: "Pitfall" },
 };
 
-export function ChapterBlockRenderer({ block, blockId }: { block: ChapterBlock; blockId: string }) {
+export function ChapterBlockRenderer({
+  block,
+  blockId,
+  diagramVariant,
+}: {
+  block: ChapterBlock;
+  blockId: string;
+  /** "static" fixes the diagram's camera — see SystemDiagram. */
+  diagramVariant?: DiagramVariant;
+}) {
   switch (block.type) {
     case "prose":
       return (
@@ -44,7 +53,7 @@ export function ChapterBlockRenderer({ block, blockId }: { block: ChapterBlock; 
         component: "SystemDiagram",
         properties: block.diagram as unknown as Record<string, unknown>,
       };
-      return <SystemDiagram def={def} ctx={noopContext} />;
+      return <SystemDiagram def={def} ctx={noopContext} variant={diagramVariant} />;
     }
 
     case "simulator": {

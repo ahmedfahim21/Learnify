@@ -8,6 +8,7 @@ import { GRADED_WIDGETS } from "@/lib/agent/grading";
 import { SIMULATOR_IDS } from "@/lib/sims/ids";
 import { DiagramThumbnail } from "@/components/course/DiagramThumbnail";
 import { WidgetGlyph } from "@/components/site/WidgetGlyph";
+import { GuaranteeFigure, type GuaranteeFigureId } from "@/components/site/GuaranteeFigure";
 import { ChapterBlockRenderer } from "@/components/course/ChapterBlockRenderer";
 
 const ACCENTS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
@@ -42,18 +43,22 @@ const GRADED = new Set<string>(GRADED_WIDGETS);
 
 const GUARANTEES = [
   {
+    figure: "composes" as GuaranteeFigureId,
     title: "It composes, it does not template",
     body: "Each turn the model emits a fresh component tree — which check to run, whether an idea needs a diagram or a simulator, what to do about the last wrong answer. Nothing is selected from prewritten screens.",
   },
   {
+    figure: "catalog" as GuaranteeFigureId,
     title: "It cannot leave the catalog",
     body: `Output is parsed against a ${WIDGET_NAMES.length}-branch discriminated union plus referential checks Zod cannot express. Anything invalid goes back as an error result for one repair round trip and never reaches the browser.`,
   },
   {
+    figure: "renderer" as GuaranteeFigureId,
     title: "The renderer executes nothing",
     body: "Validated component definitions are mapped onto React components from a fixed registry. The browser reads values the model chose; it never evaluates anything the model wrote. That is what makes model-composed UI safe to render at all.",
   },
   {
+    figure: "grading" as GuaranteeFigureId,
     title: "Correctness is not the model's job",
     body: "Multiple choice, ordering and matching are graded on the server against the answer key embedded in the original payload. The verdict is injected into the next turn, so the tutor reacts to a fact rather than re-deriving one.",
   },
@@ -91,7 +96,7 @@ export default function Home() {
 
         {/* The page explains the loop using the loop's own renderer. */}
         <div className="min-w-0 rise rise-2">
-          <ChapterBlockRenderer block={heroDiagram} blockId="a2ui-loop" />
+          <ChapterBlockRenderer block={heroDiagram} blockId="a2ui-loop" diagramVariant="static" />
         </div>
       </section>
 
@@ -125,17 +130,25 @@ export default function Home() {
             useful.
           </p>
         </div>
-        <div className="grid gap-8 sm:grid-cols-2">
+        <div className="grid gap-px border border-(--color-line) bg-(--color-line) sm:grid-cols-2">
           {GUARANTEES.map((item, i) => (
-            <div key={item.title} className="space-y-2">
-              <span
-                className="label tabular-nums"
-                style={{ color: `var(--color-${ACCENTS[i % ACCENTS.length]})` }}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <h2 className="text-xl">{item.title}</h2>
-              <p className="text-sm leading-relaxed text-(--color-mist)">{item.body}</p>
+            <div
+              key={item.title}
+              className="flex flex-col gap-4 bg-(--color-ink) p-6 sm:flex-row sm:items-start"
+            >
+              <div className="flex justify-center bg-(--color-canvas) p-3 sm:w-[240px] sm:shrink-0">
+                <GuaranteeFigure id={item.figure} />
+              </div>
+              <div className="min-w-0 space-y-2">
+                <span
+                  className="label tabular-nums"
+                  style={{ color: `var(--color-${ACCENTS[i % ACCENTS.length]})` }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <h2 className="text-lg">{item.title}</h2>
+                <p className="text-sm leading-relaxed text-(--color-mist)">{item.body}</p>
+              </div>
             </div>
           ))}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -9,6 +9,7 @@ import {
   ReactFlow,
   type Edge,
   type Node,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -35,7 +36,24 @@ function edgeStroke(accent: DiagramColor | undefined, active: boolean, dimmed: b
   return accent ? DIAGRAM_PALETTE[accent].stroke : "var(--color-signal)";
 }
 
-export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
+/**
+ * `static` strips every viewport control: no panning, no zooming, no
+ * navigation buttons. A diagram embedded in a page the reader is scrolling
+ * through has nowhere to put a viewport the reader has moved — a stray drag
+ * shoves it off-centre with no way back, which is the whole of what "glitchy"
+ * means here. The step walkthrough still works; only the camera is fixed.
+ */
+export type DiagramVariant = "interactive" | "static";
+
+export function SystemDiagram({
+  def,
+  ctx,
+  variant = "interactive",
+}: {
+  def: ComponentDef;
+  ctx: NodeContext;
+  variant?: DiagramVariant;
+}) {
   const props = def.properties as unknown as SystemDiagramProps;
   const layout = useMemo(() => layoutSystemDiagram(props), [props]);
   const reducedMotion = useReducedMotion();
@@ -143,6 +161,21 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
 
   const selectedNode = selectedNodeId ? layout.nodesById.get(selectedNodeId)?.node : undefined;
 
+  // `fitView` only runs once, on init. Anything that changes the container's
+  // width afterwards — a responsive breakpoint, a sidebar, a font swap — left
+  // the diagram framed for a box that no longer exists. Re-fit on resize.
+  const instance = useRef<ReactFlowInstance | null>(null);
+  const frame = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = frame.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      instance.current?.fitView({ padding: 0.12 });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <figure className="space-y-3 border border-(--color-line) bg-gradient-to-b from-white/[0.04] to-transparent p-4">
       {props.title && (
@@ -154,7 +187,7 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
         </figcaption>
       )}
 
-      <div style={{ height: Math.min(layout.height + 40, 520) }} className="w-full">
+      <div ref={frame} style={{ height: Math.min(layout.height + 40, 520) }} className="w-full">
         <ReactFlow
           nodes={flowNodes}
           edges={flowEdges}
@@ -171,7 +204,13 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
           nodesDraggable={false}
           nodesConnectable={false}
           edgesFocusable={false}
-          panOnDrag
+          onInit={(inst) => {
+            instance.current = inst;
+          }}
+          panOnDrag={variant === "interactive"}
+          panOnScroll={false}
+          zoomOnDoubleClick={variant === "interactive"}
+          zoomOnPinch={variant === "interactive"}
           onNodeClick={(_, node) => {
             if (node.type !== "systemNode") return;
             setSelectedNodeId((current) => (current === node.id ? null : node.id));
@@ -185,7 +224,9 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
           }}
         >
           <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="var(--color-line)" />
-          <Controls showInteractive={false} className="!border-(--color-line) !bg-(--color-node) !shadow-none" />
+          {variant === "interactive" && (
+            <Controls showInteractive={false} className="!border-(--color-line) !bg-(--color-node) !shadow-none" />
+          )}
         </ReactFlow>
       </div>
 
