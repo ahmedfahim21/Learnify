@@ -36,33 +36,6 @@ const GUARANTEES = [
   },
 ];
 
-const MACHINERY = [
-  {
-    label: "Resumable turns",
-    body: "Every turn, tool call and result is appended to a log with a monotonic sequence number, and the conversation is rebuilt from it per request. A dropped stream re-posts and continues; a refresh restores the exact screen.",
-  },
-  {
-    label: "Cache discipline",
-    body: "The system prompt is byte-stable and carries a cache breakpoint. Per-session context goes in the first user message, after it. Cache reads are tracked per session so a regression is visible.",
-  },
-  {
-    label: "Simulator sandboxing",
-    body: `The model picks one of ${SIMULATOR_IDS.length} simulators by id from a closed enum and supplies parameters, which are clamped to each simulator's declared range. All the maths lives in typed modules under unit test.`,
-  },
-  {
-    label: "Spaced repetition",
-    body: "Graded evidence feeds an exponential moving average per skill and an SM-2-derived schedule, so what you got wrong returns on a curve rather than when you happen to revisit it.",
-  },
-  {
-    label: "Metered generation",
-    body: "Turns are capped per user per day by an atomic upsert that carries the limit in its conflict clause, so concurrent requests cannot each spend the last unit.",
-  },
-  {
-    label: "One schema, both sources",
-    body: "Hand-authored content is typed against the same widget schemas the model emits against, so a malformed authored diagram is a compile error and the same validator guards both paths.",
-  },
-];
-
 export default function Home() {
   const heroDiagram = { type: "diagram" as const, diagram: A2UI_LOOP };
 
@@ -159,20 +132,6 @@ export default function Home() {
             <span key={name} className="chip">
               {name}
             </span>
-          ))}
-        </div>
-      </section>
-
-      <section className="wrap space-y-8 border-t border-(--color-line) py-16">
-        <div className="label-rule">
-          <span className="label">Around it</span>
-        </div>
-        <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
-          {MACHINERY.map((item) => (
-            <div key={item.label} className="space-y-2 border-l border-(--color-line) pl-4">
-              <h3 className="text-base text-(--color-fg)">{item.label}</h3>
-              <p className="text-sm leading-relaxed text-(--color-mist)">{item.body}</p>
-            </div>
           ))}
         </div>
       </section>
