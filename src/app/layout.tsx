@@ -26,11 +26,11 @@ const plexMono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Learnify — System Design, Explained by the Diagram",
+    default: "Learnify — a tutor that builds its own interface",
     template: "%s · Learnify",
   },
   description:
-    "Learn system design through animated architecture diagrams, explorable simulators, and an adaptive AI tutor — not static slides.",
+    "A system design tutor with no chat box. The model composes each screen by emitting declarative UI, validated against a fixed component catalog before the browser renders it.",
 };
 
 export default function RootLayout({

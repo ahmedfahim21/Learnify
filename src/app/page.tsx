@@ -2,91 +2,112 @@ import Link from "next/link";
 
 import { getPrimaryDiagram, PROBLEMS } from "@/content/systemDesign";
 import { QUIZ_BANK } from "@/content/systemDesign/quizzes";
+import { A2UI_LOOP } from "@/content/site/architecture";
+import { WIDGET_NAMES } from "@/lib/a2ui/catalog";
 import { SIMULATOR_IDS } from "@/lib/sims/ids";
-import { ChapterBlockRenderer } from "@/components/course/ChapterBlockRenderer";
 import { DiagramThumbnail } from "@/components/course/DiagramThumbnail";
+import { ChapterBlockRenderer } from "@/components/course/ChapterBlockRenderer";
 
 const ACCENTS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
 
-/** The URL Shortener walkthrough, reused verbatim — the hero demo is a real
- *  diagram from a real concept, not a mock built for the landing page. */
-const heroDiagram = PROBLEMS.find((p) => p.slug === "url-shortener")
-  ?.chapters.find((c) => c.phase === "high-level")
-  ?.blocks.find((b) => b.type === "diagram");
-
-/** Counted from the curriculum at build time, so the numbers cannot drift
- *  away from what is actually in the product. */
+/** Counted from the source at build time, so nothing here can drift into a
+ *  claim the code no longer supports. */
 const blocks = PROBLEMS.flatMap((p) => p.chapters.flatMap((c) => c.blocks));
-const STATS = [
-  { value: PROBLEMS.length, label: "concepts" },
-  { value: blocks.filter((b) => b.type === "diagram").length, label: "diagrams" },
-  { value: SIMULATOR_IDS.length, label: "simulators" },
+const QUESTION_COUNT =
+  Object.values(QUIZ_BANK).reduce((n, q) => n + q.length, 0) +
+  blocks.filter((b) => b.type === "quiz").length;
+
+const GUARANTEES = [
   {
-    value:
-      Object.values(QUIZ_BANK).reduce((n, q) => n + q.length, 0) +
-      blocks.filter((b) => b.type === "quiz").length,
-    label: "questions",
+    title: "It composes, it does not template",
+    body: "Each turn the model emits a fresh component tree — which check to run, whether an idea needs a diagram or a simulator, what to do about the last wrong answer. Nothing is selected from prewritten screens.",
+  },
+  {
+    title: "It cannot leave the catalog",
+    body: `Output is parsed against a ${WIDGET_NAMES.length}-branch discriminated union plus referential checks Zod cannot express. Anything invalid goes back as an error result for one repair round trip and never reaches the browser.`,
+  },
+  {
+    title: "The renderer executes nothing",
+    body: "Validated component definitions are mapped onto React components from a fixed registry. The browser reads values the model chose; it never evaluates anything the model wrote. That is what makes model-composed UI safe to render at all.",
+  },
+  {
+    title: "Correctness is not the model's job",
+    body: "Multiple choice, ordering and matching are graded on the server against the answer key embedded in the original payload. The verdict is injected into the next turn, so the tutor reacts to a fact rather than re-deriving one.",
   },
 ];
 
-const STEPS = [
+const MACHINERY = [
   {
-    title: "Walk the request",
-    body: "Numbered steps light one hop at a time — client, balancer, cache, store — each with a sentence explaining why it exists. Click any component to ask what it is doing there.",
+    label: "Resumable turns",
+    body: "Every turn, tool call and result is appended to a log with a monotonic sequence number, and the conversation is rebuilt from it per request. A dropped stream re-posts and continues; a refresh restores the exact screen.",
   },
   {
-    title: "Move the numbers",
-    body: "Drag a cache hit ratio from 80% to 90% and watch origin load halve. Push a queue past 80% utilisation and watch latency run away. The arithmetic is real, not illustrative.",
+    label: "Cache discipline",
+    body: "The system prompt is byte-stable and carries a cache breakpoint. Per-session context goes in the first user message, after it. Cache reads are tracked per session so a regression is visible.",
   },
   {
-    title: "Defend the design",
-    body: "Every chapter ends with a question you have to answer before it counts as read. When you want to be pushed harder, a tutor works the whole concept adaptively.",
+    label: "Simulator sandboxing",
+    body: `The model picks one of ${SIMULATOR_IDS.length} simulators by id from a closed enum and supplies parameters, which are clamped to each simulator's declared range. All the maths lives in typed modules under unit test.`,
+  },
+  {
+    label: "Spaced repetition",
+    body: "Graded evidence feeds an exponential moving average per skill and an SM-2-derived schedule, so what you got wrong returns on a curve rather than when you happen to revisit it.",
+  },
+  {
+    label: "Metered generation",
+    body: "Turns are capped per user per day by an atomic upsert that carries the limit in its conflict clause, so concurrent requests cannot each spend the last unit.",
+  },
+  {
+    label: "One schema, both sources",
+    body: "Hand-authored content is typed against the same widget schemas the model emits against, so a malformed authored diagram is a compile error and the same validator guards both paths.",
   },
 ];
 
 export default function Home() {
+  const heroDiagram = { type: "diagram" as const, diagram: A2UI_LOOP };
+
   return (
     <main className="pb-24">
-      <section className="wrap grid gap-12 pt-20 pb-16 lg:grid-cols-[1fr_1.1fr] lg:items-center">
+      <section className="wrap grid gap-12 pt-20 pb-14 lg:grid-cols-[1fr_1.15fr] lg:items-center">
         <div className="min-w-0 space-y-7 rise">
-          <div className="space-y-4">
-            <p className="label">System design, in public</p>
-            <h1 className="text-4xl leading-[1.08] sm:text-5xl">
-              Most system design material
-              <br />
-              describes the diagram.
-              <br />
-              <span className="text-(--color-signal)">This one hands it to you.</span>
-            </h1>
-          </div>
+          <p className="label">Generative UI · Next.js · Claude on Bedrock</p>
+          <h1 className="text-4xl leading-[1.1] sm:text-[3.25rem]">
+            A tutor that builds
+            <br />
+            <span className="text-(--color-signal)">its own interface.</span>
+          </h1>
           <p className="max-w-prose text-lg leading-relaxed text-(--color-mist)">
-            {PROBLEMS.length} concepts, each built around an architecture you can step through
-            one request at a time, sliders that recompute the trade-off as you move them, and a
-            question at the end of every chapter that decides whether you actually have it.
+            Learnify teaches system design without a chat box. The model never returns prose to
+            display — it calls a tool that emits declarative UI, which is validated against a
+            fixed catalog before the browser sees it. The renderer interprets that data and
+            executes none of it.
           </p>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/concepts" className="btn">
-              Start with the curriculum
+              Read the curriculum
               <span className="arr arr-r">→</span>
             </Link>
             <Link href="/concepts/url-shortener" className="btn-quiet">
-              Or open the URL shortener
+              See a concept
             </Link>
           </div>
         </div>
 
-        {heroDiagram?.type === "diagram" && (
-          <div className="min-w-0 rise rise-2">
-            <ChapterBlockRenderer block={heroDiagram} blockId="hero-diagram" />
-          </div>
-        )}
+        {/* The page explains the loop using the loop's own renderer. */}
+        <div className="min-w-0 rise rise-2">
+          <ChapterBlockRenderer block={heroDiagram} blockId="a2ui-loop" />
+        </div>
       </section>
 
-      {/* Counted from the curriculum, so it is a description rather than a claim. */}
       <section className="wrap border-y border-(--color-line)">
         <dl className="grid grid-cols-2 divide-(--color-line) sm:grid-cols-4 sm:divide-x">
-          {STATS.map((stat) => (
-            <div key={stat.label} className="px-2 py-7 text-center">
+          {[
+            { value: WIDGET_NAMES.length, label: "widgets in the catalog" },
+            { value: SIMULATOR_IDS.length, label: "simulators" },
+            { value: PROBLEMS.length, label: "concepts" },
+            { value: QUESTION_COUNT, label: "questions" },
+          ].map((stat) => (
+            <div key={stat.label} className="px-3 py-7 text-center">
               <dt className="sr-only">{stat.label}</dt>
               <dd>
                 <span className="block text-4xl tabular-nums">{stat.value}</span>
@@ -98,17 +119,59 @@ export default function Home() {
       </section>
 
       <section className="wrap space-y-8 py-16">
-        <div className="label-rule">
-          <span className="label">How it works</span>
+        <div className="max-w-(--measure-prose) space-y-3">
+          <div className="label-rule">
+            <span className="label">The interesting part</span>
+          </div>
+          <p className="text-(--color-mist)">
+            Letting a model decide what appears on screen is the easy half. The half worth
+            building carefully is making that safe and correct without taking away what makes it
+            useful.
+          </p>
         </div>
-        <div className="grid gap-10 sm:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <div key={step.title} className="space-y-3">
-              <span className="label tabular-nums" style={{ color: `var(--color-${ACCENTS[i]})` }}>
+        <div className="grid gap-8 sm:grid-cols-2">
+          {GUARANTEES.map((item, i) => (
+            <div key={item.title} className="space-y-2">
+              <span
+                className="label tabular-nums"
+                style={{ color: `var(--color-${ACCENTS[i % ACCENTS.length]})` }}
+              >
                 {String(i + 1).padStart(2, "0")}
               </span>
-              <h2 className="text-xl">{step.title}</h2>
-              <p className="text-sm leading-relaxed text-(--color-mist)">{step.body}</p>
+              <h2 className="text-xl">{item.title}</h2>
+              <p className="text-sm leading-relaxed text-(--color-mist)">{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="wrap space-y-6 border-t border-(--color-line) py-16">
+        <div className="label-rule">
+          <span className="label">The catalog</span>
+        </div>
+        <p className="max-w-(--measure-prose) text-(--color-mist)">
+          The vocabulary the tutor composes from. Adding a widget threads it through the tool
+          schema, server validation and the renderer at once — the catalog is the single source
+          of truth for all three.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {WIDGET_NAMES.map((name) => (
+            <span key={name} className="chip">
+              {name}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="wrap space-y-8 border-t border-(--color-line) py-16">
+        <div className="label-rule">
+          <span className="label">Around it</span>
+        </div>
+        <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+          {MACHINERY.map((item) => (
+            <div key={item.label} className="space-y-2 border-l border-(--color-line) pl-4">
+              <h3 className="text-base text-(--color-fg)">{item.label}</h3>
+              <p className="text-sm leading-relaxed text-(--color-mist)">{item.body}</p>
             </div>
           ))}
         </div>
@@ -118,11 +181,12 @@ export default function Home() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="space-y-2">
             <div className="label-rule">
-              <span className="label">The curriculum</span>
+              <span className="label">What it teaches</span>
             </div>
             <p className="max-w-prose text-(--color-mist)">
-              Fundamentals first — the pieces every design leans on — then the problems that put
-              them together.
+              {PROBLEMS.length} concepts, fundamentals first. Every one is readable without an
+              account and without invoking a model at all — the generated path is the upgrade,
+              not the entry fee.
             </p>
           </div>
           <Link href="/concepts" className="link text-sm">
@@ -158,21 +222,6 @@ export default function Home() {
               </Link>
             );
           })}
-        </div>
-      </section>
-
-      <section className="wrap border-t border-(--color-line) py-16">
-        <div className="max-w-(--measure-prose) space-y-5">
-          <h2 className="text-3xl">Reading is free and needs no account.</h2>
-          <p className="text-(--color-mist)">
-            Every concept, diagram, simulator and written quiz is open. An account only starts
-            mattering when you want the tutor, and want the parts you got wrong to come back
-            later.
-          </p>
-          <Link href="/concepts" className="btn">
-            Open the curriculum
-            <span className="arr arr-r">→</span>
-          </Link>
         </div>
       </section>
     </main>
