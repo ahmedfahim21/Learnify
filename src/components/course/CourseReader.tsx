@@ -15,7 +15,7 @@ import { useSession } from "@/lib/authClient";
 import { ChapterBlockRenderer } from "./ChapterBlockRenderer";
 import { useChapterProgress } from "./useChapterProgress";
 
-const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry", "blueberry"] as const;
+const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert", "signal"] as const;
 
 /**
  * The chaptered course reader — a sidebar of chapters (scroll-spied to
@@ -95,7 +95,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
             <>
               <div className="h-0.5 w-full overflow-hidden bg-(--color-line)">
                 <div
-                  className="h-full bg-(--color-mint) transition-[width] duration-500"
+                  className="h-full bg-(--color-signal) transition-[width] duration-500"
                   style={{ width: `${(readCount / phases.length) * 100}%` }}
                 />
               </div>
@@ -114,7 +114,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
                 href={`#chapter-${chapter.phase}`}
                 className={`-ml-3 border-l pl-3 py-1 text-sm transition-colors ${
                   active
-                    ? "border-(--color-mint) text-(--color-fg)"
+                    ? "border-(--color-signal) text-(--color-fg)"
                     : "border-transparent text-(--color-mist) hover:text-(--color-fg)"
                 }`}
               >
@@ -140,7 +140,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
         </header>
 
         {error && (
-          <p className="border border-(--color-strawberry)/40 bg-(--color-strawberry)/10 px-4 py-2 text-sm text-(--color-strawberry)">
+          <p className="border border-(--color-alert)/40 bg-(--color-alert)/10 px-4 py-2 text-sm text-(--color-alert)">
             {error}
           </p>
         )}
@@ -179,7 +179,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
           );
         })}
 
-        <section className="max-w-(--measure-prose) space-y-4 border border-(--color-mint)/30 bg-(--color-mint)/[0.04] p-6">
+        <section className="max-w-(--measure-prose) space-y-4 border border-(--color-signal)/30 bg-(--color-signal)/[0.04] p-6">
           <p className="label">Finished reading</p>
           <h2 className="text-2xl">Now get grilled on it</h2>
           <p className="text-(--color-mist)">
@@ -192,7 +192,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
               type="button"
               onClick={() => startPracticing(allConceptSlugs)}
               disabled={Boolean(starting)}
-              className="chip border-(--color-mint)/50 bg-(--color-mint)/10 text-(--color-mint) disabled:cursor-wait disabled:opacity-60"
+              className="chip border-(--color-signal)/50 bg-(--color-signal)/10 text-(--color-signal) disabled:cursor-wait disabled:opacity-60"
             >
               {starting ? "Starting…" : `Start a tutor session on all ${allConceptSlugs.length} concepts →`}
             </button>

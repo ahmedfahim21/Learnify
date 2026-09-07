@@ -30,9 +30,9 @@ const EDGE_TYPES = { systemEdge: SystemDiagramEdge };
 
 /** Stroke for an edge, by the accent of the node it leaves. */
 function edgeStroke(accent: DiagramColor | undefined, active: boolean, dimmed: boolean): string {
-  if (dimmed) return "rgba(255,255,255,0.10)";
-  if (!active) return "rgba(255,255,255,0.35)";
-  return accent ? DIAGRAM_PALETTE[accent].stroke : "#4fc9b8";
+  if (dimmed) return "var(--color-line)";
+  if (!active) return "var(--color-faint)";
+  return accent ? DIAGRAM_PALETTE[accent].stroke : "var(--color-signal)";
 }
 
 export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
@@ -184,13 +184,13 @@ export function SystemDiagram({ def, ctx }: { def: ComponentDef; ctx: NodeContex
             }
           }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="rgba(255,255,255,0.07)" />
-          <Controls showInteractive={false} className="!border-(--color-line) !bg-[#101216] !shadow-none" />
+          <Background variant={BackgroundVariant.Dots} gap={22} size={1} color="var(--color-line)" />
+          <Controls showInteractive={false} className="!border-(--color-line) !bg-(--color-node) !shadow-none" />
         </ReactFlow>
       </div>
 
       {selectedNode && (
-        <div className="flex items-start gap-3 border-l-2 border-(--color-mint) bg-(--color-raised) px-3 py-2">
+        <div className="flex items-start gap-3 border-l-2 border-(--color-signal) bg-(--color-raised) px-3 py-2">
           <div className="flex-1 space-y-0.5">
             <p className="text-xs text-(--color-fg)">{selectedNode.label}</p>
             <p className="text-xs leading-relaxed text-(--color-mist)">

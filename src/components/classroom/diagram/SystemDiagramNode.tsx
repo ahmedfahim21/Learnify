@@ -63,13 +63,13 @@ export function SystemDiagramNode({ data }: NodeProps) {
 
       <div
         title={node.detail ?? undefined}
-        className={`group flex h-full w-full flex-col items-center justify-center gap-1.5 border bg-[#101216] px-2 text-center transition-all duration-300 ${
+        className={`group flex h-full w-full flex-col items-center justify-center gap-1.5 border bg-(--color-node) px-2 text-center transition-all duration-300 ${
           SHAPE_RADIUS[node.shape ?? "rounded"]
         } ${palette?.border ?? DIAGRAM_NEUTRAL.border} ${
-          active ? `ring-2 ${palette?.ring ?? "ring-white/60"} ring-offset-2 ring-offset-[#0a0a0a]` : ""
-        } ${selected ? "ring-2 ring-white/80 ring-offset-2 ring-offset-[#0a0a0a]" : ""} ${
+          active ? `ring-2 ${palette?.ring ?? "ring-(--color-faint)"} ring-offset-2 ring-offset-(--color-ink)` : ""
+        } ${selected ? "ring-2 ring-(--color-fg) ring-offset-2 ring-offset-(--color-ink)" : ""} ${
           dimmed ? "opacity-20 saturate-0" : "opacity-100"
-        } ${selectable ? "cursor-pointer hover:border-white/60 hover:bg-[#171a20]" : "cursor-default"}`}
+        } ${selectable ? "cursor-pointer hover:border-(--color-faint) hover:bg-(--color-raised)" : "cursor-default"}`}
       >
         {Icon && (
           <Icon
@@ -77,14 +77,14 @@ export function SystemDiagramNode({ data }: NodeProps) {
             strokeWidth={1.75}
           />
         )}
-        <span className="text-[13.5px] leading-tight text-white/90">{node.label}</span>
+        <span className="text-[13.5px] leading-tight text-(--color-fg)">{node.label}</span>
         {node.sublabel && (
-          <span className="text-[11px] leading-tight text-white/40">{node.sublabel}</span>
+          <span className="text-[11px] leading-tight text-(--color-faint)">{node.sublabel}</span>
         )}
         {node.detail && !dimmed && (
           <span
             aria-hidden
-            className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-white/30 transition-colors group-hover:bg-white/70"
+            className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-(--color-faint) transition-colors group-hover:bg-(--color-mist)"
           />
         )}
       </div>
@@ -102,7 +102,7 @@ export function SystemDiagramGroupNode({ data }: NodeProps) {
       className={`h-full w-full rounded-lg border border-dashed ${palette.groupBorder} ${palette.groupBg}`}
     >
       <span
-        className={`absolute -top-2.5 left-3 border border-white/10 bg-[#0a0a0a] px-2 py-0.5 text-[10px] tracking-wide ${palette.groupText}`}
+        className={`absolute -top-2.5 left-3 border border-(--color-line) bg-(--color-ink) px-2 py-0.5 text-[10px] tracking-wide ${palette.groupText}`}
       >
         {label}
       </span>

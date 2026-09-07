@@ -212,7 +212,7 @@ function renderNode(id: string, ctx: NodeContext): React.ReactNode {
       return (
         <div
           key={id}
-          className="border border-(--color-mango)/40 bg-(--color-mango)/10 p-2 text-xs text-(--color-mango)"
+          className="border border-(--color-warn)/40 bg-(--color-warn)/10 p-2 text-xs text-(--color-warn)"
         >
           Unknown widget: {def.component}
         </div>

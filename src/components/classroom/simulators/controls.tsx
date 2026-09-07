@@ -64,7 +64,7 @@ export function SimToggle({
         aria-checked={value}
         onClick={() => onChange(!value)}
         className={`h-5 w-9 rounded-full border transition-colors ${
-          value ? "border-(--color-mint)/50 bg-(--color-mint)/30" : "border-(--color-line) bg-(--color-raised)"
+          value ? "border-(--color-signal)/50 bg-(--color-signal)/30" : "border-(--color-line) bg-(--color-raised)"
         }`}
       >
         <span
@@ -95,7 +95,7 @@ export function SimSelect({
         className="w-full border border-(--color-line) bg-(--color-raised) px-2 py-1.5 text-sm outline-none focus:border-(--color-line)"
       >
         {(spec.choices ?? []).map((choice) => (
-          <option key={choice.value} value={choice.value} className="bg-[#0d0d0d]">
+          <option key={choice.value} value={choice.value} className="bg-(--color-canvas)">
             {choice.label}
           </option>
         ))}
@@ -130,7 +130,7 @@ export function SimBars({
           <span className="w-20 shrink-0 truncate text-(--color-mist)">{bar.label}</span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-(--color-raised)">
             <div
-              className="h-full rounded-full bg-(--color-blueberry)/70"
+              className="h-full rounded-full bg-(--color-flow)/70"
               style={{ width: `${Math.max(2, (bar.value / max) * 100)}%` }}
             />
           </div>
@@ -145,7 +145,7 @@ export function SimBars({
 
 export function SimNotice({ text }: { text: string }) {
   return (
-    <p className="border border-(--color-mango)/25 bg-(--color-mango)/[0.06] px-3 py-2 text-sm leading-relaxed text-(--color-mango)/90">
+    <p className="border border-(--color-warn)/25 bg-(--color-warn)/[0.06] px-3 py-2 text-sm leading-relaxed text-(--color-warn)/90">
       <span>Notice: </span>
       {text}
     </p>

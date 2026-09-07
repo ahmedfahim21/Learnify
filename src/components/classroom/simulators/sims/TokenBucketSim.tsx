@@ -103,7 +103,7 @@ export function TokenBucketSim({
             {running ? "⏸ Pause" : "▶ Run"}
           </button>
         </div>
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-(--color-blueberry)">
+        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-(--color-flow)">
           <path d={path} fill="none" stroke="currentColor" strokeWidth={1.5} />
           <line x1={cursorX} x2={cursorX} y1={0} y2={CHART_H} stroke="rgba(255,255,255,0.3)" strokeWidth={1} />
         </svg>

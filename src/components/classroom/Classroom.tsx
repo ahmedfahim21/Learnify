@@ -167,13 +167,13 @@ export function Classroom({
       )}
 
       {status === "completed" && (
-        <p className="border border-(--color-mint)/30 bg-(--color-mint)/[0.06] px-4 py-3 text-sm text-(--color-mint)">
+        <p className="border border-(--color-signal)/30 bg-(--color-signal)/[0.06] px-4 py-3 text-sm text-(--color-signal)">
           Session complete.
         </p>
       )}
 
       {error && budgetSpent && (
-        <div className="space-y-2 border border-(--color-mango)/30 bg-(--color-mango)/[0.06] px-4 py-3 text-sm text-(--color-mango)">
+        <div className="space-y-2 border border-(--color-warn)/30 bg-(--color-warn)/[0.06] px-4 py-3 text-sm text-(--color-warn)">
           <p>{error}</p>
           {/* No Retry here: retrying can only fail until the window resets, so
               the only useful action is the one that still works. */}
@@ -184,12 +184,12 @@ export function Classroom({
       )}
 
       {error && !budgetSpent && (
-        <div className="flex items-center justify-between gap-4 border border-(--color-strawberry)/30 bg-(--color-strawberry)/[0.06] px-4 py-3 text-sm text-(--color-strawberry)">
+        <div className="flex items-center justify-between gap-4 border border-(--color-alert)/30 bg-(--color-alert)/[0.06] px-4 py-3 text-sm text-(--color-alert)">
           <span>{error}</span>
           <button
             type="button"
             onClick={() => void postTurn({})}
-            className="border border-(--color-strawberry)/40 px-2 py-1 text-xs hover:bg-(--color-strawberry)/10"
+            className="border border-(--color-alert)/40 px-2 py-1 text-xs hover:bg-(--color-alert)/10"
           >
             Retry
           </button>

@@ -62,15 +62,15 @@ export function SystemDiagramEdge({
                 className="flex h-5 w-5 items-center justify-center rounded-full border text-[10px] tabular-nums"
                 style={{
                   borderColor: stroke,
-                  color: active ? "#0a0a0a" : stroke,
-                  background: active ? stroke : "#0a0a0a",
+                  color: active ? "var(--color-ink)" : stroke,
+                  background: active ? stroke : "var(--color-ink)",
                 }}
               >
                 {step}
               </span>
             )}
             {label && (
-              <span className="max-w-[130px] truncate bg-[#0a0a0a]/90 px-1.5 py-0.5 text-[10px] leading-tight text-(--color-mist)">
+              <span className="max-w-[130px] truncate bg-(--color-ink)/90 px-1.5 py-0.5 text-[10px] leading-tight text-(--color-mist)">
                 {label}
               </span>
             )}

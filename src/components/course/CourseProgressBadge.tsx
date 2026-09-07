@@ -40,7 +40,7 @@ export function CourseProgressBadge({ slug }: { slug: string }) {
 
   const done = summary.fraction >= 1;
   return (
-    <span className={`chip ${done ? "border-(--color-mint)/40 text-(--color-mint)" : ""}`}>
+    <span className={`chip ${done ? "border-(--color-signal)/40 text-(--color-signal)" : ""}`}>
       {done ? "completed" : `${summary.completedPhases.length}/${summary.totalChapters} read`}
     </span>
   );

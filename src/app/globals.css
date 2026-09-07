@@ -1,51 +1,118 @@
 @import "tailwindcss";
 
 /* ======================================================================
-   Brand system — ported from the FilDOS design system (via
-   personal-portfolio). Foundation is black-and-white; the six scoops carry
-   all colour, always as an accent (dot, chip, tag, diagram/simulator
-   highlight) — never a large fill, never body text.
+   Learnify's design system.
+   
+   Inspired by the FilDOS system (via personal-portfolio) and keeping its best
+   ideas — a neutral foundation, accent used only as accent, and hierarchy
+   carried by size and colour rather than font weight — but its own thing:
+   IBM Plex rather than Helvetica/Space Mono, accents named for what they mean
+   in a systems diagram rather than for desserts, a primary that is signal
+   azure rather than mint, and a small radius rather than hard-square corners.
 
-   Learnify ships dark-first (the existing classroom is a dark surface), so
-   :root carries the dark palette directly rather than the portfolio's
-   light-default + override — same tokens, same meanings, dark from the start.
+   Light is the base — it is what renders with no stored choice and with
+   JavaScript off. Dark is the override below, keyed off `data-theme` on
+   <html>, which the boot script in layout.tsx always resolves to a concrete
+   value (stored choice, else system preference) before first paint.
    ====================================================================== */
+/* Tailwind's `dark:` variant is keyed to the attribute rather than the media
+   query, because the boot script in layout.tsx always resolves a concrete
+   theme onto <html> — so this is reliable for both an explicit choice and a
+   system-preference default. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
-  /* ---- Foundation --------------------------------------------------- */
-  --color-ink: #0a0a0a;        /* the canvas */
-  --color-surface: #131417;    /* cards, boxes sitting on the canvas */
-  --color-raised: #191b20;     /* hover / inset wells */
-  --color-fg: #ededed;         /* primary text */
-  --color-mist: #9498a3;       /* secondary text, chrome, placeholders */
-  --color-faint: #6b7080;      /* tertiary: metadata, ticks, markers */
-  --color-line: rgba(255, 255, 255, 0.12); /* 1px borders, hairline rules */
-  --wash-selection: rgba(238, 242, 251, 0.15);
-  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.55);
+  /* ---- Foundation: light is the base, as in the source system ------- */
+  --color-ink: #ffffff;        /* the canvas */
+  --color-surface: #fafafb;    /* cards, boxes sitting on the canvas */
+  --color-raised: #f1f2f4;     /* hover / inset wells */
+  --color-fg: #0f1117;         /* primary text */
+  --color-mist: #656b78;       /* secondary text, chrome, placeholders */
+  --color-faint: #8a8f9c;      /* tertiary: metadata, ticks, markers */
+  --color-line: #e3e4e8;       /* 1px borders, hairline rules */
+  /* Diagram + code surfaces. Separate from --color-surface so the drawing
+     canvas can sit slightly apart from the page without hardcoded hex. */
+  --color-canvas: #f7f8fa;
+  --color-node: #ffffff;
+  --wash-selection: rgba(15, 17, 23, 0.12);
+  --shadow-card: 0 10px 28px rgba(15, 17, 23, 0.14);
 
-  /* ---- The six scoops (accent only) --------------------------------- */
-  --color-strawberry: #f26d6d;
-  --color-bubblegum: #f286b4;
-  --color-mango: #f9a85c;
-  --color-blueberry: #6e9bee;
-  --color-mint: #4fc9b8;
-  --color-grape: #a585e0;
+  /* ---- Accents (accent only, never a large fill or body text) -------
+     Named for their role in a system diagram. `signal` is the primary:
+     interactive, live, progress. Darkened here because the dark-mode values
+     are tuned to glow on ink and go weak on white. */
+  --color-signal: #0b63d6;   /* primary: interactive, live, progress */
+  --color-flow: #5b4bd6;     /* movement between components */
+  --color-deep: #0a7d76;     /* storage, persistence */
+  --color-warn: #a8620a;     /* pressure, saturation, trade-off */
+  --color-alert: #c9382f;    /* failure, loss, the thing that breaks */
+  --color-accent: #bd3f78;   /* everything else that needs separating */
 
-  --font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  --font-mono: var(--font-space-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  /* Corners: softened from the source system's hard square. Crisp enough to
+     stay technical, not so sharp it reads as austere over a 25-minute read. */
+  --radius: 3px;
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   --measure: min(90vw, 76rem);
   --measure-mid: 60rem;
   --measure-prose: 44rem;
 
-  /* Hand-drawn squiggle underline — a small tile repeated along x, so the
-     stroke keeps its shape at any link width and repaints on every wrapped
-     line. Ready-coloured Mint for running text. */
-  --squiggle-mint: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6' viewBox='0 0 12 6'%3E%3Cpath d='M0 4.6 L3 1.4 L6 4.6 L9 1.4 L12 4.6' fill='none' stroke='%234fc9b8' stroke-opacity='0.55' stroke-width='0.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  /* Diagram edge strokes, one per accent in DIAGRAM_COLORS. Edges are SVG,
+     so these have to be variables the theme can swap rather than classes. */
+  --diagram-slate: #64748b;
+  --diagram-blue: #2563eb;
+  --diagram-green: #059669;
+  --diagram-pink: #db2777;
+  --diagram-purple: #7c3aed;
+  --diagram-amber: #b45309;
+  --diagram-cyan: #0891b2;
+  --diagram-rose: #e11d48;
+  --diagram-teal: #0d9488;
+  --diagram-indigo: #4f46e5;
+}
+
+/* ---- Dark ---------------------------------------------------------------
+   The same system inverted. Accents are brightened because the light values
+   hold contrast on white and go muddy on ink. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-ink: #0a0a0a;
+  --color-surface: #131417;
+  --color-raised: #191b20;
+  --color-fg: #ededed;
+  --color-mist: #9498a3;
+  --color-faint: #6b7080;
+  --color-line: rgba(255, 255, 255, 0.12);
+  --color-canvas: #0d0d0d;
+  --color-node: #101216;
+  --wash-selection: rgba(238, 242, 251, 0.15);
+  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.55);
+
+  --color-signal: #4da3ff;
+  --color-flow: #9b8cff;
+  --color-deep: #3fc9c0;
+  --color-warn: #f0a44a;
+  --color-alert: #f2685f;
+  --color-accent: #ef7fae;
+
+  --diagram-slate: #94a3b8;
+  --diagram-blue: #60a5fa;
+  --diagram-green: #34d399;
+  --diagram-pink: #f472b6;
+  --diagram-purple: #c084fc;
+  --diagram-amber: #fbbf24;
+  --diagram-cyan: #22d3ee;
+  --diagram-rose: #fb7185;
+  --diagram-teal: #2dd4bf;
+  --diagram-indigo: #818cf8;
 }
 
 /* ---- Base -------------------------------------------------------------- */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   interpolate-size: allow-keywords;
 }
 
@@ -75,10 +142,8 @@ body {
   font-synthesis: none;
 }
 
-/* Hierarchy comes from size + tracking, never weight — Learnify's own house
-   style already agreed with this before the port. 400 rather than a lighter
-   weight for the same portability reason as the source system: Helvetica
-   Neue Light only exists on macOS. */
+/* Hierarchy comes from size, tracking and colour — never weight. Plex Sans
+   is loaded at 400 only, so there is no bold to reach for by accident. */
 h1, h2, h3, h4 {
   font-family: var(--font-sans);
   font-weight: 400;
@@ -103,7 +168,7 @@ a {
 }
 
 :focus-visible {
-  outline: 1px solid var(--color-mint);
+  outline: 1px solid var(--color-signal);
   outline-offset: 3px;
 }
 
@@ -152,14 +217,14 @@ a {
   background: var(--color-line);
 }
 
-/* Square bordered chip (tag / stat / phase marker). Sharp corners on
-   purpose — the whole system speaks in square boxes, not pills. */
+/* Bordered chip (tag / stat / phase marker). Barely-rounded rather than a
+   pill: it should read as a field in a spec, not a badge. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   border: 1px solid var(--color-line);
-  border-radius: 0;
+  border-radius: var(--radius);
   padding: 0.2rem 0.65rem;
   font-family: var(--font-mono);
   font-size: 0.76rem;
@@ -227,20 +292,19 @@ button.chip {
 a:hover .arr-r { transform: translateX(3px); }
 a:hover .arr-d { transform: translateY(2px); }
 
-/* The one underlined link style used in running text — Mint is the system's
-   "live"/interactive highlight. Painted as a repeating background so it
-   redraws on every line of a link that wraps. */
+/* The one underlined link style used in running text. Signal azure is the
+   system's live/interactive colour. */
 @utility link {
-  color: var(--color-mint);
-  text-decoration: none;
-  background: var(--squiggle-mint) repeat-x 0 100% / 12px 6px;
-  padding-bottom: 6px;
-  opacity: 0.92;
-  transition: opacity 0.15s ease;
+  color: var(--color-signal);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--color-signal) 45%, transparent);
+  transition: text-decoration-color 0.15s ease;
 }
 @utility link {
   &:hover {
-    opacity: 1;
+    text-decoration-color: var(--color-signal);
   }
 }
 
@@ -317,13 +381,13 @@ a:hover .arr-d { transform: translateY(2px); }
   font-size: 9px;
 }
 .react-flow__attribution a {
-  color: rgba(255, 255, 255, 0.25);
+  color: var(--color-faint);
 }
 .react-flow__controls-button {
-  background: #101216;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  fill: rgba(255, 255, 255, 0.6);
+  background: var(--color-node);
+  border-bottom: 1px solid var(--color-line);
+  fill: var(--color-mist);
 }
 .react-flow__controls-button:hover {
-  background: #171a20;
+  background: var(--color-raised);
 }

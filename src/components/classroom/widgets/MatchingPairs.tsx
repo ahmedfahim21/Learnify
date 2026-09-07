@@ -35,15 +35,15 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
                 onClick={() => setActiveLeft(item.id)}
                 className={`border px-3 py-2 text-left text-sm transition ${
                   activeLeft === item.id
-                    ? "border-(--color-blueberry)/70 bg-(--color-blueberry)/10"
+                    ? "border-(--color-flow)/70 bg-(--color-flow)/10"
                     : matched
-                      ? "border-(--color-mint)/40 bg-(--color-mint)/[0.06]"
+                      ? "border-(--color-signal)/40 bg-(--color-signal)/[0.06]"
                       : "border-(--color-line) hover:border-(--color-faint)"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item.label}
                 {matched && (
-                  <span className="block text-xs text-(--color-mint)/80">
+                  <span className="block text-xs text-(--color-signal)/80">
                     → {labelOf.get(pairs[item.id])}
                   </span>
                 )}
@@ -66,13 +66,13 @@ export function MatchingPairs({ def, ctx }: { def: ComponentDef; ctx: NodeContex
                 }}
                 className={`border px-3 py-2 text-left text-sm transition ${
                   taken
-                    ? "border-(--color-mint)/40 bg-(--color-mint)/[0.06]"
+                    ? "border-(--color-signal)/40 bg-(--color-signal)/[0.06]"
                     : "border-(--color-line) hover:border-(--color-faint)"
                 } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {item.label}
                 {taken && (
-                  <span className="block text-xs text-(--color-mint)/80">
+                  <span className="block text-xs text-(--color-signal)/80">
                     ← {partnerLabel(item.id)}
                   </span>
                 )}

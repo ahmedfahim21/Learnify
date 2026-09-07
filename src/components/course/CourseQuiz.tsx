@@ -81,7 +81,7 @@ export function CourseQuiz({
               <span className="label">What to revisit</span>
             </div>
             {missed.map((q) => (
-              <div key={q.id} className="space-y-2 border-l-2 border-(--color-strawberry) bg-(--color-surface) px-4 py-3">
+              <div key={q.id} className="space-y-2 border-l-2 border-(--color-alert) bg-(--color-surface) px-4 py-3">
                 <Link href={`/courses/${slug}#chapter-${q.phase}`} className="label">
                   {DESIGN_PHASE_LABELS[q.phase]} →
                 </Link>
@@ -108,7 +108,7 @@ export function CourseQuiz({
         </div>
         <div className="h-0.5 w-full overflow-hidden bg-(--color-line)">
           <div
-            className="h-full bg-(--color-mint) transition-[width] duration-300"
+            className="h-full bg-(--color-signal) transition-[width] duration-300"
             style={{ width: `${((index + (answered ? 1 : 0)) / questions.length) * 100}%` }}
           />
         </div>
@@ -124,9 +124,9 @@ export function CourseQuiz({
             const tone = !answered
               ? "border-(--color-line) hover:border-(--color-faint) hover:bg-(--color-raised)"
               : isAnswer
-                ? "border-(--color-mint)/60 bg-(--color-mint)/10 text-(--color-fg)"
+                ? "border-(--color-signal)/60 bg-(--color-signal)/10 text-(--color-fg)"
                 : isChosen
-                  ? "border-(--color-strawberry)/50 bg-(--color-strawberry)/10 text-(--color-fg)"
+                  ? "border-(--color-alert)/50 bg-(--color-alert)/10 text-(--color-fg)"
                   : "border-(--color-line) opacity-50";
             return (
               <button
@@ -137,14 +137,14 @@ export function CourseQuiz({
                 className={`border px-4 py-3 text-left text-sm transition-colors disabled:cursor-default ${tone}`}
               >
                 {option.label}
-                {answered && isAnswer && <span className="ml-2 text-(--color-mint)">correct</span>}
+                {answered && isAnswer && <span className="ml-2 text-(--color-signal)">correct</span>}
               </button>
             );
           })}
         </div>
 
         {answered && (
-          <div className="space-y-1 border-l-2 border-(--color-mint) pl-3">
+          <div className="space-y-1 border-l-2 border-(--color-signal) pl-3">
             <p className="label">{chosen === question.correctOptionId ? "Right" : "Not quite"}</p>
             <div className="prose text-[0.95rem]">
               <Markdown text={question.explanation} />

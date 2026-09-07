@@ -48,4 +48,22 @@ export function getProblem(slug: string): SystemDesignProblem | undefined {
   return PROBLEMS.find((p) => p.slug === slug);
 }
 
+/**
+ * A course's headline diagram — the high-level design where one is authored,
+ * else the first diagram in reading order. Used for card thumbnails, so every
+ * course shows its own architecture rather than generic art.
+ */
+export function getPrimaryDiagram(problem: SystemDesignProblem) {
+  const chapters = [
+    ...problem.chapters.filter((c) => c.phase === "high-level"),
+    ...problem.chapters,
+  ];
+  for (const chapter of chapters) {
+    for (const block of chapter.blocks) {
+      if (block.type === "diagram") return block.diagram;
+    }
+  }
+  return undefined;
+}
+
 export * from "./types";

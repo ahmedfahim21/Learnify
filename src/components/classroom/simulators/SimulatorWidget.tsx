@@ -50,9 +50,9 @@ export function SimulatorWidget({ def }: { def: ComponentDef }) {
 
   if (!spec || !Component) {
     return (
-      <div className="space-y-1 border border-(--color-mango)/30 bg-(--color-mango)/[0.06] p-4 text-sm text-(--color-mango)/80">
+      <div className="space-y-1 border border-(--color-warn)/30 bg-(--color-warn)/[0.06] p-4 text-sm text-(--color-warn)/80">
         <p>This simulator isn&apos;t available yet.</p>
-        <p className="text-xs text-(--color-mango)/60">({props.simulatorId})</p>
+        <p className="text-xs text-(--color-warn)/60">({props.simulatorId})</p>
       </div>
     );
   }

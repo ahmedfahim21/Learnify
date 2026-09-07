@@ -57,7 +57,7 @@ export function LatencyNumbersSim({
               <span className="w-[42%] shrink-0 truncate text-(--color-mist)">{ref.label}</span>
               <div className="relative h-2 flex-1 overflow-hidden rounded-full bg-(--color-raised)">
                 <div
-                  className={`h-full rounded-full ${overBudget ? "bg-(--color-strawberry)/70" : "bg-(--color-mint)/60"}`}
+                  className={`h-full rounded-full ${overBudget ? "bg-(--color-alert)/70" : "bg-(--color-signal)/60"}`}
                   style={{ width: `${Math.max(1.5, logPosition(ref.nanoseconds) * 100)}%` }}
                 />
               </div>
@@ -66,7 +66,7 @@ export function LatencyNumbersSim({
               </span>
               <span
                 className={`w-16 shrink-0 text-right tabular-nums ${
-                  overBudget ? "text-(--color-strawberry)/80" : "text-(--color-mist)"
+                  overBudget ? "text-(--color-alert)/80" : "text-(--color-mist)"
                 }`}
                 title={`How many fit in a ${budgetMs}ms budget`}
               >

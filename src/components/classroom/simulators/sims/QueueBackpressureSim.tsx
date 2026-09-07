@@ -69,23 +69,23 @@ export function QueueBackpressureSim({
         <div className="flex items-baseline justify-between">
           <span className="text-xs text-(--color-mist)">Wait time vs. utilisation</span>
           {out.unstable && (
-            <span className="text-xs text-(--color-strawberry)">
+            <span className="text-xs text-(--color-alert)">
               unstable — arrivals exceed total capacity
             </span>
           )}
         </div>
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-(--color-blueberry)" role="img" aria-label="Queue wait time curve">
+        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} className="w-full text-(--color-flow)" role="img" aria-label="Queue wait time curve">
           {/* Gridline at rho = 0.8, the point past which the curve runs away. */}
           <line
             x1={(0.8 / MAX_RHO) * CHART_W}
             x2={(0.8 / MAX_RHO) * CHART_W}
             y1={0}
             y2={CHART_H}
-            stroke="rgba(255,255,255,0.12)"
+            stroke="var(--color-line)"
             strokeDasharray="3 3"
           />
           <path d={path} fill="none" stroke="currentColor" strokeWidth={1.75} />
-          <circle cx={here.x} cy={here.y} r={4} fill="#fbbf24" />
+          <circle cx={here.x} cy={here.y} r={4} fill="var(--color-warn)" />
         </svg>
         <div className="flex justify-between text-[10px] text-(--color-faint)">
           <span>ρ = 0</span>

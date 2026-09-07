@@ -51,12 +51,12 @@ export default async function MePage() {
       {today.due.length > 0 && (
         <Link
           href="/today"
-          className="flex items-center justify-between gap-3 border border-(--color-mint)/30 bg-(--color-mint)/[0.05] px-4 py-3 transition-colors hover:bg-(--color-mint)/10"
+          className="flex items-center justify-between gap-3 border border-(--color-signal)/30 bg-(--color-signal)/[0.05] px-4 py-3 transition-colors hover:bg-(--color-signal)/10"
         >
           <span className="text-(--color-fg)">
             {today.due.length} concept{today.due.length === 1 ? "" : "s"} due for review
           </span>
-          <span className="label text-(--color-mint)">Review now →</span>
+          <span className="label text-(--color-signal)">Review now →</span>
         </Link>
       )}
 
@@ -78,7 +78,7 @@ export default async function MePage() {
                   <p className="truncate text-sm text-(--color-fg)">{titleOf(course.problemSlug)}</p>
                   <div className="mt-1.5 h-0.5 w-full overflow-hidden bg-(--color-line)">
                     <div
-                      className="h-full bg-(--color-mint)"
+                      className="h-full bg-(--color-signal)"
                       style={{ width: `${course.fraction * 100}%` }}
                     />
                   </div>

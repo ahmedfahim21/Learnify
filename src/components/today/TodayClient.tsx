@@ -40,7 +40,7 @@ function MasteryBar({ score }: { score: number }) {
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-24 overflow-hidden rounded-full bg-(--color-raised)">
         <div
-          className="h-full rounded-full bg-(--color-mint)/70"
+          className="h-full rounded-full bg-(--color-signal)/70"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -105,7 +105,7 @@ export function TodayClient({ snapshot }: { snapshot: TodaySnapshot }) {
       </header>
 
       {error && (
-        <p className="border border-(--color-strawberry)/30 bg-(--color-strawberry)/[0.06] px-4 py-3 text-sm text-(--color-strawberry)">
+        <p className="border border-(--color-alert)/30 bg-(--color-alert)/[0.06] px-4 py-3 text-sm text-(--color-alert)">
           {error}
         </p>
       )}

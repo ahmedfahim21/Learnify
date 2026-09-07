@@ -25,7 +25,7 @@ const ROW_GAP = 22;
  * unknown, not as failed.
  */
 function masteryColor(score: number | null): string {
-  if (score === null) return "#6b7080";
+  if (score === null) return "var(--color-faint)";
   const hue = 40 + score * 80; // amber -> green
   return `hsl(${hue} 70% 55%)`;
 }
@@ -61,10 +61,10 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
         style: {
           width: NODE_W,
           height: 40,
-          background: "#131417",
-          border: "1px solid rgba(255,255,255,0.18)",
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-line)",
           borderRadius: 0,
-          color: "#ededed",
+          color: "var(--color-fg)",
           fontSize: 12,
         },
       });
@@ -79,10 +79,10 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
           style: {
             width: NODE_W,
             height: NODE_H,
-            background: "#101216",
+            background: "var(--color-node)",
             border: `1px solid ${masteryColor(node.score)}`,
             borderRadius: 0,
-            color: "#ededed",
+            color: "var(--color-fg)",
             fontSize: 12,
             padding: 6,
           },
@@ -96,10 +96,10 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
       source: edge.from,
       target: edge.to,
       type: "smoothstep",
-      style: { stroke: "rgba(255,255,255,0.18)", strokeWidth: 1.5 },
+      style: { stroke: "var(--color-faint)", strokeWidth: 1.5 },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: "rgba(255,255,255,0.18)",
+        color: "var(--color-faint)",
         width: 12,
         height: 12,
       },
@@ -130,14 +130,14 @@ export function KnowledgeGraphView({ graph }: { graph: GraphData }) {
             variant={BackgroundVariant.Dots}
             gap={24}
             size={1}
-            color="rgba(255,255,255,0.06)"
+            color="var(--color-line)"
           />
           <Controls showInteractive={false} />
         </ReactFlow>
       </div>
 
       {selected ? (
-        <div className="space-y-1 border-l-2 border-(--color-mint) bg-(--color-surface) px-4 py-3">
+        <div className="space-y-1 border-l-2 border-(--color-signal) bg-(--color-surface) px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
             <p className="text-(--color-fg)">{selected.name}</p>
             <span className="label">{masteryLabel(selected.score)}</span>

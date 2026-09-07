@@ -41,9 +41,9 @@ export function ChapterQuiz({
           const tone = !answered
             ? "border-(--color-line) hover:border-(--color-faint) hover:bg-(--color-raised)"
             : isAnswer
-              ? "border-(--color-mint)/60 bg-(--color-mint)/10 text-(--color-fg)"
+              ? "border-(--color-signal)/60 bg-(--color-signal)/10 text-(--color-fg)"
               : isChosen
-                ? "border-(--color-strawberry)/50 bg-(--color-strawberry)/10 text-(--color-fg)"
+                ? "border-(--color-alert)/50 bg-(--color-alert)/10 text-(--color-fg)"
                 : "border-(--color-line) opacity-50";
           return (
             <button
@@ -54,14 +54,14 @@ export function ChapterQuiz({
               className={`border px-3 py-2 text-left text-sm transition-colors disabled:cursor-default ${tone}`}
             >
               {option.label}
-              {answered && isAnswer && <span className="ml-2 text-(--color-mint)">correct</span>}
+              {answered && isAnswer && <span className="ml-2 text-(--color-signal)">correct</span>}
             </button>
           );
         })}
       </div>
 
       {answered && (
-        <div className="space-y-1 border-l-2 border-(--color-mint) pl-3">
+        <div className="space-y-1 border-l-2 border-(--color-signal) pl-3">
           <p className="label">{correct ? "Right" : "Not quite"}</p>
           <div className="prose text-[0.95rem]">
             <Markdown text={explanation} />

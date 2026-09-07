@@ -30,7 +30,7 @@ export function ProgressMeter({ def }: { def: ComponentDef }) {
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-(--color-raised)">
                 <div
-                  className="h-full rounded-full bg-(--color-mint)/70"
+                  className="h-full rounded-full bg-(--color-signal)/70"
                   style={{ width: `${pct}%` }}
                 />
               </div>

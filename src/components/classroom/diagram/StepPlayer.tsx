@@ -23,7 +23,7 @@ export function StepPlayer({
     <div className="space-y-2">
       <div className="h-0.5 w-full overflow-hidden bg-(--color-raised)">
         <div
-          className="h-full bg-(--color-mint) transition-[width] duration-500 ease-out"
+          className="h-full bg-(--color-signal) transition-[width] duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -67,7 +67,7 @@ export function StepPlayer({
               aria-current={stepIdx === step.index}
               className={`h-1.5 w-5 transition-colors ${
                 stepIdx === step.index
-                  ? "bg-(--color-mint)"
+                  ? "bg-(--color-signal)"
                   : stepIdx > step.index
                     ? "bg-white/40 hover:bg-white/60"
                     : "bg-white/12 hover:bg-white/30"
@@ -82,7 +82,7 @@ export function StepPlayer({
         className="flex min-h-[2.75rem] items-center gap-3 border border-(--color-line) bg-(--color-raised) px-3 py-2"
       >
         {active && (
-          <span className="label shrink-0 text-(--color-mint)">
+          <span className="label shrink-0 text-(--color-signal)">
             {String(active.index).padStart(2, "0")}
           </span>
         )}

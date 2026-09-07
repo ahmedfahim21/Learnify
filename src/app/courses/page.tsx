@@ -1,10 +1,12 @@
 import Link from "next/link";
 
-import { PROBLEMS } from "@/content/systemDesign";
+import { getPrimaryDiagram, PROBLEMS } from "@/content/systemDesign";
 import { CourseProgressBadge } from "@/components/course/CourseProgressBadge";
 import { getQuiz } from "@/content/systemDesign/quizzes";
+import { DiagramThumbnail } from "@/components/course/DiagramThumbnail";
+import { DifficultyPips } from "@/components/course/DifficultyPips";
 
-const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry"] as const;
+const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
 
 export const metadata = {
   title: "Courses",
@@ -30,12 +32,20 @@ export default function CoursesPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {PROBLEMS.map((problem, i) => {
           const scoop = SCOOPS[i % SCOOPS.length];
+          const diagram = getPrimaryDiagram(problem);
           return (
             <Link
               key={problem.slug}
               href={`/courses/${problem.slug}`}
               className="group flex flex-col gap-3 border border-(--color-line) p-5 transition-colors hover:border-(--color-faint) hover:bg-(--color-surface)"
             >
+              {/* The course's own architecture, so the catalog reads as a set
+                  of shapes rather than a wall of paragraphs. */}
+              {diagram && (
+                <div className="-mx-5 -mt-5 mb-1 border-b border-(--color-line) bg-(--color-canvas) px-5 py-4">
+                  <DiagramThumbnail diagram={diagram} className="h-24" />
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <span className="dot" style={{ ["--scoop" as string]: `var(--color-${scoop})` }} />
                 <span className="label">{problem.tags[0]}</span>
@@ -44,7 +54,7 @@ export default function CoursesPage() {
               <p className="flex-1 text-sm text-(--color-mist)">{problem.tagline}</p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <span className="chip">{problem.estimatedMinutes} min</span>
-                <span className="chip">difficulty {problem.difficulty}/5</span>
+                <DifficultyPips level={problem.difficulty} />
                 <span className="chip">{problem.chapters.length} chapters</span>
                 <CourseProgressBadge slug={problem.slug} />
                 <span className="chip">{getQuiz(problem.slug).length} quiz questions</span>

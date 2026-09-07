@@ -78,7 +78,7 @@ export function ConsistentHashingSim({
 
       <div className="grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="mx-auto w-[260px]" role="img" aria-label="Consistent hashing ring">
-          <circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+          <circle cx={CENTER} cy={CENTER} r={RADIUS} fill="none" stroke="var(--color-line)" strokeWidth={1} />
           {/* Each virtual node as a tick on the ring, coloured by its physical node. */}
           {result.ring.flatMap((node) =>
             node.positions.map((pos, i) => {
@@ -115,10 +115,10 @@ export function ConsistentHashingSim({
               </text>
             );
           })}
-          <text x={CENTER} y={CENTER - 6} textAnchor="middle" fontSize={11} fill="rgba(255,255,255,0.75)">
+          <text x={CENTER} y={CENTER - 6} textAnchor="middle" fontSize={11} fill="var(--color-fg)">
             {nodeCount} nodes
           </text>
-          <text x={CENTER} y={CENTER + 10} textAnchor="middle" fontSize={9} fill="rgba(255,255,255,0.4)">
+          <text x={CENTER} y={CENTER + 10} textAnchor="middle" fontSize={9} fill="var(--color-faint)">
             {virtualNodes} vnodes each
           </text>
         </svg>

@@ -1,9 +1,10 @@
 import Link from "next/link";
 
-import { PROBLEMS } from "@/content/systemDesign";
+import { getPrimaryDiagram, PROBLEMS } from "@/content/systemDesign";
 import { ChapterBlockRenderer } from "@/components/course/ChapterBlockRenderer";
+import { DiagramThumbnail } from "@/components/course/DiagramThumbnail";
 
-const SCOOPS = ["blueberry", "mint", "mango", "grape", "bubblegum", "strawberry"] as const;
+const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
 
 /** The RAG-style walkthrough from the URL Shortener course, reused verbatim
  *  on the landing page — the hero demo is a real course diagram, not a mock. */
@@ -29,7 +30,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/courses"
-              className="border border-(--color-mint)/50 bg-(--color-mint)/10 px-5 py-2.5 text-(--color-mint) transition-colors hover:bg-(--color-mint)/20"
+              className="border border-(--color-signal)/50 bg-(--color-signal)/10 px-5 py-2.5 text-(--color-signal) transition-colors hover:bg-(--color-signal)/20"
             >
               Browse the courses <span className="arr arr-r">→</span>
             </Link>
@@ -85,20 +86,30 @@ export default function Home() {
           <span className="label">The curriculum</span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {PROBLEMS.map((problem, i) => (
-            <Link
-              key={problem.slug}
-              href={`/courses/${problem.slug}`}
-              className="group flex flex-col gap-2 border border-(--color-line) p-4 transition-colors hover:border-(--color-faint) hover:bg-(--color-surface)"
-            >
-              <span
-                className="dot"
-                style={{ ["--scoop" as string]: `var(--color-${SCOOPS[i % SCOOPS.length]})` }}
-              />
-              <span className="text-sm text-(--color-fg)">{problem.title}</span>
-              <span className="label mt-auto">{problem.estimatedMinutes} min</span>
-            </Link>
-          ))}
+          {PROBLEMS.map((problem, i) => {
+            const diagram = getPrimaryDiagram(problem);
+            return (
+              <Link
+                key={problem.slug}
+                href={`/courses/${problem.slug}`}
+                className="group flex flex-col gap-2 border border-(--color-line) transition-colors hover:border-(--color-faint) hover:bg-(--color-surface)"
+              >
+                {diagram && (
+                  <div className="border-b border-(--color-line) bg-(--color-canvas) px-3 py-3">
+                    <DiagramThumbnail diagram={diagram} className="h-16 opacity-80 transition-opacity group-hover:opacity-100" />
+                  </div>
+                )}
+                <div className="flex flex-1 flex-col gap-2 p-4 pt-2">
+                  <span
+                    className="dot"
+                    style={{ ["--scoop" as string]: `var(--color-${SCOOPS[i % SCOOPS.length]})` }}
+                  />
+                  <span className="text-sm text-(--color-fg)">{problem.title}</span>
+                  <span className="label mt-auto">{problem.estimatedMinutes} min</span>
+                </div>
+              </Link>
+            );
+          })}
         </div>
         <Link href="/courses" className="link inline-block text-sm">
           See all 16 with descriptions

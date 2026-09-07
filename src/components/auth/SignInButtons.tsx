@@ -44,7 +44,7 @@ export function SignInButtons({
           </button>
         ))}
       </div>
-      {error && <p className="text-sm text-(--color-strawberry)">{error}</p>}
+      {error && <p className="text-sm text-(--color-alert)">{error}</p>}
     </div>
   );
 }

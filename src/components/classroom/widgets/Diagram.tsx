@@ -2,13 +2,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentDef } from "@/lib/a2ui/messages";
 import { asString, emitAction, type NodeContext } from "../rendererContext";
+import { useTheme } from "../../theme/theme";
 /** Build the sandboxed iframe document that renders a Mermaid diagram. */
-function buildDiagramDoc(source: string): string {
+function buildDiagramDoc(source: string, theme: "light" | "dark"): string {
+  const c =
+    theme === "dark"
+      ? { bg: "#0d0d0d", fg: "#ededed", err: "#f26d6d" }
+      : { bg: "#f7f8fa", fg: "#0f1117", err: "#d2453f" };
   return `<!doctype html><html><head><meta charset="utf-8" />
 <style>
-  body { margin: 0; padding: 8px; background: #0d0d0d; color: #ededed; font-family: system-ui, sans-serif; }
+  body { margin: 0; padding: 8px; background: ${c.bg}; color: ${c.fg}; font-family: system-ui, sans-serif; }
   .node { cursor: pointer; }
-  .err { color: #fca5a5; font-size: 12px; white-space: pre-wrap; }
+  .err { color: ${c.err}; font-size: 12px; white-space: pre-wrap; }
   svg { max-width: 100%; height: auto; }
 </style></head><body>
 <div id="root"></div>
@@ -19,7 +24,7 @@ function buildDiagramDoc(source: string): string {
     parent.postMessage({ type: "a2ui-diagram-size", height: document.body.scrollHeight }, "*");
   try {
     const mermaid = (await import("https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs")).default;
-    mermaid.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
+    mermaid.initialize({ startOnLoad: false, theme: "${theme === "dark" ? "dark" : "default"}", securityLevel: "strict" });
     const { svg, bindFunctions } = await mermaid.render("graph", src);
     root.innerHTML = svg;
     bindFunctions?.(root);
@@ -46,7 +51,9 @@ export function Diagram({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
   const [height, setHeight] = useState(220);
   const source = asString(def.properties.source);
   const caption = asString(def.properties.caption);
-  const srcDoc = useMemo(() => buildDiagramDoc(source), [source]);
+  const [theme] = useTheme();
+  // Rebuilds when the theme flips, so a Mermaid diagram follows the toggle.
+  const srcDoc = useMemo(() => buildDiagramDoc(source, theme), [source, theme]);
 
   // Latest ctx without resubscribing the message listener every render.
   const ctxRef = useRef(ctx);
@@ -78,7 +85,7 @@ export function Diagram({ def, ctx }: { def: ComponentDef; ctx: NodeContext }) {
         srcDoc={srcDoc}
         title="diagram"
         style={{ height }}
-        className="w-full border border-(--color-line) bg-[#0d0d0d]"
+        className="w-full border border-(--color-line) bg-(--color-canvas)"
       />
       {caption && <p className="text-xs text-(--color-mist)">{caption}</p>}
     </div>

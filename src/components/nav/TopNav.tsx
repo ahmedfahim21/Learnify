@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { signOut, useSession } from "@/lib/authClient";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const LINKS = [
   { href: "/courses", label: "Courses" },
@@ -24,6 +25,7 @@ export function TopNav() {
           <span className="label hidden sm:inline">system design</span>
         </Link>
         <nav className="flex items-center gap-1">
+          <ThemeToggle />
           {LINKS.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (

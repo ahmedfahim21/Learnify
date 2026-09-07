@@ -27,9 +27,9 @@ function highlightLine(line: string): React.ReactNode[] {
     const token = match[0];
     let cls = "";
     if (token.startsWith("//") || token.startsWith("#")) cls = "italic text-(--color-faint)";
-    else if (/^["'`]/.test(token)) cls = "text-(--color-mint)";
-    else if (/^\d/.test(token)) cls = "text-(--color-mango)";
-    else if (CODE_KEYWORDS.has(token)) cls = "text-(--color-blueberry)";
+    else if (/^["'`]/.test(token)) cls = "text-(--color-signal)";
+    else if (/^\d/.test(token)) cls = "text-(--color-warn)";
+    else if (CODE_KEYWORDS.has(token)) cls = "text-(--color-flow)";
     nodes.push(
       cls ? (
         <span key={key++} className={cls}>
@@ -59,7 +59,7 @@ export function CodeSnippet({ def }: { def: ComponentDef }) {
   const lines = code.replace(/\n$/, "").split("\n");
 
   return (
-    <figure className="overflow-hidden border border-(--color-line) bg-[#0d0d0d]">
+    <figure className="overflow-hidden border border-(--color-line) bg-(--color-canvas)">
       {language && (
         <div className="border-b border-(--color-line) px-4 py-1.5 text-xs uppercase tracking-widest text-(--color-faint)">
           {language}
@@ -72,7 +72,7 @@ export function CodeSnippet({ def }: { def: ComponentDef }) {
             return (
               <div
                 key={index}
-                className={`flex ${highlight.has(lineNo) ? "bg-(--color-mango)/10" : ""}`}
+                className={`flex ${highlight.has(lineNo) ? "bg-(--color-warn)/10" : ""}`}
               >
                 <span className="w-10 shrink-0 select-none px-2 text-right text-(--color-faint)">
                   {lineNo}

@@ -11,7 +11,7 @@ export function SessionRecap({ def }: { def: ComponentDef }) {
   const nextUp = asString(def.properties.nextUp);
 
   return (
-    <div className="space-y-3 border border-(--color-mint)/30 bg-(--color-mint)/[0.06] p-4">
+    <div className="space-y-3 border border-(--color-signal)/30 bg-(--color-signal)/[0.06] p-4">
       <div className="text-(--color-fg)">
         <Markdown text={summary} />
       </div>

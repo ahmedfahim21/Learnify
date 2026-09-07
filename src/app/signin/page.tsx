@@ -33,7 +33,7 @@ export default async function SignInPage({
       ) : (
         // Dead UI is worse than absent UI: with no credentials configured the
         // buttons could only fail, so say why instead of rendering them.
-        <div className="space-y-2 border border-(--color-mango)/30 bg-(--color-mango)/[0.06] p-4">
+        <div className="space-y-2 border border-(--color-warn)/30 bg-(--color-warn)/[0.06] p-4">
           <p className="label">Not configured</p>
           <p className="text-sm text-(--color-mist)">
             Auth isn&apos;t configured on this deployment yet. Set{" "}
