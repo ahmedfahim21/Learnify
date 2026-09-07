@@ -23,7 +23,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "Write-heavy, time-ordered, rarely updated",
       summary: "Metrics data has a distinctive shape: enormous write volume, always appending, almost never updating a past value.",
       concepts: [
-        { slug: "metrics-scope", name: "The time-series access pattern", summary: "Metrics are written once (a new data point every few seconds) and read as a range (a chart over the last hour). This shape — high write volume, append-only, range-queried — is exactly what a time-series database is optimized for, unlike a general-purpose relational store.", difficulty: 1 },
+        { slug: "metrics-scope", name: "The time-series access pattern", summary: "Metrics are written once (a new data point every few seconds) and read as a range (a chart over the last hour). This shape — high write volume, append-only, range-queried — is exactly what a time-series database is optimized for, unlike a general-purpose relational store.", difficulty: 1, tags: ["scoping", "observability"] },
       ],
       blocks: [
         { type: "prose", body: "A metric like \"CPU usage on host X\" produces a new, immutable data point every few seconds, forever, and is almost always queried as a range (\"show me the last hour\") rather than a point lookup. That access pattern — extremely high write volume, strictly append-only, always range-queried by time — is different enough from a typical database workload that purpose-built time-series databases exist specifically to optimize for it, with storage layouts built around exactly this shape." },
@@ -34,7 +34,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "Write volume at fleet scale",
       summary: "Multiply hosts by metrics-per-host by reporting frequency — the number gets large fast.",
       concepts: [
-        { slug: "metrics-estimation", name: "Estimating ingestion volume", summary: "10,000 hosts, 100 metrics each, reported every 10 seconds, is already a million data points every 10 seconds — 100,000 writes/sec sustained, from monitoring alone.", difficulty: 1 },
+        { slug: "metrics-estimation", name: "Estimating ingestion volume", summary: "10,000 hosts, 100 metrics each, reported every 10 seconds, is already a million data points every 10 seconds — 100,000 writes/sec sustained, from monitoring alone.", difficulty: 1, tags: ["estimation", "observability"] },
       ],
       blocks: [
         { type: "prose", body: "10,000 hosts, each emitting 100 distinct metrics (CPU, memory, disk, per-endpoint latency, ...) every 10 seconds, is 1,000,000 data points every 10 seconds — 100,000 writes/sec sustained, and that's before any burst from an incident (when metrics often get *more* frequent, exactly when the system is under the most stress)." },
@@ -52,7 +52,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "The API",
       summary: "A push or pull collection path, and a separate query API for charts and alert evaluation.",
       concepts: [
-        { slug: "metrics-api", name: "Collection API + query API", summary: "Metrics arrive via a lightweight collection endpoint (or are scraped, pull-style, from each host). A separate query API answers range queries for dashboards and for the alerting engine's own periodic checks.", difficulty: 1 },
+        { slug: "metrics-api", name: "Collection API + query API", summary: "Metrics arrive via a lightweight collection endpoint (or are scraped, pull-style, from each host). A separate query API answers range queries for dashboards and for the alerting engine's own periodic checks.", difficulty: 1, tags: ["api-design", "observability"] },
       ],
       blocks: [
         { type: "prose", body: "`POST /metrics { host, name, value, timestamp }` (or a batched variant) is the write path — often implemented as a lightweight agent on each host pushing every few seconds, though a \"pull\" model (a central collector scraping each host's `/metrics` endpoint, as Prometheus does) is just as common. `GET /query?metric=&from=&to=&aggregation=` is the read path, used both by dashboards and by the alerting engine evaluating rules." },
@@ -63,7 +63,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "The time-series model",
       summary: "Each point is (metric name, tags, timestamp, value) — sharded and stored so a time-range query for one metric is cheap.",
       concepts: [
-        { slug: "metrics-data-model", name: "Metric name + tags + timestamp + value", summary: "A data point is identified by its metric name plus a set of key-value tags (host, region, endpoint) — the combination is often called a 'series.' Storage is organized so all points for one series, over a time range, are physically close together.", difficulty: 2 },
+        { slug: "metrics-data-model", name: "Metric name + tags + timestamp + value", summary: "A data point is identified by its metric name plus a set of key-value tags (host, region, endpoint) — the combination is often called a 'series.' Storage is organized so all points for one series, over a time range, are physically close together.", difficulty: 2, tags: ["data-modeling", "indexing"] },
       ],
       blocks: [
         { type: "prose", body: "A single data point is `(metric=\"cpu_usage\", tags={host: \"web-42\", region: \"us-east\"}, timestamp, value)`. The combination of metric name and tag set defines a \"series\" — and storage is organized (often column-oriented, and always time-partitioned) so that fetching one series over a time range touches a small, contiguous chunk of storage rather than scanning broadly, which is what makes chart queries fast even against a huge overall dataset." },
@@ -74,7 +74,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "High-level design",
       summary: "Agents push metrics through a buffer into a time-series store; a separate alerting engine polls that store on a schedule and fires notifications on threshold breaches.",
       concepts: [
-        { slug: "metrics-alerting-engine", name: "The alerting engine as a separate, always-polling consumer", summary: "Alert rules are evaluated by a dedicated engine that periodically queries the time-series store (or subscribes to a stream of incoming points) and compares recent values against configured thresholds — decoupled from both ingestion and the dashboard query path.", difficulty: 3 },
+        { slug: "metrics-alerting-engine", name: "The alerting engine as a separate, always-polling consumer", summary: "Alert rules are evaluated by a dedicated engine that periodically queries the time-series store (or subscribes to a stream of incoming points) and compares recent values against configured thresholds — decoupled from both ingestion and the dashboard query path.", difficulty: 3, tags: ["observability", "queueing"] },
       ],
       blocks: [
         {
@@ -108,7 +108,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "Deep dive: downsampling old data",
       summary: "Nobody needs per-second resolution from a year ago — aggregating old data trades precision for a dramatic storage saving.",
       concepts: [
-        { slug: "metrics-downsampling", name: "Downsampling by data age", summary: "A background job periodically aggregates older raw data points into coarser summaries (e.g. per-second data older than a week becomes per-minute averages), cutting storage volume for old data by orders of magnitude with minimal loss of practical value.", difficulty: 3 },
+        { slug: "metrics-downsampling", name: "Downsampling by data age", summary: "A background job periodically aggregates older raw data points into coarser summaries (e.g. per-second data older than a week becomes per-minute averages), cutting storage volume for old data by orders of magnitude with minimal loss of practical value.", difficulty: 3, tags: ["durability", "observability"] },
       ],
       blocks: [
         {
@@ -134,7 +134,7 @@ export const metricsMonitoring: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "During an actual incident, the metrics system's own load spikes exactly when you need it to be most reliable.",
       concepts: [
-        { slug: "metrics-incident-load", name: "The monitoring system's load spikes during incidents", summary: "An outage often causes error rates and retry storms that flood the metrics system with more data (and more alert evaluations firing) right when you most need it to stay up — the monitoring system needs its own headroom and can't assume steady-state load.", difficulty: 4 },
+        { slug: "metrics-incident-load", name: "The monitoring system's load spikes during incidents", summary: "An outage often causes error rates and retry storms that flood the metrics system with more data (and more alert evaluations firing) right when you most need it to stay up — the monitoring system needs its own headroom and can't assume steady-state load.", difficulty: 4, tags: ["hotspots", "observability"] },
       ],
       blocks: [
         {

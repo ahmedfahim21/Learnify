@@ -23,7 +23,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "Upload once, stream in every quality, everywhere",
       summary: "One uploaded file needs to become many different encoded versions, delivered from servers physically close to each viewer.",
       concepts: [
-        { slug: "video-scope", name: "One upload, many playback contexts", summary: "A single uploaded video needs to play smoothly on a phone on 3G and a TV on gigabit fiber, from viewers on every continent — which means transcoding into multiple qualities and serving from geographically distributed edges, not just storing and re-serving the original file.", difficulty: 1 },
+        { slug: "video-scope", name: "One upload, many playback contexts", summary: "A single uploaded video needs to play smoothly on a phone on 3G and a TV on gigabit fiber, from viewers on every continent — which means transcoding into multiple qualities and serving from geographically distributed edges, not just storing and re-serving the original file.", difficulty: 1, tags: ["scoping", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "The raw uploaded file is almost never what gets streamed. It has to become several different encoded versions (resolutions and bitrates) so playback can adapt to whatever bandwidth a given viewer actually has at a given moment, and it has to be served from locations physically close to viewers worldwide, since video is enormously bandwidth-heavy and a single origin server on one continent would be both slow and prohibitively expensive to serve globally from." },
@@ -34,7 +34,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "Scale numbers",
       summary: "Bandwidth, not storage, is usually the dominant cost at this scale.",
       concepts: [
-        { slug: "video-estimation", name: "Bandwidth as the dominant cost", summary: "Storage is a one-time cost per video; every single view re-consumes bandwidth. At high view counts, bandwidth cost dwarfs storage cost — which is exactly the case a CDN is built to address.", difficulty: 1 },
+        { slug: "video-estimation", name: "Bandwidth as the dominant cost", summary: "Storage is a one-time cost per video; every single view re-consumes bandwidth. At high view counts, bandwidth cost dwarfs storage cost — which is exactly the case a CDN is built to address.", difficulty: 1, tags: ["estimation", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "A single 10-minute video encoded at a modest average of 5 Mbps is roughly 375 MB total across all its bitrate variants. Stored once, that's a one-time cost. But if it's viewed a million times, that's potentially 375 TB of bandwidth served — a thousand times the storage cost. This is the number that makes a CDN (caching content at edge locations close to viewers, rather than serving every view from a central origin) close to mandatory at any real scale." },
@@ -52,7 +52,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "The API",
       summary: "Upload returns immediately; a separate status check reflects the async transcoding pipeline.",
       concepts: [
-        { slug: "video-api", name: "Async upload, poll for ready", summary: "Upload can't be synchronous with transcoding — that would mean the uploader waits minutes for a response. The upload call returns immediately with a video id; a status endpoint reflects when transcoding finishes and playback becomes available.", difficulty: 1 },
+        { slug: "video-api", name: "Async upload, poll for ready", summary: "Upload can't be synchronous with transcoding — that would mean the uploader waits minutes for a response. The upload call returns immediately with a video id; a status endpoint reflects when transcoding finishes and playback becomes available.", difficulty: 1, tags: ["api-design", "queueing"] },
       ],
       blocks: [
         { type: "prose", body: "`POST /videos` accepts the raw file (often via a pre-signed direct-to-storage upload, to avoid routing large files through the application server), returns `{ videoId, status: \"processing\" }` immediately, and transcoding happens asynchronously. `GET /videos/{id}` reflects current status and, once ready, returns the manifest URL the player needs to start adaptive playback." },
@@ -63,7 +63,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "Videos, renditions, and manifests",
       summary: "One logical video maps to many physical encoded files (renditions), described by a manifest the player reads.",
       concepts: [
-        { slug: "video-renditions", name: "Renditions and the playback manifest", summary: "A single video becomes several encoded renditions (e.g. 360p/720p/1080p at different bitrates), each split into small chunks, described by a manifest file that lists every rendition and chunk so the player can switch between them mid-playback.", difficulty: 2 },
+        { slug: "video-renditions", name: "Renditions and the playback manifest", summary: "A single video becomes several encoded renditions (e.g. 360p/720p/1080p at different bitrates), each split into small chunks, described by a manifest file that lists every rendition and chunk so the player can switch between them mid-playback.", difficulty: 2, tags: ["data-modeling", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "`videos(id, title, status, duration)` is the logical record. `renditions(video_id, resolution, bitrate, storage_url)` tracks each encoded variant, itself split into a few seconds of playable chunks (this is what makes adaptive streaming possible — the player can switch renditions between chunks without restarting). A manifest (HLS `.m3u8` or DASH `.mpd`) lists all of this so the player's logic, not the server's, decides which rendition to fetch next based on measured bandwidth." },
@@ -74,7 +74,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "High-level design",
       summary: "Upload triggers an async transcoding pipeline; playback is served almost entirely from CDN edge caches, not origin.",
       concepts: [
-        { slug: "video-cdn", name: "CDN-first playback serving", summary: "Once transcoded, video chunks are pushed to (or pulled into) CDN edge locations. The overwhelming majority of playback requests are served from an edge cache near the viewer and never reach origin storage at all.", difficulty: 3 },
+        { slug: "video-cdn", name: "CDN-first playback serving", summary: "Once transcoded, video chunks are pushed to (or pulled into) CDN edge locations. The overwhelming majority of playback requests are served from an edge cache near the viewer and never reach origin storage at all.", difficulty: 3, tags: ["caching", "availability"] },
       ],
       blocks: [
         {
@@ -116,7 +116,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "Deep dive: adaptive bitrate streaming",
       summary: "The player, not the server, decides which quality to fetch next — based on its own measured download speed.",
       concepts: [
-        { slug: "video-adaptive-bitrate", name: "Client-driven adaptive bitrate", summary: "The player measures its own recent download throughput and picks the highest rendition it can sustain without buffering, chunk by chunk — the server's only job is to have every rendition available to switch to.", difficulty: 4 },
+        { slug: "video-adaptive-bitrate", name: "Client-driven adaptive bitrate", summary: "The player measures its own recent download throughput and picks the highest rendition it can sustain without buffering, chunk by chunk — the server's only job is to have every rendition available to switch to.", difficulty: 4, tags: ["availability", "observability"] },
       ],
       blocks: [
         {
@@ -172,7 +172,7 @@ export const videoStreaming: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "The transcoding pipeline, not playback, is usually the first thing to fall behind at scale.",
       concepts: [
-        { slug: "video-transcoding-scale", name: "Transcoding is the write-side bottleneck", summary: "Transcoding is CPU-intensive and can take longer than the video's own runtime; at high upload volume it needs its own horizontally-scaled worker pool, decoupled entirely from the playback path.", difficulty: 3 },
+        { slug: "video-transcoding-scale", name: "Transcoding is the write-side bottleneck", summary: "Transcoding is CPU-intensive and can take longer than the video's own runtime; at high upload volume it needs its own horizontally-scaled worker pool, decoupled entirely from the playback path.", difficulty: 3, tags: ["queueing", "hotspots"] },
       ],
       blocks: [
         {

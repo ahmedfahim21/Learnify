@@ -23,8 +23,8 @@ export const replication: SystemDesignProblem = {
       title: "Why keep more than one copy",
       summary: "Three different goals get bundled under one word, and they pull in different directions.",
       concepts: [
-        { slug: "repl-goals", name: "Durability, availability, read capacity", summary: "Copies protect against data loss, keep serving during a failure, and add read throughput. The same mechanism delivers all three, but tuning for one can cost another.", difficulty: 2 },
-        { slug: "repl-vs-backup", name: "Replication is not backup", summary: "Replication faithfully copies whatever the primary does — including a bad migration or a mistaken DELETE. A backup is a point in time you can return to; a replica is a mirror of the present, mistakes included.", difficulty: 2 },
+        { slug: "repl-goals", name: "Durability, availability, read capacity", summary: "Copies protect against data loss, keep serving during a failure, and add read throughput. The same mechanism delivers all three, but tuning for one can cost another.", difficulty: 2, tags: ["replication", "durability"] },
+        { slug: "repl-vs-backup", name: "Replication is not backup", summary: "Replication faithfully copies whatever the primary does — including a bad migration or a mistaken DELETE. A backup is a point in time you can return to; a replica is a mirror of the present, mistakes included.", difficulty: 2, tags: ["replication", "durability"] },
       ],
       blocks: [
         { type: "prose", heading: "Three goals, one mechanism", body: "\"Replication\" bundles three separate wants. **Durability**: a disk dies and the data still exists. **Availability**: a machine dies and requests still get answered. **Read capacity**: reads outnumber writes, so extra copies mean extra read throughput. They are usually served by the same machinery, which makes it easy to assume that getting one gets you all three — and it does not. A configuration that maximises read capacity can be one that loses recent writes." },
@@ -36,7 +36,7 @@ export const replication: SystemDesignProblem = {
       title: "What replication costs",
       summary: "Every copy multiplies write traffic and storage while doing nothing for write throughput.",
       concepts: [
-        { slug: "repl-cost", name: "The write amplification of copies", summary: "A replication factor of 3 means every write is performed three times and stored three times. Replicas add read capacity and durability; they never add write capacity.", difficulty: 2 },
+        { slug: "repl-cost", name: "The write amplification of copies", summary: "A replication factor of 3 means every write is performed three times and stored three times. Replicas add read capacity and durability; they never add write capacity.", difficulty: 2, tags: ["replication", "estimation"] },
       ],
       blocks: [
         { type: "prose", body: "With a replication factor of three, each logical write becomes three physical writes and three copies on disk. 10 TB of data is 30 TB provisioned; 1,000 writes/sec is 3,000 write operations across the cluster. This is the asymmetry worth internalising: **replicas multiply read capacity and never touch write capacity**. A workload that is write-bound gets nothing from more replicas — it needs partitioning, which is the Key-Value Store concept's answer." },
@@ -48,7 +48,7 @@ export const replication: SystemDesignProblem = {
       title: "Where a write is allowed to land",
       summary: "One writer, or many, is the fork everything else follows from.",
       concepts: [
-        { slug: "repl-topology", name: "Single-leader, multi-leader, leaderless", summary: "One node accepting writes makes ordering trivial and the leader a bottleneck. Many writers remove that bottleneck and introduce write conflicts that something must resolve.", difficulty: 3 },
+        { slug: "repl-topology", name: "Single-leader, multi-leader, leaderless", summary: "One node accepting writes makes ordering trivial and the leader a bottleneck. Many writers remove that bottleneck and introduce write conflicts that something must resolve.", difficulty: 3, tags: ["replication", "availability"] },
       ],
       blocks: [
         { type: "prose", body: "**Single-leader.** All writes go to one node, which streams them to followers. Ordering is trivial — there is one sequence of events, defined by the leader — and conflicts cannot occur, because there is only one writer. The cost is that the leader bounds write throughput and its failure requires an election.\n\n**Multi-leader.** Several nodes accept writes, typically one per region so writers get a local round trip. Now two regions can modify the same row at the same time, and the system must decide what that means. You have traded a bottleneck for a conflict-resolution problem.\n\n**Leaderless.** Any replica takes any write, and correctness comes from quorums rather than from a designated node — the model in the Key-Value Store concept. No election to get wrong, no leader to lose, but every read and write is now a coordination decision." },
@@ -60,7 +60,7 @@ export const replication: SystemDesignProblem = {
       title: "What actually travels between nodes",
       summary: "Copying the statement, or copying its effect — and why the difference bites.",
       concepts: [
-        { slug: "repl-log-shipping", name: "Statement vs. row-based replication", summary: "Shipping the SQL is compact but breaks on anything non-deterministic — NOW(), RANDOM(), an auto-increment race. Shipping the resulting row changes is larger on the wire and always reproduces exactly what happened.", difficulty: 3 },
+        { slug: "repl-log-shipping", name: "Statement vs. row-based replication", summary: "Shipping the SQL is compact but breaks on anything non-deterministic — NOW(), RANDOM(), an auto-increment race. Shipping the resulting row changes is larger on the wire and always reproduces exactly what happened.", difficulty: 3, tags: ["replication", "ordering"] },
       ],
       blocks: [
         { type: "prose", body: "A replica can be sent the **statement** — the literal `UPDATE ... WHERE ...` — and re-execute it. Compact, and wrong the moment a statement is non-deterministic: `NOW()` evaluates differently on each node, `RANDOM()` obviously does, and anything depending on row order can diverge. Divergence is the worst kind of bug here, because nothing errors; the copies simply stop agreeing.\n\nOr it can be sent **the effects** — the actual before and after images of each changed row. Larger on the wire, and immune to all of that, because there is nothing left to re-evaluate. This is why row-based replication is the modern default despite costing more bandwidth." },
@@ -72,7 +72,7 @@ export const replication: SystemDesignProblem = {
       title: "The replication path",
       summary: "Where the acknowledgement happens is the whole design.",
       concepts: [
-        { slug: "repl-sync-async", name: "Synchronous vs. asynchronous acknowledgement", summary: "Acknowledge after a replica confirms and no acknowledged write is ever lost, but the writer waits for the slowest replica. Acknowledge immediately and writes are fast, with a window in which a leader failure loses them.", difficulty: 4 },
+        { slug: "repl-sync-async", name: "Synchronous vs. asynchronous acknowledgement", summary: "Acknowledge after a replica confirms and no acknowledged write is ever lost, but the writer waits for the slowest replica. Acknowledge immediately and writes are fast, with a window in which a leader failure loses them.", difficulty: 4, tags: ["replication", "consistency"] },
       ],
       blocks: [
         { type: "prose", body: "The one decision that defines the system: when do you tell the client the write succeeded?\n\n**Synchronously** — after at least one replica confirms it has the write. Nothing acknowledged is ever lost, because the data exists in two places before the client hears \"ok\". You have coupled write latency to your slowest replica, and if that replica is unreachable, writes stall.\n\n**Asynchronously** — as soon as the leader has it. Fast and unaffected by replica health, with a window: if the leader dies before the write ships, an acknowledged write is gone. \"Acknowledged and then lost\" is exactly the failure users experience as data corruption.\n\n**Semi-synchronous** is the common middle: wait for one replica, let the others follow. Bounded latency, no single-node loss." },
@@ -121,8 +121,8 @@ export const replication: SystemDesignProblem = {
       title: "Reading your own writes",
       summary: "The anomaly users actually notice, and why it is not a bug in the database.",
       concepts: [
-        { slug: "repl-read-your-writes", name: "Read-your-writes consistency", summary: "Write to the leader, read from a lagging replica, and your own change is missing. The fixes route a user's reads to the leader for a window, or pin them to a replica known to have caught up.", difficulty: 4 },
-        { slug: "repl-monotonic", name: "Monotonic reads", summary: "Two reads hitting replicas at different lag positions can show a user time moving backwards — a comment appears, then vanishes. Pinning a session to one replica prevents it.", difficulty: 4 },
+        { slug: "repl-read-your-writes", name: "Read-your-writes consistency", summary: "Write to the leader, read from a lagging replica, and your own change is missing. The fixes route a user's reads to the leader for a window, or pin them to a replica known to have caught up.", difficulty: 4, tags: ["consistency"] },
+        { slug: "repl-monotonic", name: "Monotonic reads", summary: "Two reads hitting replicas at different lag positions can show a user time moving backwards — a comment appears, then vanishes. Pinning a session to one replica prevents it.", difficulty: 4, tags: ["consistency", "ordering"] },
       ],
       blocks: [
         { type: "prose", body: "A user edits their profile, the write goes to the leader, the page reloads, the read is served by a replica two seconds behind — and their change is not there. They will report this as data loss. Nothing is broken; asynchronous replication is doing precisely what it promised.\n\nThe fixes are all about routing rather than about the storage engine. **Read from the leader for a window** after a user writes — simple, and it concentrates load on the leader exactly when a user is most active. **Track the write's log position** in the session, and only use a replica that has reached it. More precise, and it needs the client or session to carry that position." },
@@ -135,8 +135,8 @@ export const replication: SystemDesignProblem = {
       title: "Failover, and the writes it eats",
       summary: "Promoting a replica is the moment every deferred decision comes due at once.",
       concepts: [
-        { slug: "repl-failover", name: "Leader failover and lost writes", summary: "Promoting an asynchronous replica discards whatever the old leader had acknowledged but not shipped. Choosing the most caught-up replica narrows the window; only synchronous replication closes it.", difficulty: 4 },
-        { slug: "repl-split-brain", name: "Split brain", summary: "If the old leader is alive but unreachable, it may keep accepting writes while a new one is promoted. Two leaders diverge, and merging them afterwards means choosing whose writes to discard.", difficulty: 5 },
+        { slug: "repl-failover", name: "Leader failover and lost writes", summary: "Promoting an asynchronous replica discards whatever the old leader had acknowledged but not shipped. Choosing the most caught-up replica narrows the window; only synchronous replication closes it.", difficulty: 4, tags: ["availability", "replication"] },
+        { slug: "repl-split-brain", name: "Split brain", summary: "If the old leader is alive but unreachable, it may keep accepting writes while a new one is promoted. Two leaders diverge, and merging them afterwards means choosing whose writes to discard.", difficulty: 5, tags: ["availability", "consistency"] },
       ],
       blocks: [
         { type: "prose", body: "The leader dies. A replica is promoted. Whatever the old leader had acknowledged but not yet shipped is now gone — writes the client was told had succeeded. Promoting the most caught-up replica narrows that window; nothing but synchronous replication closes it, which is the bill for the latency you saved earlier." },

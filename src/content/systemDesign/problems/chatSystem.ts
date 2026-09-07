@@ -23,7 +23,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "Why HTTP request/response doesn't fit",
       summary: "A chat server needs to push to the client, not just respond to it — that alone rules out plain request/response.",
       concepts: [
-        { slug: "chat-scope", name: "Push, not pull", summary: "A recipient isn't polling for new messages — the server needs to push a message the moment it arrives, which needs a persistent, bidirectional connection rather than request/response HTTP.", difficulty: 1 },
+        { slug: "chat-scope", name: "Push, not pull", summary: "A recipient isn't polling for new messages — the server needs to push a message the moment it arrives, which needs a persistent, bidirectional connection rather than request/response HTTP.", difficulty: 1, tags: ["scoping", "fanout"] },
       ],
       blocks: [
         { type: "prose", body: "The core requirement that shapes everything else: when Alice sends Bob a message, Bob's client needs to find out *immediately*, without Bob's client having to ask \"anything new?\" every few seconds. That rules out plain HTTP request/response as the delivery mechanism and points straight at a persistent, bidirectional connection — WebSockets being the standard choice." },
@@ -34,7 +34,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "Connections and message volume",
       summary: "The number that dominates capacity planning here is concurrent open connections, not requests/sec.",
       concepts: [
-        { slug: "chat-estimation", name: "Estimating concurrent connections", summary: "Unlike a stateless API, a chat server has to hold one open connection per online user for as long as they're online — that's a very different capacity model than request throughput.", difficulty: 2 },
+        { slug: "chat-estimation", name: "Estimating concurrent connections", summary: "Unlike a stateless API, a chat server has to hold one open connection per online user for as long as they're online — that's a very different capacity model than request throughput.", difficulty: 2, tags: ["estimation", "availability"] },
       ],
       blocks: [
         { type: "prose", body: "If 50 million users are online at peak, that's 50 million simultaneous open connections the system has to hold — not 50 million requests/sec, but 50 million *stateful, long-lived* connections. A single modern server can hold on the order of hundreds of thousands of WebSocket connections, which means the peak load alone needs on the order of a few hundred connection-serving machines, before any message-throughput capacity is even considered." },
@@ -59,7 +59,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "The protocol",
       summary: "A persistent WebSocket carries send/receive/ack frames; a regular REST API handles everything that isn't real-time (history, contacts).",
       concepts: [
-        { slug: "chat-protocol", name: "WebSocket for real-time, REST for everything else", summary: "Only the real-time send/receive path needs a persistent connection. Loading chat history, managing contacts, and other non-real-time operations are ordinary stateless REST calls.", difficulty: 2 },
+        { slug: "chat-protocol", name: "WebSocket for real-time, REST for everything else", summary: "Only the real-time send/receive path needs a persistent connection. Loading chat history, managing contacts, and other non-real-time operations are ordinary stateless REST calls.", difficulty: 2, tags: ["api-design"] },
       ],
       blocks: [
         { type: "prose", body: "Over the WebSocket: `send { toUserId, content }`, and the server pushes `receive { fromUserId, content, messageId }` to the recipient's connection if they're online. Everything that isn't inherently real-time — loading the last 50 messages of a conversation, listing contacts, updating a display name — stays a plain stateless REST call, because forcing it through the WebSocket buys nothing and complicates the connection-handling code." },
@@ -70,7 +70,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "Messages and conversations",
       summary: "Messages are stored append-only, partitioned by conversation, ordered so history loads in one range query.",
       concepts: [
-        { slug: "chat-data-model", name: "Conversation-partitioned message log", summary: "messages(conversation_id, message_id, sender_id, content, sent_at), partitioned by conversation_id so that loading one conversation's history is a single-partition range scan, not a scatter-gather across the whole cluster.", difficulty: 2 },
+        { slug: "chat-data-model", name: "Conversation-partitioned message log", summary: "messages(conversation_id, message_id, sender_id, content, sent_at), partitioned by conversation_id so that loading one conversation's history is a single-partition range scan, not a scatter-gather across the whole cluster.", difficulty: 2, tags: ["data-modeling", "partitioning"] },
       ],
       blocks: [
         { type: "prose", body: "Partitioning the message store by `conversation_id` (rather than, say, by sender) means the single most common query — \"load the last N messages of this conversation\" — hits exactly one partition. `message_id` is chosen to be sortable (a Snowflake-style id from the Unique ID Generator course works well) so messages within a conversation naturally order by send time without a separate timestamp index." },
@@ -81,7 +81,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "High-level design",
       summary: "A connection-management layer tracks which server holds which user's socket; that's the piece a stateless system doesn't need.",
       concepts: [
-        { slug: "chat-connection-routing", name: "The connection-to-server mapping", summary: "Because a user's WebSocket is pinned to one specific server, that server needs to be discoverable — a service (backed by something like Redis) maps user_id -> which server currently holds their connection, so any server can route a message to the right one.", difficulty: 4 },
+        { slug: "chat-connection-routing", name: "The connection-to-server mapping", summary: "Because a user's WebSocket is pinned to one specific server, that server needs to be discoverable — a service (backed by something like Redis) maps user_id -> which server currently holds their connection, so any server can route a message to the right one.", difficulty: 4, tags: ["partitioning", "load-balancing", "availability"] },
       ],
       blocks: [
         {
@@ -132,7 +132,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "Deep dive: guaranteeing delivery, online or not",
       summary: "Persist before you push — that ordering is what makes offline delivery and crash recovery the same code path.",
       concepts: [
-        { slug: "chat-delivery-guarantee", name: "Persist-then-push", summary: "Writing the message durably before attempting live delivery means an offline recipient and a mid-delivery server crash are handled by the exact same recovery mechanism: fetch undelivered messages from the store on reconnect.", difficulty: 3 },
+        { slug: "chat-delivery-guarantee", name: "Persist-then-push", summary: "Writing the message durably before attempting live delivery means an offline recipient and a mid-delivery server crash are handled by the exact same recovery mechanism: fetch undelivered messages from the store on reconnect.", difficulty: 3, tags: ["durability", "idempotency"] },
       ],
       blocks: [
         {
@@ -173,7 +173,7 @@ export const chatSystem: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Group chats fan out like a tiny news feed — the same push-vs-pull tension shows up again.",
       concepts: [
-        { slug: "chat-group-fanout", name: "Group message fan-out", summary: "A group message has to reach every member's connection (if online) — for very large groups this becomes the same fan-out problem as the News Feed course, and the same push/pull trade-offs apply.", difficulty: 4 },
+        { slug: "chat-group-fanout", name: "Group message fan-out", summary: "A group message has to reach every member's connection (if online) — for very large groups this becomes the same fan-out problem as the News Feed course, and the same push/pull trade-offs apply.", difficulty: 4, tags: ["fanout", "hotspots"] },
       ],
       blocks: [
         {

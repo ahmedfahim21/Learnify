@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { concepts, courseProgress, mastery, topics } from "@/db/schema";
 import { PROBLEMS } from "@/content/systemDesign";
+import type { SkillTag } from "@/content/systemDesign/tags";
 
 /**
  * Reading progress and mastery, rolled up per course.
@@ -71,10 +72,23 @@ export interface KnowledgeNode {
   state: SkillState;
   problemSlug: string;
   courseTitle: string;
+  tags: SkillTag[];
+}
+
+/** A theme two or more skills share — the graph's connective tissue. */
+export interface KnowledgeTag {
+  tag: SkillTag;
+  /** Ids of the skills reached under this theme. */
+  skillIds: string[];
+  /** How many distinct concepts those skills came from. */
+  conceptCount: number;
 }
 
 export interface KnowledgeGraph {
   nodes: KnowledgeNode[];
+  tags: KnowledgeTag[];
+  /** Skill -> theme. The only edges: a chain within one concept says nothing
+   *  a reading list doesn't already say. */
   edges: { from: string; to: string }[];
 }
 
@@ -127,11 +141,9 @@ export async function getKnowledgeGraph(userId: string): Promise<KnowledgeGraph>
   }
 
   const nodes: KnowledgeNode[] = [];
-  const edges: { from: string; to: string }[] = [];
 
   for (const problem of PROBLEMS) {
     const read = readPhases.get(problem.slug);
-    const included: string[] = [];
 
     for (const chapter of problem.chapters) {
       const chapterRead = read?.has(chapter.phase) ?? false;
@@ -147,21 +159,43 @@ export async function getKnowledgeGraph(userId: string): Promise<KnowledgeGraph>
           summary: skill.summary,
           phase: chapter.phase,
           score,
-          state:
-            score === null ? "read" : score >= 0.8 ? "mastered" : "practised",
+          state: score === null ? "read" : score >= 0.8 ? "mastered" : "practised",
           problemSlug: problem.slug,
           courseTitle: problem.title,
+          tags: skill.tags,
         });
-        included.push(key);
       }
-    }
-
-    // A chain through whatever of this concept was actually reached, so the
-    // graph shows the path taken rather than the path on offer.
-    for (let i = 1; i < included.length; i++) {
-      edges.push({ from: included[i - 1], to: included[i] });
     }
   }
 
-  return { nodes, edges };
+  // Themes are the structure. A chain through one concept's skills in reading
+  // order only redraws the table of contents; what a learner cannot see any
+  // other way is that the partitioning in a key-value store and the consistent
+  // hashing in a cache are the same idea, met twice.
+  const byTag = new Map<SkillTag, { skillIds: string[]; concepts: Set<string> }>();
+  for (const node of nodes) {
+    for (const tag of node.tags) {
+      const bucket = byTag.get(tag) ?? { skillIds: [], concepts: new Set<string>() };
+      bucket.skillIds.push(node.id);
+      bucket.concepts.add(node.problemSlug);
+      byTag.set(tag, bucket);
+    }
+  }
+
+  // A theme reached exactly once is not yet a connection, and drawing it as a
+  // hub with a single spoke makes the graph look busier without saying more.
+  const tags: KnowledgeTag[] = [...byTag.entries()]
+    .filter(([, bucket]) => bucket.skillIds.length > 1)
+    .map(([tag, bucket]) => ({
+      tag,
+      skillIds: bucket.skillIds,
+      conceptCount: bucket.concepts.size,
+    }))
+    .sort((a, b) => b.skillIds.length - a.skillIds.length);
+
+  const edges = tags.flatMap((entry) =>
+    entry.skillIds.map((skillId) => ({ from: skillId, to: `tag:${entry.tag}` })),
+  );
+
+  return { nodes, tags, edges };
 }

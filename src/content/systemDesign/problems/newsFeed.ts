@@ -23,7 +23,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "Two very different operations",
       summary: "Publishing a post and reading a feed are asymmetric in every way that matters — volume, latency tolerance, and who's affected.",
       concepts: [
-        { slug: "feed-scope", name: "Publish vs. read asymmetry", summary: "A read (loading your feed) has to be fast for every single request. A write (publishing a post) can afford to do more background work, since it happens far less often per user than reads do.", difficulty: 1 },
+        { slug: "feed-scope", name: "Publish vs. read asymmetry", summary: "A read (loading your feed) has to be fast for every single request. A write (publishing a post) can afford to do more background work, since it happens far less often per user than reads do.", difficulty: 1, tags: ["scoping", "fanout"] },
       ],
       blocks: [
         { type: "prose", body: "Feed reads happen constantly — every time any user opens the app. Posts are published far less often per user. That asymmetry means the design should push work toward publish time (precompute what it can) so read time stays cheap — the opposite of a system where writes are rare and reads are rarer still." },
@@ -34,7 +34,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "Scale numbers, including the celebrity case",
       summary: "The number that breaks the naive design isn't average followers — it's the maximum.",
       concepts: [
-        { slug: "feed-estimation", name: "Average vs. worst-case fan-out", summary: "A typical user might have 200 followers; a celebrity account can have 100 million. Any design that fans out a post to every follower's feed at publish time has to survive that outlier, not just the average.", difficulty: 2 },
+        { slug: "feed-estimation", name: "Average vs. worst-case fan-out", summary: "A typical user might have 200 followers; a celebrity account can have 100 million. Any design that fans out a post to every follower's feed at publish time has to survive that outlier, not just the average.", difficulty: 2, tags: ["estimation", "fanout"] },
       ],
       blocks: [
         { type: "prose", body: "If the average user has 200 followers and posts twice a day, that's a modest fan-out load. But a celebrity account with 100 million followers publishing one post means 100 million feed insertions from that single write — several orders of magnitude more than the average case. Designing only for the average and hoping the celebrity case just works is the single most common mistake in this problem." },
@@ -52,7 +52,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "The API",
       summary: "Publish a post; fetch a page of feed items.",
       concepts: [
-        { slug: "feed-api", name: "publishPost / getFeed", summary: "publishPost(userId, content) triggers fan-out; getFeed(userId, cursor) returns a page of precomputed (or partially precomputed) feed items.", difficulty: 1 },
+        { slug: "feed-api", name: "publishPost / getFeed", summary: "publishPost(userId, content) triggers fan-out; getFeed(userId, cursor) returns a page of precomputed (or partially precomputed) feed items.", difficulty: 1, tags: ["api-design", "fanout"] },
       ],
       blocks: [
         { type: "prose", body: "`POST /posts { content }` publishes and kicks off fan-out. `GET /feed?cursor=...` returns the next page of feed items for the current user — ideally a near-instant read against something already computed, not a live query joining \"who do I follow\" against \"what did they post.\"" },
@@ -63,7 +63,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "Posts table plus a per-user feed cache",
       summary: "The posts themselves live in one place; each user's feed is a separate, precomputed list of pointers into that store.",
       concepts: [
-        { slug: "feed-data-model", name: "Posts store + feed cache", summary: "posts(id, author_id, content, created_at) holds the source of truth. feed_cache(user_id) -> ordered list of post_ids is a per-user, precomputed view — the thing getFeed actually reads.", difficulty: 2 },
+        { slug: "feed-data-model", name: "Posts store + feed cache", summary: "posts(id, author_id, content, created_at) holds the source of truth. feed_cache(user_id) -> ordered list of post_ids is a per-user, precomputed view — the thing getFeed actually reads.", difficulty: 2, tags: ["data-modeling", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "Posts are stored once, in a normal write-once table keyed by post id. What makes reads fast is a separate structure — a per-user feed cache, essentially a sorted list of post ids — that's populated ahead of time so a feed read is just \"fetch this list, then batch-fetch the posts it points to,\" not a live fan-in query across everyone you follow." },
@@ -74,7 +74,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "High-level design: push vs. pull fan-out",
       summary: "Push (fan-out-on-write) precomputes every follower's feed at publish time. Pull (fan-out-on-read) computes a feed live at read time. Most real systems use both.",
       concepts: [
-        { slug: "feed-fanout-strategy", name: "Fan-out-on-write vs. fan-out-on-read", summary: "Push work to publish time for most users (fast reads, but a write that touches every follower). Fall back to computing at read time for accounts with huge follower counts (avoids a catastrophic celebrity-post fan-out).", difficulty: 4 },
+        { slug: "feed-fanout-strategy", name: "Fan-out-on-write vs. fan-out-on-read", summary: "Push work to publish time for most users (fast reads, but a write that touches every follower). Fall back to computing at read time for accounts with huge follower counts (avoids a catastrophic celebrity-post fan-out).", difficulty: 4, tags: ["fanout", "caching"] },
       ],
       blocks: [
         {
@@ -130,7 +130,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "Deep dive: ranking beyond recency",
       summary: "A pure reverse-chronological feed is simple but not what most production feeds actually ship — ranking adds a whole other system.",
       concepts: [
-        { slug: "feed-ranking", name: "Ranking as a separate concern from fan-out", summary: "Fan-out solves 'get candidate posts to the user fast.' Ranking (recency, engagement prediction, diversity) is a separate scoring pass applied on top, usually re-ordering a candidate set rather than being baked into the fan-out itself.", difficulty: 4 },
+        { slug: "feed-ranking", name: "Ranking as a separate concern from fan-out", summary: "Fan-out solves 'get candidate posts to the user fast.' Ranking (recency, engagement prediction, diversity) is a separate scoring pass applied on top, usually re-ordering a candidate set rather than being baked into the fan-out itself.", difficulty: 4, tags: ["indexing", "ordering"] },
       ],
       blocks: [
         {
@@ -171,7 +171,7 @@ export const newsFeed: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Even with the hybrid split, a celebrity with a threshold-adjacent follower count is a moving target as they grow.",
       concepts: [
-        { slug: "feed-threshold-tuning", name: "The follower-count threshold isn't static", summary: "An account that crosses the fan-out threshold needs a migration path — its existing per-follower cache entries have to stop being written to going forward, without a flag day that breaks feeds mid-flight.", difficulty: 4 },
+        { slug: "feed-threshold-tuning", name: "The follower-count threshold isn't static", summary: "An account that crosses the fan-out threshold needs a migration path — its existing per-follower cache entries have to stop being written to going forward, without a flag day that breaks feeds mid-flight.", difficulty: 4, tags: ["hotspots", "fanout"] },
       ],
       blocks: [
         {

@@ -23,7 +23,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "Three channels, one event",
       summary: "The interesting problem isn't sending one notification — it's fanning one event out to three different, unreliable third-party providers.",
       concepts: [
-        { slug: "notif-scope", name: "Fan-out to heterogeneous channels", summary: "Push, SMS, and email have different providers, different rate limits, different failure modes, and different latencies — the system has to abstract over all of that behind one internal event.", difficulty: 1 },
+        { slug: "notif-scope", name: "Fan-out to heterogeneous channels", summary: "Push, SMS, and email have different providers, different rate limits, different failure modes, and different latencies — the system has to abstract over all of that behind one internal event.", difficulty: 1, tags: ["scoping", "fanout"] },
       ],
       blocks: [
         { type: "prose", body: "A single internal event — \"user 42 got a new follower\" — might need to become a push notification (via APNs/FCM), an email (via SendGrid/SES), and an SMS (via Twilio), depending on the user's preferences. Each of those providers has its own API, its own rate limits, its own failure modes and retry semantics. The core design problem is decoupling \"an event happened\" from \"deliver it through three different unreliable third parties.\"" },
@@ -34,7 +34,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "Fan-out scale",
       summary: "A single event can become millions of individual sends.",
       concepts: [
-        { slug: "notif-estimation", name: "Estimating fan-out volume", summary: "The ratio between events and individual sends is the key number — a breaking-news event to 10 million subscribers is one event and 10 million sends, each independently rate-limited by its provider.", difficulty: 1 },
+        { slug: "notif-estimation", name: "Estimating fan-out volume", summary: "The ratio between events and individual sends is the key number — a breaking-news event to 10 million subscribers is one event and 10 million sends, each independently rate-limited by its provider.", difficulty: 1, tags: ["estimation", "fanout"] },
       ],
       blocks: [
         { type: "prose", body: "If a breaking-news push goes to 10 million subscribers, that's 1 event fanning out to 10 million individual send operations. If the push provider caps you at 5,000 sends/sec, that fan-out alone takes over 30 minutes to fully deliver — a number worth surfacing early, since \"instant\" breaking-news pushes at this scale are actually a queued, rate-limited drain, not a synchronous broadcast." },
@@ -45,7 +45,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "The API",
       summary: "Callers submit an event; they never talk to a provider directly.",
       concepts: [
-        { slug: "notif-api", name: "sendNotification(event)", summary: "Internal callers submit an abstract event (type, recipient, payload) and never see providers, templates, or retry logic — all of that lives behind this one call.", difficulty: 1 },
+        { slug: "notif-api", name: "sendNotification(event)", summary: "Internal callers submit an abstract event (type, recipient, payload) and never see providers, templates, or retry logic — all of that lives behind this one call.", difficulty: 1, tags: ["api-design", "queueing"] },
       ],
       blocks: [
         { type: "prose", body: "`POST /notifications { userId, type, payload }` — the calling service (e.g. the \"someone followed you\" feature) never picks a channel, formats a template, or talks to Twilio directly. It emits one abstract event and the notification system resolves the rest: which channels the user has enabled for this type, which template to render, and which provider to call." },
@@ -56,7 +56,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "Preferences and templates",
       summary: "A preferences table (user x notification type x channel -> enabled) and a templates table per channel.",
       concepts: [
-        { slug: "notif-data-model", name: "Preferences and delivery log", summary: "A user's opt-in/opt-out state per notification type per channel, plus an append-only delivery log for tracking what was actually sent and whether it succeeded.", difficulty: 1 },
+        { slug: "notif-data-model", name: "Preferences and delivery log", summary: "A user's opt-in/opt-out state per notification type per channel, plus an append-only delivery log for tracking what was actually sent and whether it succeeded.", difficulty: 1, tags: ["data-modeling"] },
       ],
       blocks: [
         { type: "prose", body: "`preferences(user_id, notification_type, channel, enabled)` answers \"should we send this?\" before any queue work happens. `deliveries(id, event_id, channel, status, attempts, sent_at)` is an append-only log of every attempted send — the audit trail that answers \"did user 42 actually get this?\" when support asks." },
@@ -67,7 +67,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "High-level design",
       summary: "One event fans out into per-channel queues, each drained by workers that talk to exactly one provider.",
       concepts: [
-        { slug: "notif-queue-fanout", name: "Per-channel queues decouple providers", summary: "Fanning the event into separate push/email/SMS queues means a slow or down email provider never blocks push delivery — each channel scales, retries, and fails independently.", difficulty: 2 },
+        { slug: "notif-queue-fanout", name: "Per-channel queues decouple providers", summary: "Fanning the event into separate push/email/SMS queues means a slow or down email provider never blocks push delivery — each channel scales, retries, and fails independently.", difficulty: 2, tags: ["queueing", "fanout"] },
       ],
       blocks: [
         {
@@ -123,7 +123,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "Deep dive: retries and idempotency",
       summary: "A worker crash mid-send must never mean 'zero notifications' or 'duplicate notifications' — an idempotency key ties both cases together.",
       concepts: [
-        { slug: "notif-idempotency", name: "At-least-once delivery with idempotency keys", summary: "Queues typically guarantee at-least-once delivery, which means a retry after a crash could double-send. An idempotency key (derived from the event) lets the provider or the worker deduplicate.", difficulty: 3 },
+        { slug: "notif-idempotency", name: "At-least-once delivery with idempotency keys", summary: "Queues typically guarantee at-least-once delivery, which means a retry after a crash could double-send. An idempotency key (derived from the event) lets the provider or the worker deduplicate.", difficulty: 3, tags: ["idempotency", "durability"] },
       ],
       blocks: [
         {
@@ -137,7 +137,7 @@ export const notificationSystem: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Provider rate limits are the real ceiling — no amount of internal scaling gets past a fixed external quota.",
       concepts: [
-        { slug: "notif-rate-limit-provider", name: "Respecting the provider's own rate limit", summary: "However fast your queue can drain, the provider's rate limit is a hard external ceiling. The worker pool's own concurrency needs to be capped to match it, or the provider starts rejecting or throttling you.", difficulty: 3 },
+        { slug: "notif-rate-limit-provider", name: "Respecting the provider's own rate limit", summary: "However fast your queue can drain, the provider's rate limit is a hard external ceiling. The worker pool's own concurrency needs to be capped to match it, or the provider starts rejecting or throttling you.", difficulty: 3, tags: ["rate-limiting", "queueing"] },
       ],
       blocks: [
         {

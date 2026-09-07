@@ -23,7 +23,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "The one property that overrides every other design goal",
       summary: "In most systems in this course, availability and latency are the dominant pressures. Here, correctness dominates everything.",
       concepts: [
-        { slug: "payments-scope", name: "Correctness over everything else", summary: "A payment system that's occasionally slow is an inconvenience. A payment system that occasionally double-charges or silently drops a charge is a trust-destroying, possibly legally serious failure — every design decision in this course is weighed against that asymmetry.", difficulty: 1 },
+        { slug: "payments-scope", name: "Correctness over everything else", summary: "A payment system that's occasionally slow is an inconvenience. A payment system that occasionally double-charges or silently drops a charge is a trust-destroying, possibly legally serious failure — every design decision in this course is weighed against that asymmetry.", difficulty: 1, tags: ["scoping", "consistency"] },
       ],
       blocks: [
         { type: "prose", body: "Almost every other system in this course treats \"eventually consistent, mostly available\" as an acceptable trade-off for speed and scale. A payment system inverts that: a charge that takes an extra 2 seconds is a minor UX issue; a charge that fires twice because of a network retry, or a charge that silently vanishes because of a crashed worker, is a customer-trust and often regulatory problem. Every technique in this course exists to make **exactly-once effect** achievable despite running on the same unreliable networks and machines every other system in this course has to tolerate." },
@@ -34,7 +34,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "Scale numbers, and where the real cost lives",
       summary: "Payment volume is usually modest compared to, say, a news feed — the cost here is correctness engineering, not raw throughput.",
       concepts: [
-        { slug: "payments-estimation", name: "Payment volume is a correctness problem, not a scale problem", summary: "Even a large payments business processes orders of magnitude fewer transactions per second than a social feed processes reads. The engineering effort goes almost entirely into correctness (idempotency, reconciliation, audit trails), not raw throughput.", difficulty: 1 },
+        { slug: "payments-estimation", name: "Payment volume is a correctness problem, not a scale problem", summary: "Even a large payments business processes orders of magnitude fewer transactions per second than a social feed processes reads. The engineering effort goes almost entirely into correctness (idempotency, reconciliation, audit trails), not raw throughput.", difficulty: 1, tags: ["estimation", "consistency"] },
       ],
       blocks: [
         { type: "prose", body: "A large e-commerce platform doing 10 million orders a day is about 115 payments/sec on average — modest by the standards of this course's other read-heavy systems. The design effort here isn't about handling millions of requests per second; it's almost entirely about guaranteeing correctness under failure: every write needs to be idempotent, every state transition needs to be auditable, and every external call (to a bank, to a processor) needs a defined behavior for \"I don't know if that succeeded.\"" },
@@ -45,7 +45,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "The API",
       summary: "Every mutating call carries a client-generated idempotency key — the single most important detail in this whole design.",
       concepts: [
-        { slug: "payments-idempotency-key", name: "Idempotency keys on every charge", summary: "The client generates a unique key before making a charge request; if the same key is submitted twice (e.g. after a timeout-triggered retry), the server recognizes it and returns the original result instead of charging again.", difficulty: 2 },
+        { slug: "payments-idempotency-key", name: "Idempotency keys on every charge", summary: "The client generates a unique key before making a charge request; if the same key is submitted twice (e.g. after a timeout-triggered retry), the server recognizes it and returns the original result instead of charging again.", difficulty: 2, tags: ["idempotency", "api-design"] },
       ],
       blocks: [
         { type: "prose", body: "`POST /charges { amount, paymentMethodId, idempotencyKey }`. That `idempotencyKey` — generated once by the client and reused on any retry of the *same logical charge* — is the mechanism that turns \"my request timed out, did it go through?\" from a dangerous ambiguity into a safe question: the client just resubmits with the same key, and the server, having recorded that key against the original charge's outcome, returns that same outcome instead of creating a second charge." },
@@ -68,7 +68,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "The ledger",
       summary: "An append-only, double-entry ledger is the source of truth — every balance is a computed sum, not a stored, mutable field.",
       concepts: [
-        { slug: "payments-ledger", name: "Append-only double-entry ledger", summary: "Rather than a mutable 'balance' field that gets incremented and decremented (and can drift or get corrupted), every transaction is recorded as two immutable ledger entries (a debit and a credit) that must always sum to zero — a balance is always the sum of its entries, never a stored, directly-updated number.", difficulty: 4 },
+        { slug: "payments-ledger", name: "Append-only double-entry ledger", summary: "Rather than a mutable 'balance' field that gets incremented and decremented (and can drift or get corrupted), every transaction is recorded as two immutable ledger entries (a debit and a credit) that must always sum to zero — a balance is always the sum of its entries, never a stored, directly-updated number.", difficulty: 4, tags: ["durability", "data-modeling"] },
       ],
       blocks: [
         { type: "prose", body: "`ledger_entries(id, account_id, amount, direction, transaction_id, created_at)`, append-only, never updated or deleted. A single payment writes at least two entries — debit the buyer's account, credit the merchant's account (or an intermediate escrow account) — and any correct transaction's entries always sum to exactly zero. This is standard double-entry bookkeeping, borrowed directly into the data model: an account's balance is never a stored number you increment, it's always a *computed* sum over its entries, which makes corruption structurally much harder (a bug can't silently decouple a stored balance from the transaction history, because there is no separate stored balance)." },
@@ -79,7 +79,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "High-level design",
       summary: "A payment moves through explicit states, recorded at every step, before ever touching the ledger as final.",
       concepts: [
-        { slug: "payments-state-machine", name: "The payment state machine", summary: "A payment moves through explicit, persisted states (pending -> processing -> succeeded/failed) rather than being a single atomic operation — this makes every intermediate failure point recoverable and auditable, instead of an ambiguous unknown.", difficulty: 4 },
+        { slug: "payments-state-machine", name: "The payment state machine", summary: "A payment moves through explicit, persisted states (pending -> processing -> succeeded/failed) rather than being a single atomic operation — this makes every intermediate failure point recoverable and auditable, instead of an ambiguous unknown.", difficulty: 4, tags: ["ordering", "consistency"] },
       ],
       blocks: [
         {
@@ -119,7 +119,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "Deep dive: the ambiguous timeout",
       summary: "The single hardest case in this whole system: the external processor call times out, and you genuinely don't know if it succeeded.",
       concepts: [
-        { slug: "payments-ambiguous-timeout", name: "Resolving an unknown processor response", summary: "A timeout calling the external processor is fundamentally ambiguous — it might have succeeded, might have failed, might still be in flight. The only safe response is to query the processor's own status endpoint for that idempotency key rather than guessing (retry blindly, or assume failure), until it resolves.", difficulty: 5 },
+        { slug: "payments-ambiguous-timeout", name: "Resolving an unknown processor response", summary: "A timeout calling the external processor is fundamentally ambiguous — it might have succeeded, might have failed, might still be in flight. The only safe response is to query the processor's own status endpoint for that idempotency key rather than guessing (retry blindly, or assume failure), until it resolves.", difficulty: 5, tags: ["idempotency", "availability"] },
       ],
       blocks: [
         {
@@ -168,7 +168,7 @@ export const paymentSystem: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Reconciliation — comparing your ledger against the processor's own records — is the unglamorous process that catches everything else missed.",
       concepts: [
-        { slug: "payments-reconciliation", name: "Reconciliation as a mandatory background process", summary: "Even a correctly-designed system can drift from the processor's records due to bugs, edge cases, or processor-side issues. A periodic reconciliation job comparing your ledger against the processor's transaction records is the final backstop that catches discrepancies before they become customer-facing problems.", difficulty: 4 },
+        { slug: "payments-reconciliation", name: "Reconciliation as a mandatory background process", summary: "Even a correctly-designed system can drift from the processor's records due to bugs, edge cases, or processor-side issues. A periodic reconciliation job comparing your ledger against the processor's transaction records is the final backstop that catches discrepancies before they become customer-facing problems.", difficulty: 4, tags: ["consistency", "observability"] },
       ],
       blocks: [
         {

@@ -24,7 +24,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "What is a crawler actually optimizing for?",
       summary: "Coverage and freshness, under a hard constraint: never overload the sites you're crawling.",
       concepts: [
-        { slug: "crawler-scope", name: "Coverage, freshness, politeness", summary: "The three axes a crawler is judged on: how much of the web it covers, how fresh its copy is, and whether it stays a well-behaved citizen of the sites it visits.", difficulty: 1 },
+        { slug: "crawler-scope", name: "Coverage, freshness, politeness", summary: "The three axes a crawler is judged on: how much of the web it covers, how fresh its copy is, and whether it stays a well-behaved citizen of the sites it visits.", difficulty: 1, tags: ["scoping", "rate-limiting"] },
       ],
       blocks: [
         { type: "prose", body: "A crawler's job sounds simple — follow links, fetch pages — but it's shaped by a tension: crawl aggressively for coverage and freshness, while staying \"polite\" enough that no single site's server gets overwhelmed (or blocks you outright). That politeness constraint, more than raw scale, is what drives most of the interesting design decisions here." },
@@ -35,7 +35,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "Scale numbers",
       summary: "Billions of pages, terabytes of content, and a URL frontier too big to fit in memory.",
       concepts: [
-        { slug: "crawler-estimation", name: "Estimating crawl scale", summary: "At web scale, both the set of URLs-to-visit and the set of URLs-already-visited outgrow a single machine's memory — both need to become distributed data structures.", difficulty: 1 },
+        { slug: "crawler-estimation", name: "Estimating crawl scale", summary: "At web scale, both the set of URLs-to-visit and the set of URLs-already-visited outgrow a single machine's memory — both need to become distributed data structures.", difficulty: 1, tags: ["estimation", "queueing"] },
       ],
       blocks: [
         { type: "prose", body: "Crawling 1 billion pages a month at an average 500 KB each is 500 TB of raw content a month. The URL frontier (URLs discovered but not yet fetched) and the seen-set (URLs already fetched, to avoid re-fetching) both need to track billions of entries — far past what fits in one machine's memory, which is why both become distributed, not local, data structures in the high-level design." },
@@ -46,7 +46,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "The crawl loop's interface",
       summary: "Not a client-facing API — an internal contract between the frontier, fetchers, and extractors.",
       concepts: [
-        { slug: "crawler-loop", name: "The fetch-parse-extract loop", summary: "Pop a URL, fetch it, extract new links and content, push the new links back onto the frontier. This loop, run by many workers in parallel, is the entire crawler.", difficulty: 1 },
+        { slug: "crawler-loop", name: "The fetch-parse-extract loop", summary: "Pop a URL, fetch it, extract new links and content, push the new links back onto the frontier. This loop, run by many workers in parallel, is the entire crawler.", difficulty: 1, tags: ["queueing", "api-design"] },
       ],
       blocks: [
         { type: "prose", body: "There's no external API here — the interface is the loop itself: pop a URL from the frontier, fetch the page (respecting robots.txt and rate limits), extract its links and its content, push newly-discovered links back onto the frontier, store the content, mark the URL as seen. Many workers run this loop concurrently against a shared frontier and seen-set." },
@@ -57,7 +57,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "The two big sets: frontier and seen",
       summary: "A priority queue of URLs to visit, and a set (typically a Bloom filter) of URLs already visited.",
       concepts: [
-        { slug: "crawler-bloom-filter", name: "The Bloom filter for dedup", summary: "Checking 'have I seen this URL?' against billions of entries in an exact set is expensive; a Bloom filter answers 'definitely not, or maybe' in constant time and constant (small) memory, at the cost of a small false-positive rate.", difficulty: 3 },
+        { slug: "crawler-bloom-filter", name: "The Bloom filter for dedup", summary: "Checking 'have I seen this URL?' against billions of entries in an exact set is expensive; a Bloom filter answers 'definitely not, or maybe' in constant time and constant (small) memory, at the cost of a small false-positive rate.", difficulty: 3, tags: ["indexing", "durability"] },
       ],
       blocks: [
         { type: "prose", body: "The seen-set needs to answer one question — has this URL been crawled? — billions of times, fast, without storing every URL string in full. A Bloom filter (a bit array plus several hash functions) does exactly this: it can say \"definitely not seen\" with certainty, or \"possibly seen\" with a small, tunable false-positive rate, using a fraction of the memory an exact hash set would need. The cost of a false positive here is just an occasional missed re-crawl of an already-crawled page — an acceptable trade for the memory savings at this scale." },
@@ -80,7 +80,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "High-level design",
       summary: "Seed URLs feed a frontier queue; a fleet of fetcher workers drains it, checking politeness rules per host.",
       concepts: [
-        { slug: "crawler-politeness", name: "Per-host politeness via queue partitioning", summary: "Partition the frontier by host, and enforce a minimum delay between two fetches to the same host — this is what keeps the crawler from accidentally DDoSing any one site.", difficulty: 3 },
+        { slug: "crawler-politeness", name: "Per-host politeness via queue partitioning", summary: "Partition the frontier by host, and enforce a minimum delay between two fetches to the same host — this is what keeps the crawler from accidentally DDoSing any one site.", difficulty: 3, tags: ["rate-limiting", "partitioning"] },
       ],
       blocks: [
         {
@@ -115,7 +115,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "Deep dive: avoiding crawler traps",
       summary: "Some sites generate infinite URLs (calendars, session ids in the URL) — the crawler needs guardrails.",
       concepts: [
-        { slug: "crawler-traps", name: "Crawler traps and URL normalization", summary: "Dynamically generated infinite link spaces (an endless 'next month' calendar link) can trap a naive crawler forever. Normalizing URLs (stripping session ids, sorting query params) and capping crawl depth per host limits the damage.", difficulty: 3 },
+        { slug: "crawler-traps", name: "Crawler traps and URL normalization", summary: "Dynamically generated infinite link spaces (an endless 'next month' calendar link) can trap a naive crawler forever. Normalizing URLs (stripping session ids, sorting query params) and capping crawl depth per host limits the damage.", difficulty: 3, tags: ["indexing", "availability"] },
       ],
       blocks: [
         {
@@ -130,7 +130,7 @@ export const webCrawler: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "The frontier queue and the seen-set both need to be distributed once a single host can't hold them.",
       concepts: [
-        { slug: "crawler-scaling", name: "Distributing the frontier and seen-set", summary: "Both the frontier and seen-set need to be sharded across machines at web scale — usually by a hash of the host, so all URLs for one host land on the same shard and politeness rate-limiting stays local to that shard.", difficulty: 4 },
+        { slug: "crawler-scaling", name: "Distributing the frontier and seen-set", summary: "Both the frontier and seen-set need to be sharded across machines at web scale — usually by a hash of the host, so all URLs for one host land on the same shard and politeness rate-limiting stays local to that shard.", difficulty: 4, tags: ["partitioning", "queueing"] },
       ],
       blocks: [
         {

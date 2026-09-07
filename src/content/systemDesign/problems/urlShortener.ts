@@ -30,6 +30,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "Scoping a URL shortener",
           summary: "Two operations only: create a short link, and redirect from it. Everything else — custom aliases, expiry, analytics — is a stretch goal layered on top.",
           difficulty: 1,
+          tags: ["scoping", "api-design"],
         },
       ],
       blocks: [
@@ -55,6 +56,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "Estimating traffic and storage",
           summary: "From a daily write volume, derive QPS, the short-code keyspace needed, and total storage — the numbers that decide whether you need sharding at all.",
           difficulty: 1,
+          tags: ["estimation"],
         },
       ],
       blocks: [
@@ -87,6 +89,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "Designing the API",
           summary: "POST to create, GET to redirect. The redirect endpoint is the entire hot path — keep it doing nothing but a cache/DB lookup and a 301.",
           difficulty: 1,
+          tags: ["api-design"],
         },
       ],
       blocks: [
@@ -106,6 +109,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "The links table",
           summary: "short_code (primary key) -> long_url, created_at, expires_at. A key-value shape, not a relational one — which is why a NoSQL store fits as well as SQL here.",
           difficulty: 1,
+          tags: ["data-modeling", "indexing"],
         },
       ],
       blocks: [
@@ -125,6 +129,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "Generating the short code",
           summary: "A counter-based generator (base62-encode an auto-incrementing id) avoids collisions by construction, unlike hashing the URL and truncating.",
           difficulty: 2,
+          tags: ["ordering", "partitioning"],
         },
       ],
       blocks: [
@@ -189,6 +194,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "Cache-aside on the redirect path",
           summary: "Read-through cache-aside: check cache, fall back to the store on a miss, populate the cache. A skewed popularity distribution (a few links get most clicks) makes this very effective.",
           difficulty: 2,
+          tags: ["caching"],
         },
       ],
       blocks: [
@@ -242,6 +248,7 @@ export const urlShortener: SystemDesignProblem = {
           name: "Scaling past a single generator and a single store",
           summary: "A single ID-generator instance and a single database both become bottlenecks; the fix for each is different — range-partitioning ids vs. sharding the store by short code.",
           difficulty: 3,
+          tags: ["partitioning", "caching"],
         },
       ],
       blocks: [

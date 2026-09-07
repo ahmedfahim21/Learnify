@@ -23,7 +23,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "The latency budget is the whole design",
       summary: "This fires on every keystroke, so the p99 latency target is far tighter than almost any other system in this course.",
       concepts: [
-        { slug: "autocomplete-scope", name: "Autocomplete's latency-first requirement", summary: "A suggestion that arrives after the user has already typed the next character is useless — this design is dominated by the ~100ms round-trip budget, more than by any other requirement.", difficulty: 1 },
+        { slug: "autocomplete-scope", name: "Autocomplete's latency-first requirement", summary: "A suggestion that arrives after the user has already typed the next character is useless — this design is dominated by the ~100ms round-trip budget, more than by any other requirement.", difficulty: 1, tags: ["scoping", "indexing"] },
       ],
       blocks: [
         { type: "prose", body: "Autocomplete requests fire on essentially every keystroke, and a suggestion that arrives late is worse than useless — it flickers in after the user has moved on. That ~100ms round-trip budget (network + server processing) is the single hardest constraint in the design, tighter than almost any read latency target elsewhere in this course, and it rules out anything resembling a live database query per keystroke." },
@@ -41,7 +41,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "QPS and data size",
       summary: "Every keystroke of every active search session is a request — the multiplier that makes this a high-QPS system even with modest user counts.",
       concepts: [
-        { slug: "autocomplete-estimation", name: "Estimating keystroke-driven QPS", summary: "A single search of 5 characters generates up to 5 autocomplete requests, not 1 — multiply typical search volume by average query length to get real request volume.", difficulty: 1 },
+        { slug: "autocomplete-estimation", name: "Estimating keystroke-driven QPS", summary: "A single search of 5 characters generates up to 5 autocomplete requests, not 1 — multiply typical search volume by average query length to get real request volume.", difficulty: 1, tags: ["estimation", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "If 10,000 searches happen per second and the average query is 8 characters typed before selecting a suggestion, that's up to 80,000 autocomplete requests/sec — an order of magnitude more than the underlying search volume itself, purely because of how the feature fires on every keystroke." },
@@ -52,7 +52,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "The API",
       summary: "One endpoint, one parameter — deliberately as thin as the latency budget demands.",
       concepts: [
-        { slug: "autocomplete-api", name: "GET /suggestions?prefix=", summary: "A single GET with the current prefix, returning a small ranked list — no request body, no complex parameters, nothing that adds parsing overhead on the hot path.", difficulty: 1 },
+        { slug: "autocomplete-api", name: "GET /suggestions?prefix=", summary: "A single GET with the current prefix, returning a small ranked list — no request body, no complex parameters, nothing that adds parsing overhead on the hot path.", difficulty: 1, tags: ["api-design", "indexing"] },
       ],
       blocks: [
         { type: "prose", body: "`GET /suggestions?prefix=syst` returns `{ suggestions: [\"system design\", \"systemd\", \"systematic review\", ...] }` — typically the top 5-10 by popularity. The API surface is intentionally minimal; every millisecond of processing on this path is scrutinized given the latency budget." },
@@ -63,7 +63,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "The trie",
       summary: "A trie (prefix tree) is the data structure purpose-built for 'give me everything starting with this prefix' — with each node caching its own top-K.",
       concepts: [
-        { slug: "autocomplete-trie", name: "Trie with cached top-K per node", summary: "A trie naturally groups all completions of a prefix under one node. Caching each node's top-K most popular completions (instead of walking the whole subtree per query) turns a lookup into O(prefix length) with no subtree scan.", difficulty: 3 },
+        { slug: "autocomplete-trie", name: "Trie with cached top-K per node", summary: "A trie naturally groups all completions of a prefix under one node. Caching each node's top-K most popular completions (instead of walking the whole subtree per query) turns a lookup into O(prefix length) with no subtree scan.", difficulty: 3, tags: ["indexing", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "A trie stores each character of each known query as a path from the root; every string that starts with a given prefix shares that prefix's path. Rather than, at query time, walking the entire subtree under a prefix's node to find the most popular completions (slow, and gets slower as the dataset grows), each node **precomputes and caches** its own top-K most popular completions when the trie is built. A query then costs exactly the length of the typed prefix to reach the right node, plus a cache read — no subtree traversal on the hot path at all." },
@@ -74,7 +74,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "High-level design: build offline, serve from a snapshot",
       summary: "The trie is rebuilt periodically from query logs, not updated live on every single search — that decoupling is what keeps reads fast.",
       concepts: [
-        { slug: "autocomplete-offline-build", name: "Offline trie building, decoupled from serving", summary: "A batch job aggregates recent query logs into popularity counts and rebuilds the trie (with cached top-K per node) on a schedule — serving nodes just load the latest built trie into memory and answer reads from it.", difficulty: 3 },
+        { slug: "autocomplete-offline-build", name: "Offline trie building, decoupled from serving", summary: "A batch job aggregates recent query logs into popularity counts and rebuilds the trie (with cached top-K per node) on a schedule — serving nodes just load the latest built trie into memory and answer reads from it.", difficulty: 3, tags: ["indexing", "queueing"] },
       ],
       blocks: [
         {
@@ -124,7 +124,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "Deep dive: freshness vs. staleness",
       summary: "A trending query needs to surface faster than a full rebuild cycle allows — a small, fast-updating overlay handles that.",
       concepts: [
-        { slug: "autocomplete-trending", name: "A fast-path overlay for trending queries", summary: "The batch-rebuilt trie is intentionally not real-time. A separate, much smaller, frequently-updated structure tracking spiking queries (e.g. breaking news) can be checked alongside the trie and merged into results, without needing the whole trie to rebuild in real time.", difficulty: 4 },
+        { slug: "autocomplete-trending", name: "A fast-path overlay for trending queries", summary: "The batch-rebuilt trie is intentionally not real-time. A separate, much smaller, frequently-updated structure tracking spiking queries (e.g. breaking news) can be checked alongside the trie and merged into results, without needing the whole trie to rebuild in real time.", difficulty: 4, tags: ["caching", "hotspots"] },
       ],
       blocks: [
         {
@@ -138,7 +138,7 @@ export const searchAutocomplete: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "The trie has to fit in memory on every serving node — that's the real ceiling, not query throughput.",
       concepts: [
-        { slug: "autocomplete-memory-limit", name: "The trie's memory footprint", summary: "As the set of distinct queries grows, the trie (plus every node's cached top-K) eventually stops fitting on one machine's memory, forcing either sharding the trie by prefix range, or pruning rare queries out of it.", difficulty: 3 },
+        { slug: "autocomplete-memory-limit", name: "The trie's memory footprint", summary: "As the set of distinct queries grows, the trie (plus every node's cached top-K) eventually stops fitting on one machine's memory, forcing either sharding the trie by prefix range, or pruning rare queries out of it.", difficulty: 3, tags: ["indexing", "estimation"] },
       ],
       blocks: [
         {

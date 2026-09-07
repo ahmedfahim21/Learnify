@@ -6,7 +6,8 @@ import { SIMULATOR_IDS } from "@/lib/sims/ids";
 import { SIMULATOR_REGISTRY } from "@/lib/sims/registry";
 
 import { PROBLEMS } from "./index";
-import { chainEdges, DESIGN_PHASES, flattenConcepts } from "./types";
+import { SKILL_TAGS, type SkillTag } from "./tags";
+import { allSkills, chainEdges, DESIGN_PHASES, flattenConcepts } from "./types";
 
 describe("authored system design courses", () => {
   it("has a unique slug per problem", () => {
@@ -157,4 +158,47 @@ describe("authored system design courses", () => {
       });
     });
   }
+});
+
+describe("skill tags", () => {
+  const skills = allSkills(PROBLEMS);
+
+  it("gives every skill at least one tag", () => {
+    const untagged = skills.filter((s) => s.tags.length === 0).map((s) => s.slug);
+    expect(untagged).toEqual([]);
+  });
+
+  it("draws every tag from the closed vocabulary", () => {
+    const vocabulary = new Set<string>(SKILL_TAGS);
+    const unknown = skills.flatMap((s) => s.tags.filter((t) => !vocabulary.has(t)));
+    expect(unknown).toEqual([]);
+  });
+
+  it("never repeats a tag on one skill", () => {
+    const dupes = skills.filter((s) => new Set(s.tags).size !== s.tags.length).map((s) => s.slug);
+    expect(dupes).toEqual([]);
+  });
+
+  // The point of a tag is to link two concepts. One that appears in a single
+  // concept can never draw a cross-concept edge, so it is either mis-scoped or
+  // the curriculum is missing its counterpart — either way, worth failing on.
+  it("spans at least two concepts per tag in use", () => {
+    const conceptsPerTag = new Map<SkillTag, Set<string>>();
+    for (const skill of skills) {
+      for (const tag of skill.tags) {
+        const set = conceptsPerTag.get(tag) ?? new Set<string>();
+        set.add(skill.problemSlug);
+        conceptsPerTag.set(tag, set);
+      }
+    }
+    const narrow = [...conceptsPerTag.entries()]
+      .filter(([, set]) => set.size < 2)
+      .map(([tag]) => tag);
+    expect(narrow).toEqual([]);
+  });
+
+  it("uses every tag in the vocabulary", () => {
+    const used = new Set(skills.flatMap((s) => s.tags));
+    expect(SKILL_TAGS.filter((t) => !used.has(t))).toEqual([]);
+  });
 });

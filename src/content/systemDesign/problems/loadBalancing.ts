@@ -23,8 +23,8 @@ export const loadBalancing: SystemDesignProblem = {
       title: "What a balancer is actually for",
       summary: "Two jobs that are easy to confuse: using capacity you already have, and surviving the loss of some of it.",
       concepts: [
-        { slug: "lb-purpose", name: "Distribution vs. availability", summary: "Spreading load and tolerating failure are separate goals that happen to share a mechanism. A balancer that spreads perfectly but keeps routing to a dead server has solved only one of them.", difficulty: 1 },
-        { slug: "lb-statelessness", name: "Why the servers must be interchangeable", summary: "Balancing only works if any server can serve any request. The moment a server holds state a request depends on, you are no longer balancing — you are routing, which is a harder problem.", difficulty: 2 },
+        { slug: "lb-purpose", name: "Distribution vs. availability", summary: "Spreading load and tolerating failure are separate goals that happen to share a mechanism. A balancer that spreads perfectly but keeps routing to a dead server has solved only one of them.", difficulty: 1, tags: ["load-balancing", "availability"] },
+        { slug: "lb-statelessness", name: "Why the servers must be interchangeable", summary: "Balancing only works if any server can serve any request. The moment a server holds state a request depends on, you are no longer balancing — you are routing, which is a harder problem.", difficulty: 2, tags: ["load-balancing", "data-modeling"] },
       ],
       blocks: [
         { type: "prose", heading: "Two jobs, one mechanism", body: "A load balancer does two things that are worth separating in your head. The first is **utilisation**: you have ten servers and you would like all ten working rather than one melting while nine idle. The second is **availability**: when one of those ten dies at 3am, traffic should stop going to it without anyone waking up. The same box does both, which is why they get conflated — but a balancer with perfect round-robin distribution that keeps cheerfully forwarding to a dead host has solved the first and completely failed the second." },
@@ -37,7 +37,7 @@ export const loadBalancing: SystemDesignProblem = {
       title: "How much does the balancer itself cost?",
       summary: "It runs on every request, so its own overhead is multiplied by everything.",
       concepts: [
-        { slug: "lb-overhead", name: "Per-request overhead", summary: "The balancer's decision runs on 100% of traffic, so an expensive routing rule is multiplied by total request volume — which is why the algorithms are all O(1) tricks rather than optimisation problems.", difficulty: 2 },
+        { slug: "lb-overhead", name: "Per-request overhead", summary: "The balancer's decision runs on 100% of traffic, so an expensive routing rule is multiplied by total request volume — which is why the algorithms are all O(1) tricks rather than optimisation problems.", difficulty: 2, tags: ["estimation", "load-balancing"] },
       ],
       blocks: [
         { type: "prose", body: "Whatever the balancer does, it does on every request. At 50,000 requests/sec, a routing decision costing one millisecond would consume fifty seconds of CPU per wall-clock second — you would need fifty cores purely to decide where things go. This is why every algorithm below is an O(1) trick: a counter increment, a hash, a comparison of a few integers. None of them is solving an optimisation problem, because there is no budget to." },
@@ -49,7 +49,7 @@ export const loadBalancing: SystemDesignProblem = {
       title: "Where it sits: L4 versus L7",
       summary: "Balancing on connections is fast and blind; balancing on requests is slower and can read what it is routing.",
       concepts: [
-        { slug: "lb-osi-layer", name: "Layer 4 vs. layer 7", summary: "L4 routes TCP connections by IP and port without reading the payload — fast, protocol-agnostic, blind. L7 parses the HTTP request, so it can route on path, header or cookie, at the cost of terminating the connection and doing real parsing work.", difficulty: 3 },
+        { slug: "lb-osi-layer", name: "Layer 4 vs. layer 7", summary: "L4 routes TCP connections by IP and port without reading the payload — fast, protocol-agnostic, blind. L7 parses the HTTP request, so it can route on path, header or cookie, at the cost of terminating the connection and doing real parsing work.", difficulty: 3, tags: ["load-balancing", "api-design"] },
       ],
       blocks: [
         { type: "prose", heading: "Layer 4: fast and blind", body: "An L4 balancer works at the TCP level. It sees a connection arriving at an IP and port, picks a backend, and shuttles packets. It never looks inside, which makes it extremely fast and completely protocol-agnostic — it will balance HTTP, gRPC, a database protocol, anything. It also means it cannot make any decision that depends on *what* is being asked." },
@@ -62,8 +62,8 @@ export const loadBalancing: SystemDesignProblem = {
       title: "What state the balancer keeps",
       summary: "Less than you would think, and that is deliberate.",
       concepts: [
-        { slug: "lb-health-state", name: "Health state and connection counts", summary: "The minimum is a list of backends and whether each is currently healthy. Least-connections additionally tracks in-flight requests per backend — the only per-request state most balancers hold.", difficulty: 2 },
-        { slug: "lb-health-checks", name: "Active vs. passive health checks", summary: "Active checks poll a health endpoint on a timer. Passive checks infer health from real traffic — consecutive errors or timeouts eject a backend. Active detects a fully dead host; passive catches one that is up but broken.", difficulty: 3 },
+        { slug: "lb-health-state", name: "Health state and connection counts", summary: "The minimum is a list of backends and whether each is currently healthy. Least-connections additionally tracks in-flight requests per backend — the only per-request state most balancers hold.", difficulty: 2, tags: ["load-balancing", "observability"] },
+        { slug: "lb-health-checks", name: "Active vs. passive health checks", summary: "Active checks poll a health endpoint on a timer. Passive checks infer health from real traffic — consecutive errors or timeouts eject a backend. Active detects a fully dead host; passive catches one that is up but broken.", difficulty: 3, tags: ["availability", "observability"] },
       ],
       blocks: [
         { type: "prose", body: "A balancer holds strikingly little: the backend list, a health flag per backend, and — only for least-connections — a count of in-flight requests. That minimalism is the point. State in the balancer is state that must be replicated when you run more than one of them, and every field you add is another thing to keep consistent across the pair." },
@@ -76,7 +76,7 @@ export const loadBalancing: SystemDesignProblem = {
       title: "The algorithms",
       summary: "Four choices, each optimal for a different assumption about your requests.",
       concepts: [
-        { slug: "lb-algorithms", name: "Round-robin, least-connections, hashing, random", summary: "Round-robin assumes requests cost the same. Least-connections adapts when they don't. Hashing pins a key to a backend for cache locality. Random with two choices gets most of least-connections' benefit with none of its coordination.", difficulty: 3 },
+        { slug: "lb-algorithms", name: "Round-robin, least-connections, hashing, random", summary: "Round-robin assumes requests cost the same. Least-connections adapts when they don't. Hashing pins a key to a backend for cache locality. Random with two choices gets most of least-connections' benefit with none of its coordination.", difficulty: 3, tags: ["load-balancing", "partitioning"] },
       ],
       blocks: [
         { type: "prose", body: "**Round-robin** hands each request to the next backend in order. It is optimal when every request costs about the same, and it degrades badly when they don't — one backend can be grinding through an expensive report while round-robin cheerfully hands it another.\n\n**Least-connections** sends each request to whichever backend currently has the fewest in flight. This adapts automatically to uneven request cost, because an expensive request keeps its connection open and the backend stops being chosen. It is the sane default for anything with variable work per request.\n\n**Hash-based** routing sends the same key — a user id, a cache key — to the same backend every time. You give up evenness to gain locality: that backend's cache stays warm for that key. This is the Distributed Cache concept's ring, applied to traffic instead of data.\n\n**Random with two choices** picks two backends at random and takes the less loaded of the two. It is startlingly effective: it captures most of the benefit of least-connections while needing no global view, which matters when you have many balancers that would otherwise have to share counts." },
@@ -126,7 +126,7 @@ export const loadBalancing: SystemDesignProblem = {
       title: "Who balances the balancer?",
       summary: "You have moved the single point of failure rather than removed it.",
       concepts: [
-        { slug: "lb-ha", name: "Making the balancer redundant", summary: "One balancer in front of ten servers is one machine whose failure takes down all ten. The fixes — a floating IP with failover, or several balancers behind DNS — each trade failover speed against complexity.", difficulty: 3 },
+        { slug: "lb-ha", name: "Making the balancer redundant", summary: "One balancer in front of ten servers is one machine whose failure takes down all ten. The fixes — a floating IP with failover, or several balancers behind DNS — each trade failover speed against complexity.", difficulty: 3, tags: ["availability", "replication"] },
       ],
       blocks: [
         { type: "prose", body: "Put a single load balancer in front of ten servers and you have built a system that survives any one of the ten failing, and dies completely if the eleventh box does. The balancer is now the single point of failure, and it is a more consequential one than any individual server was." },
@@ -163,7 +163,7 @@ export const loadBalancing: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Even distribution of requests is not even distribution of work.",
       concepts: [
-        { slug: "lb-uneven-work", name: "When even distribution isn't enough", summary: "Balancers spread requests, not cost. One tenant's expensive queries can saturate a backend that is receiving exactly its fair share of traffic — the fix is isolation, not better balancing.", difficulty: 4 },
+        { slug: "lb-uneven-work", name: "When even distribution isn't enough", summary: "Balancers spread requests, not cost. One tenant's expensive queries can saturate a backend that is receiving exactly its fair share of traffic — the fix is isolation, not better balancing.", difficulty: 4, tags: ["hotspots", "load-balancing"] },
       ],
       blocks: [
         { type: "prose", body: "The assumption underneath round-robin is that requests are roughly equal. Real traffic is not: one customer runs reports that take thirty seconds while everyone else does millisecond lookups. Spread perfectly evenly by *count*, the backends receiving that customer's requests are pinned while the rest idle. Least-connections helps, because a long request holds its connection and the backend stops being picked — but it only reacts after the damage is underway." },

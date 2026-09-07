@@ -23,7 +23,7 @@ export const proximityService: SystemDesignProblem = {
       title: "Why not just a SQL range query on lat/lng?",
       summary: "Latitude and longitude are two independent columns; a normal B-tree index can only efficiently range-query one dimension at a time.",
       concepts: [
-        { slug: "proximity-scope", name: "The two-dimensional indexing problem", summary: "A standard database index sorts by one key. \"Everything within 2km\" is inherently a two-dimensional range query, which is exactly what a regular index isn't built for — this whole course is about the geospatial indexes that solve it.", difficulty: 1 },
+        { slug: "proximity-scope", name: "The two-dimensional indexing problem", summary: "A standard database index sorts by one key. \"Everything within 2km\" is inherently a two-dimensional range query, which is exactly what a regular index isn't built for — this whole course is about the geospatial indexes that solve it.", difficulty: 1, tags: ["scoping", "indexing"] },
       ],
       blocks: [
         { type: "prose", body: "\"Find everything within 2km of (lat, lng)\" sounds like it should be a simple range query, but latitude and longitude indexed as two separate B-tree columns can't answer it efficiently — a database would have to scan a wide latitude band and then filter by longitude (or vice versa), touching far more rows than actually lie within the radius. Geospatial indexes exist specifically to make \"nearby\" a genuinely efficient query, and this course's whole story is which one to pick and why." },
@@ -34,7 +34,7 @@ export const proximityService: SystemDesignProblem = {
       title: "Density is wildly uneven",
       summary: "The real design pressure comes from Manhattan having a thousand times the point-of-interest density of rural Montana.",
       concepts: [
-        { slug: "proximity-estimation", name: "Uneven geographic density", summary: "A uniform grid over the earth wastes enormous resolution on empty ocean and rural areas, while being too coarse in dense cities — the indexing scheme needs to adapt to real-world density, not assume it's uniform.", difficulty: 2 },
+        { slug: "proximity-estimation", name: "Uneven geographic density", summary: "A uniform grid over the earth wastes enormous resolution on empty ocean and rural areas, while being too coarse in dense cities — the indexing scheme needs to adapt to real-world density, not assume it's uniform.", difficulty: 2, tags: ["estimation", "hotspots"] },
       ],
       blocks: [
         { type: "prose", body: "A fixed-size grid (say, 1km x 1km cells) has to be small enough to be useful in dense Manhattan, but that same cell size wastes enormous index space over open ocean and sparse countryside where almost nothing exists. This tension — needing fine resolution where things are dense and coarse resolution where they're sparse — is exactly what a good geospatial index (like a quadtree or geohash) is built to handle adaptively, rather than a naive fixed grid." },
@@ -45,7 +45,7 @@ export const proximityService: SystemDesignProblem = {
       title: "The API",
       summary: "One read-heavy endpoint: search by location and radius.",
       concepts: [
-        { slug: "proximity-api", name: "GET /search?lat=&lng=&radius=", summary: "The dominant operation by far is the nearby-search read. Writes (a business's location changing, or a driver's live position updating) are comparatively rare and handled separately.", difficulty: 1 },
+        { slug: "proximity-api", name: "GET /search?lat=&lng=&radius=", summary: "The dominant operation by far is the nearby-search read. Writes (a business's location changing, or a driver's live position updating) are comparatively rare and handled separately.", difficulty: 1, tags: ["api-design", "indexing"] },
       ],
       blocks: [
         { type: "prose", body: "`GET /search?lat=&lng=&radius=&limit=20` returns nearby entities sorted by distance. For a live use case like ride-hailing, there's also a high-frequency write path — `POST /location { entityId, lat, lng }` — updating a driver's position every few seconds, which the index needs to absorb without degrading read performance." },
@@ -56,7 +56,7 @@ export const proximityService: SystemDesignProblem = {
       title: "Geohash vs. quadtree",
       summary: "Two standard ways to turn 2D coordinates into something a normal 1D index can handle.",
       concepts: [
-        { slug: "proximity-geohash", name: "Geohashing: encoding 2D into a sortable string", summary: "A geohash recursively subdivides the map into a grid and encodes a point's cell as a base32 string, where nearby points usually (not always) share a long common prefix — turning 'nearby' into 'shares a string prefix,' which a normal B-tree index handles well.", difficulty: 3 },
+        { slug: "proximity-geohash", name: "Geohashing: encoding 2D into a sortable string", summary: "A geohash recursively subdivides the map into a grid and encodes a point's cell as a base32 string, where nearby points usually (not always) share a long common prefix — turning 'nearby' into 'shares a string prefix,' which a normal B-tree index handles well.", difficulty: 3, tags: ["indexing", "partitioning"] },
       ],
       blocks: [
         { type: "prose", body: "A geohash interleaves bits of latitude and longitude into a single string, where each additional character narrows the location to a smaller rectangular cell. Two points near each other usually — though not always, because of edge effects at cell boundaries — share a long common prefix. This turns \"find nearby points\" into \"find rows whose geohash shares this prefix,\" a query a completely ordinary database index (even a plain B-tree) can answer efficiently, without any custom geospatial index type." },
@@ -79,7 +79,7 @@ export const proximityService: SystemDesignProblem = {
       title: "High-level design",
       summary: "Businesses indexed by geohash prefix; a search expands outward from the query point's own geohash cell.",
       concepts: [
-        { slug: "proximity-search-algorithm", name: "Prefix search with neighbor-cell expansion", summary: "A search starts with the query point's own geohash cell, and — because the target radius rarely fits exactly one cell, and boundary effects mean nearby points can fall in an adjacent cell — expands to include neighboring cells until enough results are found.", difficulty: 3 },
+        { slug: "proximity-search-algorithm", name: "Prefix search with neighbor-cell expansion", summary: "A search starts with the query point's own geohash cell, and — because the target radius rarely fits exactly one cell, and boundary effects mean nearby points can fall in an adjacent cell — expands to include neighboring cells until enough results are found.", difficulty: 3, tags: ["indexing"] },
       ],
       blocks: [
         {
@@ -115,7 +115,7 @@ export const proximityService: SystemDesignProblem = {
       title: "Deep dive: high-frequency location updates",
       summary: "A ride-hailing driver's position updates every few seconds — that write rate needs a different strategy than a static business listing.",
       concepts: [
-        { slug: "proximity-live-updates", name: "In-memory index for high-churn entities", summary: "Static businesses can live in a disk-backed geospatial index. Constantly-moving entities (drivers, delivery couriers) are better served from an in-memory structure, since re-indexing on disk every few seconds per entity doesn't scale.", difficulty: 4 },
+        { slug: "proximity-live-updates", name: "In-memory index for high-churn entities", summary: "Static businesses can live in a disk-backed geospatial index. Constantly-moving entities (drivers, delivery couriers) are better served from an in-memory structure, since re-indexing on disk every few seconds per entity doesn't scale.", difficulty: 4, tags: ["caching", "indexing"] },
       ],
       blocks: [
         {
@@ -129,7 +129,7 @@ export const proximityService: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Hot cells (dense city centers) get disproportionate query and write load — the same imbalance problem as a hot key in a cache.",
       concepts: [
-        { slug: "proximity-hot-cells", name: "Hot cells in dense areas", summary: "A geohash cell covering downtown Manhattan sees vastly more reads and writes than a cell covering rural farmland. If cells are sharded across nodes, this is the same hot-key/hot-partition problem seen in the Distributed Cache course, just spatial instead of key-based.", difficulty: 4 },
+        { slug: "proximity-hot-cells", name: "Hot cells in dense areas", summary: "A geohash cell covering downtown Manhattan sees vastly more reads and writes than a cell covering rural farmland. If cells are sharded across nodes, this is the same hot-key/hot-partition problem seen in the Distributed Cache course, just spatial instead of key-based.", difficulty: 4, tags: ["hotspots", "partitioning"] },
       ],
       blocks: [
         {

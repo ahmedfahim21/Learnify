@@ -182,8 +182,8 @@ export default async function MePage() {
               ))}
             </svg>
             <p className="max-w-md text-sm text-(--color-mist)">
-              Your skills appear here once you practise with the tutor, each one shaded by how
-              well you know it.
+              Read a chapter and its skills appear here, linked to every other concept that
+              teaches the same idea. Practising shades them by how well you know them.
             </p>
             <Link href="/concepts" className="btn-quiet">
               Pick a concept

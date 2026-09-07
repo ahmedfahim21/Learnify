@@ -23,7 +23,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "Why cache at all, and why distribute it?",
       summary: "A single-node cache runs out of memory and becomes a single point of failure; distributing it fixes both.",
       concepts: [
-        { slug: "distcache-scope", name: "Scoping a distributed cache", summary: "A cache trades memory (expensive, finite) for latency (what you're optimizing). Once the working set outgrows one machine's RAM, the cache itself has to become a distributed system.", difficulty: 1 },
+        { slug: "distcache-scope", name: "Scoping a distributed cache", summary: "A cache trades memory (expensive, finite) for latency (what you're optimizing). Once the working set outgrows one machine's RAM, the cache itself has to become a distributed system.", difficulty: 1, tags: ["scoping", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "A single-machine cache (in-process, or a single Redis instance) works until the hot data no longer fits in that machine's RAM, or until that machine's request rate saturates its network or CPU. Distributing the cache across many nodes solves both: more aggregate RAM, and more aggregate request throughput. The hard part is deciding which node owns which key — and what happens to that decision when a node is added or removed." },
@@ -34,7 +34,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "Sizing the cluster",
       summary: "From a working-set size and a per-node memory budget, derive how many nodes you actually need.",
       concepts: [
-        { slug: "distcache-sizing", name: "Estimating node count", summary: "Working set size / usable memory per node, with headroom for eviction and replication — not exact division, since a node running near 100% full thrashes.", difficulty: 1 },
+        { slug: "distcache-sizing", name: "Estimating node count", summary: "Working set size / usable memory per node, with headroom for eviction and replication — not exact division, since a node running near 100% full thrashes.", difficulty: 1, tags: ["estimation", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "If the hot working set is 500 GB and each cache node runs with 32 GB of usable memory (after leaving headroom for the OS and avoiding thrashing near capacity), that's a minimum of roughly 16-20 nodes — rounding up, since a cache node kept near 100% full evicts constantly and its hit ratio collapses." },
@@ -45,7 +45,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "The client-facing API",
       summary: "Get, set, delete — the operations themselves are simple; the routing behind them is the whole problem.",
       concepts: [
-        { slug: "distcache-api", name: "GET / SET / DELETE", summary: "The API is deliberately minimal — three operations. All the design complexity is in routing a key to the right node, not in the operations themselves.", difficulty: 1 },
+        { slug: "distcache-api", name: "GET / SET / DELETE", summary: "The API is deliberately minimal — three operations. All the design complexity is in routing a key to the right node, not in the operations themselves.", difficulty: 1, tags: ["api-design", "caching"] },
       ],
       blocks: [
         { type: "prose", body: "`GET key`, `SET key value [ttl]`, `DELETE key`. A client library (or a proxy layer) is responsible for hashing the key and routing the request to the node that owns it — the caller never needs to know the cluster topology." },
@@ -56,7 +56,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "What each node stores",
       summary: "Each node runs its own independent in-memory key-value map with its own LRU eviction policy.",
       concepts: [
-        { slug: "distcache-node-storage", name: "Per-node LRU map", summary: "Each node is, on its own, exactly the single-machine cache from the requirements chapter — a hash map plus an LRU eviction list, sized to that node's memory budget.", difficulty: 1 },
+        { slug: "distcache-node-storage", name: "Per-node LRU map", summary: "Each node is, on its own, exactly the single-machine cache from the requirements chapter — a hash map plus an LRU eviction list, sized to that node's memory budget.", difficulty: 1, tags: ["caching", "data-modeling"] },
       ],
       blocks: [
         { type: "prose", body: "Each individual node is unremarkable: a hash map of key to value, with a doubly-linked list tracking recency so the least-recently-used entry can be evicted in O(1) when the node hits its memory limit. The distributed system properties come entirely from how keys are assigned to nodes — the topic of this course's high-level design." },
@@ -67,7 +67,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "High-level design: routing keys to nodes",
       summary: "Naive modulo hashing reshuffles almost everything when the cluster resizes. Consistent hashing doesn't.",
       concepts: [
-        { slug: "distcache-consistent-hashing", name: "Consistent hashing", summary: "Nodes and keys are hashed onto the same ring; a key is owned by the next node clockwise. Adding or removing a node only remaps the keys between it and its neighbor — roughly 1/N of the total, not nearly all of it.", difficulty: 3 },
+        { slug: "distcache-consistent-hashing", name: "Consistent hashing", summary: "Nodes and keys are hashed onto the same ring; a key is owned by the next node clockwise. Adding or removing a node only remaps the keys between it and its neighbor — roughly 1/N of the total, not nearly all of it.", difficulty: 3, tags: ["partitioning", "caching"] },
       ],
       blocks: [
         {
@@ -123,7 +123,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "Deep dive: replication and failure",
       summary: "Replicate each key to N-1 neighboring nodes on the ring so one node's failure isn't a total loss.",
       concepts: [
-        { slug: "distcache-replication", name: "Ring-neighbor replication", summary: "Storing each key on the next R nodes clockwise (not just the first) means a single node failure only degrades, rather than eliminates, that key's availability — and the replicas are a natural, deterministic set with no extra coordination.", difficulty: 3 },
+        { slug: "distcache-replication", name: "Ring-neighbor replication", summary: "Storing each key on the next R nodes clockwise (not just the first) means a single node failure only degrades, rather than eliminates, that key's availability — and the replicas are a natural, deterministic set with no extra coordination.", difficulty: 3, tags: ["replication", "availability"] },
       ],
       blocks: [
         {
@@ -164,7 +164,7 @@ export const distributedCache: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "Hot keys defeat even a perfectly balanced ring, because popularity isn't uniform.",
       concepts: [
-        { slug: "distcache-hot-keys", name: "The hot-key problem", summary: "Consistent hashing balances key *count* evenly, but not key *popularity*. One viral key can still overload the single node that owns it, no matter how even the ring is.", difficulty: 4 },
+        { slug: "distcache-hot-keys", name: "The hot-key problem", summary: "Consistent hashing balances key *count* evenly, but not key *popularity*. One viral key can still overload the single node that owns it, no matter how even the ring is.", difficulty: 4, tags: ["hotspots", "caching"] },
       ],
       blocks: [
         {

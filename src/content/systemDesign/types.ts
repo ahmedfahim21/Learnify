@@ -1,6 +1,8 @@
 import type { SystemDiagramProps } from "@/lib/a2ui/catalog";
 import type { SimulatorId } from "@/lib/sims/ids";
 
+import type { SkillTag } from "./tags";
+
 /**
  * Authored system-design course content — typed data, compile-checked against
  * the same widget schemas the live tutor emits against (an authored diagram's
@@ -70,6 +72,13 @@ export interface AuthoredConcept {
   summary: string;
   /** 1 (foundational) .. 5 (advanced). */
   difficulty: number;
+  /**
+   * Cross-cutting themes this skill belongs to. Required, and from a closed
+   * vocabulary: these are the only thing linking a skill in one design problem
+   * to the same idea in another, so an untagged skill is an isolated node in
+   * the learner's knowledge graph.
+   */
+  tags: SkillTag[];
 }
 
 export interface CourseChapter {
@@ -116,4 +125,18 @@ export function chainEdges(problem: SystemDesignProblem): { from: string; to: st
     edges.push({ from: slugs[i - 1], to: slugs[i] });
   }
   return edges;
+}
+
+/** Every skill in the curriculum, with the concept it belongs to. */
+export function allSkills(problems: SystemDesignProblem[]) {
+  return problems.flatMap((problem) =>
+    problem.chapters.flatMap((chapter) =>
+      chapter.concepts.map((concept) => ({
+        ...concept,
+        phase: chapter.phase,
+        problemSlug: problem.slug,
+        problemTitle: problem.title,
+      })),
+    ),
+  );
 }

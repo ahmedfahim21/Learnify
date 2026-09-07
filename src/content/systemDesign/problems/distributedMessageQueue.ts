@@ -23,7 +23,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "Decoupling producers from consumers",
       summary: "The core value proposition: a producer doesn't need to know who's consuming, how many there are, or whether they're keeping up.",
       concepts: [
-        { slug: "mq-scope", name: "Why a queue instead of direct calls", summary: "A producer calling a consumer's API directly couples their availability and throughput together. A queue in between lets each scale, fail, and deploy independently — the producer just writes; consumers read at their own pace.", difficulty: 1 },
+        { slug: "mq-scope", name: "Why a queue instead of direct calls", summary: "A producer calling a consumer's API directly couples their availability and throughput together. A queue in between lets each scale, fail, and deploy independently — the producer just writes; consumers read at their own pace.", difficulty: 1, tags: ["scoping", "queueing"] },
       ],
       blocks: [
         { type: "prose", body: "If a service that logs events called every downstream consumer (analytics, fraud detection, a search indexer) directly and synchronously, it would be as slow as its slowest consumer, and would fail if any one consumer was down. A message queue in between removes that coupling entirely: the producer writes to the queue and moves on; each consumer reads at its own pace, and a slow or down consumer never blocks the producer or any other consumer." },
@@ -34,7 +34,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "Throughput and retention",
       summary: "Sustained write throughput and how long messages need to stay available are the two numbers that size the cluster.",
       concepts: [
-        { slug: "mq-estimation", name: "Estimating throughput and retention footprint", summary: "Messages/sec times average message size gives write bandwidth; that times a retention window (how long messages stay readable before being deleted) gives total storage footprint.", difficulty: 1 },
+        { slug: "mq-estimation", name: "Estimating throughput and retention footprint", summary: "Messages/sec times average message size gives write bandwidth; that times a retention window (how long messages stay readable before being deleted) gives total storage footprint.", difficulty: 1, tags: ["estimation", "queueing"] },
       ],
       blocks: [
         { type: "prose", body: "At 1 million messages/sec averaging 1 KB each, that's 1 GB/sec of write bandwidth — already beyond what a single machine's disk can sustain, which is exactly why the log is partitioned across many machines (the high-level design chapter). With a 7-day retention window, total storage is roughly 1 GB/sec x 604,800 seconds ≈ 600 TB, spread across the cluster." },
@@ -45,7 +45,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "The API",
       summary: "Producers append; consumers read from a position they track themselves.",
       concepts: [
-        { slug: "mq-api", name: "produce/consume with consumer-tracked offsets", summary: "produce(topic, message) appends. consume(topic, partition, offset) reads from a specific position — critically, the consumer (not the broker) tracks how far it has read, which is what makes replay and independent consumer groups possible.", difficulty: 2 },
+        { slug: "mq-api", name: "produce/consume with consumer-tracked offsets", summary: "produce(topic, message) appends. consume(topic, partition, offset) reads from a specific position — critically, the consumer (not the broker) tracks how far it has read, which is what makes replay and independent consumer groups possible.", difficulty: 2, tags: ["api-design", "queueing"] },
       ],
       blocks: [
         { type: "prose", body: "`produce(topic, message)` appends to the log. `consume(topic, partition, fromOffset)` reads starting at a given position. The key design choice: the broker doesn't remove a message once it's been read, and doesn't track \"has this been consumed\" per consumer — each consumer tracks its own offset (how far it's read). This is what lets multiple independent consumers read the same topic at their own pace, and lets a consumer replay messages by simply resetting its own offset backward." },
@@ -56,7 +56,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "The append-only log",
       summary: "A topic's data is an ordered, immutable, append-only sequence — the single simplest and most scalable structure for this problem.",
       concepts: [
-        { slug: "mq-log-structure", name: "Append-only log per partition", summary: "Each partition is a simple sequential file: new messages are always appended to the end, each gets a monotonically increasing offset, and nothing is ever modified in place — sequential disk writes are extremely fast, which is a large part of why this design achieves such high throughput.", difficulty: 2 },
+        { slug: "mq-log-structure", name: "Append-only log per partition", summary: "Each partition is a simple sequential file: new messages are always appended to the end, each gets a monotonically increasing offset, and nothing is ever modified in place — sequential disk writes are extremely fast, which is a large part of why this design achieves such high throughput.", difficulty: 2, tags: ["durability", "data-modeling"] },
       ],
       blocks: [
         { type: "prose", body: "Rather than a database with updates and deletes, each partition is literally an append-only log file: new messages go at the end, get the next sequential offset, and are never modified. Sequential writes to disk are dramatically faster than random writes — this structural simplicity is a big part of why message queues built this way (Kafka being the canonical example) sustain such high write throughput compared to a general-purpose database." },
@@ -67,7 +67,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "High-level design: partitions and consumer groups",
       summary: "A topic splits into partitions for parallelism; a consumer group splits the partitions among its members so the group processes the whole topic together, once each.",
       concepts: [
-        { slug: "mq-partitioning-consumer-groups", name: "Partitions distribute load; consumer groups distribute consumption", summary: "A topic is split into N partitions, each an independent append-only log that can live on a different broker. Within a consumer group, each partition is read by exactly one consumer — adding consumers up to the partition count adds parallelism.", difficulty: 4 },
+        { slug: "mq-partitioning-consumer-groups", name: "Partitions distribute load; consumer groups distribute consumption", summary: "A topic is split into N partitions, each an independent append-only log that can live on a different broker. Within a consumer group, each partition is read by exactly one consumer — adding consumers up to the partition count adds parallelism.", difficulty: 4, tags: ["partitioning", "load-balancing", "queueing"] },
       ],
       blocks: [
         {
@@ -104,7 +104,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "Deep dive: ordering guarantees",
       summary: "Ordering is guaranteed within a partition, not across the whole topic — the producer's partitioning key decides what stays ordered together.",
       concepts: [
-        { slug: "mq-ordering", name: "Per-partition ordering, keyed writes", summary: "Messages within one partition are strictly ordered (append order = read order). Across partitions there's no guarantee at all — so a producer that needs \"all events for user 42, in order\" must hash on user id to route them to the same partition every time.", difficulty: 4 },
+        { slug: "mq-ordering", name: "Per-partition ordering, keyed writes", summary: "Messages within one partition are strictly ordered (append order = read order). Across partitions there's no guarantee at all — so a producer that needs \"all events for user 42, in order\" must hash on user id to route them to the same partition every time.", difficulty: 4, tags: ["ordering", "partitioning"] },
       ],
       blocks: [
         {
@@ -135,7 +135,7 @@ export const distributedMessageQueue: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "A single broker holding a partition is a single point of failure until that partition is itself replicated.",
       concepts: [
-        { slug: "mq-replication", name: "Partition replication and leader election", summary: "Each partition is replicated to multiple brokers, with one elected leader handling all reads/writes for it and the others as in-sync followers ready to take over if the leader fails.", difficulty: 4 },
+        { slug: "mq-replication", name: "Partition replication and leader election", summary: "Each partition is replicated to multiple brokers, with one elected leader handling all reads/writes for it and the others as in-sync followers ready to take over if the leader fails.", difficulty: 4, tags: ["replication", "availability"] },
       ],
       blocks: [
         {

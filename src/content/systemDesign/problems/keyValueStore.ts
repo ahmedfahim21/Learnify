@@ -23,7 +23,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "What makes this different from a relational database?",
       summary: "No joins, no complex queries — just a partition key. That constraint is what makes horizontal scale tractable.",
       concepts: [
-        { slug: "kv-scope", name: "The key-value contract", summary: "Give up joins and ad-hoc queries; in exchange, every operation addresses exactly one key, which is what makes partitioning the data across many machines straightforward.", difficulty: 1 },
+        { slug: "kv-scope", name: "The key-value contract", summary: "Give up joins and ad-hoc queries; in exchange, every operation addresses exactly one key, which is what makes partitioning the data across many machines straightforward.", difficulty: 1, tags: ["scoping", "api-design"] },
       ],
       blocks: [
         { type: "prose", body: "A relational database's flexibility — joins, secondary indexes, arbitrary WHERE clauses — is exactly what makes it hard to shard: a query might need data from many partitions. A key-value store gives up that flexibility deliberately: every read or write names one key, so the system can place any given key on any given machine and always know exactly where to find it. That single constraint is the whole reason key-value stores scale horizontally more easily than relational ones." },
@@ -34,7 +34,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "Scale numbers",
       summary: "The kind of scale that justifies giving up relational features in the first place.",
       concepts: [
-        { slug: "kv-estimation", name: "Estimating cluster scale", summary: "Key-value stores exist for the scale tier where a single powerful machine is no longer an option — terabytes to petabytes of data, millions of QPS.", difficulty: 1 },
+        { slug: "kv-estimation", name: "Estimating cluster scale", summary: "Key-value stores exist for the scale tier where a single powerful machine is no longer an option — terabytes to petabytes of data, millions of QPS.", difficulty: 1, tags: ["estimation", "partitioning"] },
       ],
       blocks: [
         { type: "prose", body: "Say the store holds 10 billion key-value pairs averaging 1 KB each — 10 TB of raw data, which after a replication factor of 3 (for durability) becomes 30 TB actually stored. At even 100,000 requests/sec, no single machine's disk or network can keep up; this is squarely the regime a horizontally-partitioned store is built for." },
@@ -45,7 +45,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "The API",
       summary: "put and get, plus optional versioning metadata for conflict resolution.",
       concepts: [
-        { slug: "kv-api", name: "put/get and vector clocks", summary: "The client-facing API is minimal, but a put often needs to carry version metadata (a vector clock) so the system can later tell whether two writes conflicted or one simply happened after the other.", difficulty: 2 },
+        { slug: "kv-api", name: "put/get and vector clocks", summary: "The client-facing API is minimal, but a put often needs to carry version metadata (a vector clock) so the system can later tell whether two writes conflicted or one simply happened after the other.", difficulty: 2, tags: ["api-design", "consistency"] },
       ],
       blocks: [
         { type: "prose", body: "`put(key, value, context)` and `get(key)`, where `context` carries versioning metadata from a prior `get`. That context is what lets the system distinguish \"this write happened after that one\" from \"these two writes conflict and both need to be kept\" — essential once multiple replicas can each accept writes independently." },
@@ -56,7 +56,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "Partitioning the keyspace",
       summary: "Consistent hashing again — the same ring that balances a distributed cache balances a key-value store's partitions.",
       concepts: [
-        { slug: "kv-partitioning", name: "Consistent hashing for data partitions", summary: "Each key hashes onto a ring of partitions; a partition (not a whole machine) is the unit that gets assigned to and moved between physical nodes, which makes rebalancing finer-grained.", difficulty: 3 },
+        { slug: "kv-partitioning", name: "Consistent hashing for data partitions", summary: "Each key hashes onto a ring of partitions; a partition (not a whole machine) is the unit that gets assigned to and moved between physical nodes, which makes rebalancing finer-grained.", difficulty: 3, tags: ["partitioning"] },
       ],
       blocks: [
         { type: "prose", body: "Just as in a distributed cache, keys are placed on a hash ring and owned by ranges of that ring. The refinement a durable store adds: the ring is divided into many more partitions than there are physical nodes, and each node owns several partitions. Rebalancing then means moving whole partitions between nodes — a coarser, easier-to-reason-about unit than individual keys, and one that spreads a rebalance's cost across many nodes at once." },
@@ -75,7 +75,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "High-level design: writes and reads with quorums",
       summary: "Every key is replicated to N nodes; a write or read only needs to succeed on a quorum of them.",
       concepts: [
-        { slug: "kv-quorum", name: "Quorum reads and writes (N, W, R)", summary: "With replication factor N, a write succeeds after W replicas ack it and a read succeeds after querying R replicas — and W + R > N guarantees every read sees the latest write.", difficulty: 4 },
+        { slug: "kv-quorum", name: "Quorum reads and writes (N, W, R)", summary: "With replication factor N, a write succeeds after W replicas ack it and a read succeeds after querying R replicas — and W + R > N guarantees every read sees the latest write.", difficulty: 4, tags: ["consistency", "replication"] },
       ],
       blocks: [
         {
@@ -125,7 +125,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "Deep dive: handling conflicting writes",
       summary: "When two replicas accept concurrent writes, something has to reconcile them — vector clocks make \"concurrent\" detectable.",
       concepts: [
-        { slug: "kv-conflict-resolution", name: "Vector clocks and last-write-wins", summary: "A vector clock tracks per-replica write counts to detect true concurrency (both writes must be kept) versus a strict happens-before relationship (the newer write wins outright).", difficulty: 4 },
+        { slug: "kv-conflict-resolution", name: "Vector clocks and last-write-wins", summary: "A vector clock tracks per-replica write counts to detect true concurrency (both writes must be kept) versus a strict happens-before relationship (the newer write wins outright).", difficulty: 4, tags: ["consistency", "ordering"] },
       ],
       blocks: [
         {
@@ -175,7 +175,7 @@ export const keyValueStore: SystemDesignProblem = {
       title: "Where it breaks: partitions and CAP",
       summary: "During a network partition you must choose: stay available and risk inconsistency, or refuse writes to stay consistent.",
       concepts: [
-        { slug: "kv-cap-theorem", name: "CAP theorem in practice", summary: "When a network partition happens, you can't have both full consistency and full availability — quorum systems make this trade-off tunable per-request via N, W, and R rather than fixed system-wide.", difficulty: 4 },
+        { slug: "kv-cap-theorem", name: "CAP theorem in practice", summary: "When a network partition happens, you can't have both full consistency and full availability — quorum systems make this trade-off tunable per-request via N, W, and R rather than fixed system-wide.", difficulty: 4, tags: ["consistency", "availability"] },
       ],
       blocks: [
         {

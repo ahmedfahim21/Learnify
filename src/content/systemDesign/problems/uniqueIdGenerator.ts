@@ -23,7 +23,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "Why not just UUID?",
       summary: "A UUID solves uniqueness but gives up ordering — and a database auto-increment solves ordering but doesn't scale past one writer.",
       concepts: [
-        { slug: "idgen-scope", name: "The uniqueness-and-order requirement", summary: "The interesting version of this problem needs BOTH global uniqueness AND rough time-ordering — random UUIDs get the first for free but fail the second.", difficulty: 1 },
+        { slug: "idgen-scope", name: "The uniqueness-and-order requirement", summary: "The interesting version of this problem needs BOTH global uniqueness AND rough time-ordering — random UUIDs get the first for free but fail the second.", difficulty: 1, tags: ["scoping", "ordering"] },
       ],
       blocks: [
         { type: "prose", body: "A random 128-bit UUID is trivially globally unique, but it's not sortable by creation time — inserting UUID-keyed rows into a B-tree index causes random-order inserts, which is much slower than appending to the end. A database auto-increment column gives perfect ordering, but only one machine can safely hand out the next value. The interesting design problem is getting both properties — uniqueness across many machines, AND rough chronological order — at once." },
@@ -34,7 +34,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "How many ids, how fast",
       summary: "The generation rate that any workable scheme has to sustain.",
       concepts: [
-        { slug: "idgen-estimation", name: "Estimating generation rate", summary: "At high write volume, a generator has to produce ids fast enough that it's never the bottleneck relative to the write itself.", difficulty: 1 },
+        { slug: "idgen-estimation", name: "Estimating generation rate", summary: "At high write volume, a generator has to produce ids fast enough that it's never the bottleneck relative to the write itself.", difficulty: 1, tags: ["estimation", "ordering"] },
       ],
       blocks: [
         { type: "prose", body: "A system doing 50,000 writes/sec needs 50,000 ids/sec at minimum, with bursts several times that. A scheme requiring a network round-trip per id (e.g. asking a central service for the next value) adds that round-trip's latency to every single write in the system — which is why the best schemes generate ids **locally**, with zero network calls per id." },
@@ -45,7 +45,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "The interface",
       summary: "One function call, no arguments, no network round-trip.",
       concepts: [
-        { slug: "idgen-api", name: "generateId()", summary: "The ideal API is a pure, local function call — everything needed to guarantee uniqueness is already known to the generator instance without asking anyone else.", difficulty: 1 },
+        { slug: "idgen-api", name: "generateId()", summary: "The ideal API is a pure, local function call — everything needed to guarantee uniqueness is already known to the generator instance without asking anyone else.", difficulty: 1, tags: ["api-design", "ordering"] },
       ],
       blocks: [
         { type: "prose", body: "`generateId(): int64` — no parameters, no network call. Every property that makes an id unique and ordered has to be derivable from information the generating machine already has: the current time, and something that distinguishes this machine from every other machine running the same generator." },
@@ -63,7 +63,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "The bit layout",
       summary: "This 'data model' is literally how 64 bits get carved up.",
       concepts: [
-        { slug: "idgen-bit-layout", name: "Timestamp + machine id + sequence", summary: "Reserve the high bits for a timestamp (giving order), the middle bits for a machine id (giving uniqueness across machines), and the low bits for a per-millisecond sequence counter (giving uniqueness within one machine in one millisecond).", difficulty: 2 },
+        { slug: "idgen-bit-layout", name: "Timestamp + machine id + sequence", summary: "Reserve the high bits for a timestamp (giving order), the middle bits for a machine id (giving uniqueness across machines), and the low bits for a per-millisecond sequence counter (giving uniqueness within one machine in one millisecond).", difficulty: 2, tags: ["ordering", "data-modeling"] },
       ],
       blocks: [
         { type: "prose", body: "The Snowflake-style layout that answers both requirements: 1 unused sign bit, 41 bits of milliseconds since a custom epoch (good for ~69 years), 10 bits of machine/datacenter id (1,024 distinct machines), and 12 bits of per-millisecond sequence number (4,096 ids per machine per millisecond before it has to wait for the next millisecond). Sorting by the raw integer sorts by time first, which is the ordering property a random UUID can't give you." },
@@ -74,7 +74,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "High-level design",
       summary: "Every generator instance is independent — no shared state, no coordination, no single point of failure.",
       concepts: [
-        { slug: "idgen-independence", name: "No coordination between generators", summary: "Because each machine's id space is carved out by its unique machine id bits, no two generator instances can ever produce the same id — even without ever communicating with each other.", difficulty: 2 },
+        { slug: "idgen-independence", name: "No coordination between generators", summary: "Because each machine's id space is carved out by its unique machine id bits, no two generator instances can ever produce the same id — even without ever communicating with each other.", difficulty: 2, tags: ["availability", "ordering"] },
       ],
       blocks: [
         {
@@ -120,7 +120,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "Deep dive: clock skew and rollback",
       summary: "The timestamp bits assume the system clock only moves forward — NTP adjustments can violate that.",
       concepts: [
-        { slug: "idgen-clock-skew", name: "Handling clock drift", summary: "If a machine's clock is corrected backward (e.g. by NTP), a naive generator could reissue a timestamp — and therefore potentially an id — it already used. The generator has to detect and refuse to generate during a clock rollback.", difficulty: 3 },
+        { slug: "idgen-clock-skew", name: "Handling clock drift", summary: "If a machine's clock is corrected backward (e.g. by NTP), a naive generator could reissue a timestamp — and therefore potentially an id — it already used. The generator has to detect and refuse to generate during a clock rollback.", difficulty: 3, tags: ["ordering", "consistency"] },
       ],
       blocks: [
         {
@@ -134,7 +134,7 @@ export const uniqueIdGenerator: SystemDesignProblem = {
       title: "Where it breaks",
       summary: "The per-millisecond sequence counter caps throughput per machine — the only real ceiling in this design.",
       concepts: [
-        { slug: "idgen-scaling", name: "Scaling past the per-machine ceiling", summary: "4,096 ids/ms/machine (with the 12-bit layout) is the hard ceiling per generator instance. Scaling further means adding more machines — which the design already supports for free.", difficulty: 3 },
+        { slug: "idgen-scaling", name: "Scaling past the per-machine ceiling", summary: "4,096 ids/ms/machine (with the 12-bit layout) is the hard ceiling per generator instance. Scaling further means adding more machines — which the design already supports for free.", difficulty: 3, tags: ["partitioning", "ordering"] },
       ],
       blocks: [
         {
