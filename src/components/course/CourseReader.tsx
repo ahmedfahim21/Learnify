@@ -11,9 +11,11 @@ import {
 } from "@/content/systemDesign/types";
 
 import { useSession } from "@/lib/authClient";
+import { getQuiz } from "@/content/systemDesign/quizzes";
 
 import { ChapterBlockRenderer } from "./ChapterBlockRenderer";
 import { ChapterCompleter } from "./ChapterCompleter";
+import { ConceptHeaderGraphic } from "./ConceptHeader";
 import { useChapterProgress } from "./useChapterProgress";
 
 const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert", "signal"] as const;
@@ -40,6 +42,7 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
   const phases = useMemo(() => problem.chapters.map((c) => c.phase), [problem]);
   const { completed, markRead } = useChapterProgress(problem.slug, Boolean(session?.user));
   const readCount = phases.filter((p) => completed.has(p)).length;
+  const quizCount = getQuiz(problem.slug).length;
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -130,10 +133,11 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
       </aside>
 
       <main className="min-w-0 max-w-(--measure-mid) space-y-16">
-        <header className="max-w-(--measure-prose) space-y-4 rise">
+        <header className="space-y-4 rise">
+          <ConceptHeaderGraphic problem={problem} />
           <p className="label">{problem.tags.join(" · ")}</p>
           <h1 className="text-3xl">{problem.title}</h1>
-          <p className="text-(--color-mist)">{problem.tagline}</p>
+          <p className="max-w-(--measure-prose) text-(--color-mist)">{problem.tagline}</p>
           <div className="flex flex-wrap gap-2 pt-1">
             <span className="chip">{problem.estimatedMinutes} min</span>
             <span className="chip">difficulty {problem.difficulty}/5</span>
@@ -188,32 +192,83 @@ export function CourseReader({ problem }: { problem: SystemDesignProblem }) {
           );
         })}
 
-        <section className="max-w-(--measure-prose) space-y-4 border border-(--color-signal)/30 bg-(--color-signal)/[0.04] p-6">
-          <p className="label">Finished reading</p>
-          <h2 className="text-2xl">Now get grilled on it</h2>
-          <p className="text-(--color-mist)">
-            The tutor works through {problem.title} adaptively — it diagnoses what you
-            already know, presses on the parts you answer poorly, and schedules whatever
-            stayed shaky for review.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => startPracticing(allConceptSlugs)}
-              disabled={Boolean(starting)}
-              className="btn"
-            >
-              {starting ? "Starting…" : `Practise all ${allConceptSlugs.length} skills`}
-              <span className="arr arr-r">→</span>
-            </button>
-            <Link href={`/concepts/${problem.slug}/quiz`} className="btn-quiet">
-              Take the written quiz
-            </Link>
+        {/* Two practice modes, deliberately shown as two separate things
+            rather than a primary button with an alternative beside it: one
+            costs nothing and works signed out, the other spends a generation
+            and needs an account, and which one a learner wants depends on
+            that, not on which is "better". */}
+        <section className="space-y-4">
+          <div className="label-rule">
+            <span className="label">Practice</span>
           </div>
-          <p className="text-sm text-(--color-mist)">
-            The tutor adapts and needs an account. The quiz is pre-written, works signed out,
-            and uses none of your daily budget.
-          </p>
+          <div className="grid gap-px border border-(--color-line) bg-(--color-line) lg:grid-cols-2">
+            <div className="flex flex-col gap-3 bg-(--color-ink) p-6">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-xl">Written quiz</h2>
+                <span className="label">{quizCount} questions</span>
+              </div>
+              <p className="text-sm leading-relaxed text-(--color-mist)">
+                Pre-written, fixed, and the same for everyone. No account, no model call, and
+                it stays available when the day&rsquo;s generation budget is gone.
+              </p>
+              <ul className="space-y-1 pt-1">
+                {["Works signed out", "Costs nothing to run", "Graded instantly"].map((line) => (
+                  <li key={line} className="flex items-center gap-2 text-sm text-(--color-mist)">
+                    <span className="dot" style={{ ["--scoop" as string]: "var(--color-deep)" }} />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              <div className="pt-2">
+                <Link href={`/concepts/${problem.slug}/quiz`} className="btn-quiet">
+                  Take the quiz
+                  <span className="arr arr-r">→</span>
+                </Link>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 bg-(--color-ink) p-6">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-xl">Adaptive session</h2>
+                <span className="label text-(--color-signal)">generative UI</span>
+              </div>
+              <p className="text-sm leading-relaxed text-(--color-mist)">
+                The tutor composes each screen as it goes — diagrams, simulators and checks
+                chosen for what you just got right or wrong, across all{" "}
+                {allConceptSlugs.length} skills in {problem.title}.
+              </p>
+              <ul className="space-y-1 pt-1">
+                {[
+                  "Opens on a question, not a spinner",
+                  "Checks graded on the server, not by the model",
+                  "What you miss comes back for review",
+                ].map((line) => (
+                  <li key={line} className="flex items-center gap-2 text-sm text-(--color-mist)">
+                    <span className="dot" style={{ ["--scoop" as string]: "var(--color-signal)" }} />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+              <div className="pt-2">
+                {session?.user ? (
+                  <button
+                    type="button"
+                    onClick={() => startPracticing(allConceptSlugs)}
+                    disabled={Boolean(starting)}
+                    className="btn"
+                  >
+                    {starting ? "Starting…" : "Start a session"}
+                    <span className="arr arr-r">→</span>
+                  </button>
+                ) : (
+                  <Link href={`/signin?next=/concepts/${problem.slug}`} className="btn">
+                    Sign in to start
+                    <span className="arr arr-r">→</span>
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
         </section>
       </main>
     </div>

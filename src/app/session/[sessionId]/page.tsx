@@ -9,6 +9,9 @@ import {
   sessionSurfaceId,
 } from "@/lib/agent/replay";
 import type { EventPayload, StoredEvent } from "@/lib/agent/transcript";
+import { starterPresentUi } from "@/lib/agent/starter";
+import { toEnvelope, validatePresentUi } from "@/lib/a2ui/emit";
+import type { A2UIServerMessage } from "@/lib/a2ui/messages";
 import { getCurrentUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -37,7 +40,7 @@ export default async function SessionPage({
   if (!session) notFound();
 
   const [topic] = await db
-    .select({ title: topics.title })
+    .select({ title: topics.title, problemSlug: topics.problemSlug })
     .from(topics)
     .where(eq(topics.id, session.topicId))
     .limit(1);
@@ -54,10 +57,22 @@ export default async function SessionPage({
     payload: row.payload as EventPayload,
   }));
 
-  const initialMessages = replaySurfaceMessages(
-    stored,
-    sessionSurfaceId(sessionId),
-  );
+  const surfaceId = sessionSurfaceId(sessionId);
+  const replayed = replaySurfaceMessages(stored, surfaceId);
+
+  // A brand-new session opens on an authored question instead of a spinner —
+  // see lib/agent/starter. Rendered through the same validate-then-envelope
+  // path as anything the model emits, so the renderer cannot tell the
+  // difference, and left out entirely for a concept with no authored bank.
+  let initialMessages: A2UIServerMessage[] = replayed;
+  let awaitingStarter = false;
+  if (replayed.length === 0 && session.status !== "completed" && topic?.problemSlug) {
+    const starter = starterPresentUi(topic.problemSlug);
+    if (starter) {
+      initialMessages = [toEnvelope(validatePresentUi(starter, surfaceId))];
+      awaitingStarter = true;
+    }
+  }
 
   return (
     <main className="min-h-screen">
@@ -66,6 +81,7 @@ export default async function SessionPage({
         topicTitle={topic?.title ?? "Session"}
         initialMessages={initialMessages}
         sessionStatus={session.status}
+        awaitingStarter={awaitingStarter}
       />
     </main>
   );

@@ -23,6 +23,12 @@ import { applyEvidence, isEvidenceKind } from "@/lib/mastery/engine";
 import { consumeGeneration } from "@/lib/budget";
 import { requireUserId } from "@/lib/session";
 import { distillAndRemember, recallLearnerNotes } from "@/lib/memory";
+import { PRESENT_UI_TOOL_NAME } from "@/lib/agent/tools";
+import {
+  STARTER_TOOL_RESULT,
+  STARTER_TOOL_USE_ID,
+  starterPresentUi,
+} from "@/lib/agent/starter";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -145,6 +151,15 @@ export async function POST(
     topicTitle = topic?.title ?? "your topic";
   }
 
+  // Which authored concept this session is for, if any — the starter comes
+  // from its quiz bank.
+  const [topicRow] = await db
+    .select({ problemSlug: topics.problemSlug })
+    .from(topics)
+    .where(eq(topics.id, session.topicId))
+    .limit(1);
+  const problemSlug = topicRow?.problemSlug ?? null;
+
   // Insert an event, assigning the next seq.
   async function insertEvent(
     role: "tutor" | "user" | "system",
@@ -192,6 +207,40 @@ export async function POST(
     const payload: EventPayload = { kind: EventKind.UserMessage, text };
     await insertEvent("user", payload.kind, payload);
     stored.push({ seq: nextSeq - 1, role: "user", payload });
+
+    // The learner has already answered the authored starter that the session
+    // page rendered without a model call. Write that exchange into the
+    // transcript in the shape the loop would have written it — tool_use, then
+    // tool_result — so the model sees a conversation it appears to have had,
+    // and the answer below is graded against a component that really is in the
+    // log. Without this the model's first turn would repeat the question.
+    const starter = problemSlug ? starterPresentUi(problemSlug) : null;
+    if (starter && body.action) {
+      const toolUse: EventPayload = {
+        kind: EventKind.TutorToolUse,
+        id: STARTER_TOOL_USE_ID,
+        name: PRESENT_UI_TOOL_NAME,
+        input: starter,
+      };
+      await insertEvent("tutor", toolUse.kind, toolUse);
+      stored.push({ seq: nextSeq - 1, role: "tutor", payload: toolUse });
+
+      const toolResult: EventPayload = {
+        kind: EventKind.ToolResult,
+        toolUseId: STARTER_TOOL_USE_ID,
+        content: STARTER_TOOL_RESULT,
+      };
+      await insertEvent("user", toolResult.kind, toolResult);
+      stored.push({ seq: nextSeq - 1, role: "user", payload: toolResult });
+
+      const graded = gradeAction(body.action, collectComponents(stored));
+      const answered: EventPayload = {
+        kind: EventKind.UserMessage,
+        text: graded.message,
+      };
+      await insertEvent("user", answered.kind, answered);
+      stored.push({ seq: nextSeq - 1, role: "user", payload: answered });
+    }
   } else if (body.action || body.message) {
     // A structured widget interaction is graded deterministically here; a plain
     // message passes through. The forced-recap directive is appended either way.

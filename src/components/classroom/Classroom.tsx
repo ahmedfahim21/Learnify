@@ -27,6 +27,12 @@ export interface ClassroomProps {
   initialMessages: A2UIServerMessage[];
   /** Persisted session status from the server. */
   sessionStatus: string;
+  /**
+   * The screen on show is the authored starter, not model output — the learner
+   * has not answered anything yet. Only affects framing; the answer travels
+   * the same path as any other action.
+   */
+  awaitingStarter?: boolean;
 }
 
 export function Classroom({
@@ -34,6 +40,7 @@ export function Classroom({
   topicTitle,
   initialMessages,
   sessionStatus,
+  awaitingStarter = false,
 }: ClassroomProps) {
   const [state, dispatch] = useReducer(
     rendererReducer,
@@ -156,15 +163,20 @@ export function Classroom({
         <StatusBadge status={status} />
       </header>
 
+      {awaitingStarter && status === "idle" && (
+        <p className="border-l-2 border-(--color-signal) bg-(--color-surface) px-3 py-2 text-sm text-(--color-mist)">
+          Starting with one question, so the tutor has something to work from.
+          Your answer shapes what it does next.
+        </p>
+      )}
+
       <SurfaceRenderer
         state={state}
         onAction={onAction}
         interactive={status === "idle"}
       />
 
-      {status === "streaming" && (
-        <p className="text-sm text-(--color-faint)">The tutor is working…</p>
-      )}
+      {status === "streaming" && <TurnSkeleton />}
 
       {status === "completed" && (
         <p className="border border-(--color-signal)/30 bg-(--color-signal)/[0.06] px-4 py-3 text-sm text-(--color-signal)">
@@ -195,6 +207,29 @@ export function Classroom({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Shown while the model composes the next screen. A shaped placeholder rather
+ * than a line of text: the wait is a couple of seconds of nothing on a page
+ * that is otherwise entirely visual, and a skeleton says "a screen is coming"
+ * where a sentence only says "wait".
+ */
+function TurnSkeleton() {
+  return (
+    <div aria-live="polite" className="space-y-3">
+      <span className="sr-only">The tutor is composing the next screen.</span>
+      <div className="space-y-2" aria-hidden>
+        <div className="h-3 w-2/3 animate-pulse bg-(--color-raised)" />
+        <div className="h-3 w-1/2 animate-pulse bg-(--color-raised)" />
+      </div>
+      <div className="space-y-2 border border-(--color-line) p-4" aria-hidden>
+        <div className="h-3 w-1/3 animate-pulse bg-(--color-raised)" />
+        <div className="h-8 w-full animate-pulse bg-(--color-raised)" />
+        <div className="h-8 w-full animate-pulse bg-(--color-raised)" />
+      </div>
     </div>
   );
 }
