@@ -16,7 +16,15 @@ export async function generateMetadata({
   const { slug } = await params;
   const problem = getProblem(slug);
   if (!problem) return {};
-  return { title: problem.title, description: problem.tagline };
+  return {
+    title: problem.title,
+    description: problem.tagline,
+    openGraph: {
+      title: `${problem.title} · Learnify.sd`,
+      description: problem.tagline,
+      type: "article",
+    },
+  };
 }
 
 export default async function CoursePage({

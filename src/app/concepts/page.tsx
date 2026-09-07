@@ -10,7 +10,7 @@ const SCOOPS = ["signal", "deep", "warn", "flow", "accent", "alert"] as const;
 
 export const metadata = {
   title: "Concepts",
-  description: "The full curated system-design curriculum — animated diagrams, explorable simulators, an adaptive AI tutor.",
+  description: `All ${PROBLEMS.length} concepts — diagrams, simulators and a written quiz each, readable without an account.`,
 };
 
 /** The concept catalog — a static server component reading the authored
@@ -22,10 +22,10 @@ export default function CoursesPage() {
         <p className="label">Concepts</p>
         <h1 className="text-3xl">The system design curriculum</h1>
         <p className="text-(--color-mist)">
-          Sixteen courses covering the canonical interview problems — each one an animated
+          {PROBLEMS.length} concepts covering the canonical interview problems — each one a
           walkthrough of requirements, estimation, API, data model, high-level design, a deep
-          dive, and where it breaks at 10x. Read it like a book, or jump into any chapter with the
-          adaptive tutor.
+          dive, and where it breaks at 10x. Read it end to end, or hand it to the tutor and be
+          asked about it instead.
         </p>
       </header>
 
