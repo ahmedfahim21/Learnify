@@ -12,6 +12,9 @@ export const SIMULATOR_IDS = [
   "queue-backpressure",
   "latency-numbers",
   "back-of-envelope",
+  "replication-lag",
+  "quorum-tradeoff",
+  "cdn-geo",
 ] as const;
 
 export type SimulatorId = (typeof SIMULATOR_IDS)[number];

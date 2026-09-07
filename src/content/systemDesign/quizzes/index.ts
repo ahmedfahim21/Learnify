@@ -5,6 +5,8 @@ import { distributedCacheQuiz } from "./distributedCache";
 import { distributedMessageQueueQuiz } from "./distributedMessageQueue";
 import { fileStorageQuiz } from "./fileStorage";
 import { keyValueStoreQuiz } from "./keyValueStore";
+import { loadBalancingQuiz } from "./loadBalancing";
+import { replicationQuiz } from "./replication";
 import { metricsMonitoringQuiz } from "./metricsMonitoring";
 import { newsFeedQuiz } from "./newsFeed";
 import { notificationSystemQuiz } from "./notificationSystem";
@@ -25,6 +27,8 @@ import { webCrawlerQuiz } from "./webCrawler";
  * their daily generative-UI budget.
  */
 export const QUIZ_BANK: QuizBank = {
+  "load-balancing": loadBalancingQuiz,
+  replication: replicationQuiz,
   "url-shortener": urlShortenerQuiz,
   "rate-limiter": rateLimiterQuiz,
   "distributed-cache": distributedCacheQuiz,

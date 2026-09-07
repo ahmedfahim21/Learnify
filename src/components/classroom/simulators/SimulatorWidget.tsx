@@ -12,10 +12,13 @@ import { asString } from "../rendererContext";
 import { SimNotice } from "./controls";
 import { BackOfEnvelopeSim } from "./sims/BackOfEnvelopeSim";
 import { CacheHitRatioSim } from "./sims/CacheHitRatioSim";
+import { CdnGeoSim } from "./sims/CdnGeoSim";
 import { ConsistentHashingSim } from "./sims/ConsistentHashingSim";
 import { LatencyNumbersSim } from "./sims/LatencyNumbersSim";
 import { LoadBalancerSim } from "./sims/LoadBalancerSim";
 import { QueueBackpressureSim } from "./sims/QueueBackpressureSim";
+import { QuorumTradeoffSim } from "./sims/QuorumTradeoffSim";
+import { ReplicationLagSim } from "./sims/ReplicationLagSim";
 import { TokenBucketSim } from "./sims/TokenBucketSim";
 
 type SimComponent = ComponentType<{
@@ -41,6 +44,9 @@ export const SIMULATOR_COMPONENTS: Record<SimulatorId, SimComponent> = {
   "queue-backpressure": QueueBackpressureSim,
   "latency-numbers": LatencyNumbersSim,
   "back-of-envelope": BackOfEnvelopeSim,
+  "replication-lag": ReplicationLagSim,
+  "quorum-tradeoff": QuorumTradeoffSim,
+  "cdn-geo": CdnGeoSim,
 };
 
 export function SimulatorWidget({ def }: { def: ComponentDef }) {

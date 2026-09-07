@@ -82,6 +82,42 @@ export const SIMULATOR_REGISTRY: Record<SimulatorId, SimulatorSpec> = {
       { key: "peakMultiplier", label: "Peak vs. average", kind: "number", min: 1, max: 10, step: 1, unit: "x", default: 3 },
     ],
   },
+  "replication-lag": {
+    id: "replication-lag",
+    title: "Replication lag",
+    summary: "Lag is not a constant — it is what happens when writes arrive faster than a replica can apply them.",
+    params: [
+      { key: "writeRate", label: "Writes at the primary", kind: "number", min: 10, max: 2000, step: 10, unit: "/s", default: 400 },
+      { key: "applyRate", label: "Replica apply rate", kind: "number", min: 10, max: 2000, step: 10, unit: "/s", default: 500 },
+      { key: "networkMs", label: "Network hop", kind: "number", min: 1, max: 200, step: 1, unit: "ms", default: 8 },
+      { key: "sustainedSec", label: "Sustained for", kind: "number", min: 1, max: 300, step: 1, unit: "s", default: 30 },
+      { key: "replicaCount", label: "Read replicas", kind: "number", min: 1, max: 10, step: 1, default: 3 },
+    ],
+  },
+  "quorum-tradeoff": {
+    id: "quorum-tradeoff",
+    title: "Quorum: N, W and R",
+    summary: "Move W and R to see when reads are guaranteed fresh, how many nodes you can lose, and what each costs in latency.",
+    params: [
+      { key: "n", label: "Replicas (N)", kind: "number", min: 1, max: 7, step: 1, default: 3 },
+      { key: "w", label: "Write quorum (W)", kind: "number", min: 1, max: 7, step: 1, default: 2 },
+      { key: "r", label: "Read quorum (R)", kind: "number", min: 1, max: 7, step: 1, default: 2 },
+      { key: "replicaLatencyMs", label: "Per-replica latency", kind: "number", min: 1, max: 100, step: 1, unit: "ms", default: 12 },
+    ],
+  },
+  "cdn-geo": {
+    id: "cdn-geo",
+    title: "Distance, not caching",
+    summary: "An edge does not make the network faster — it makes the distance shorter. Watch latency track kilometres.",
+    params: [
+      { key: "edgeHitRatio", label: "Edge hit ratio", kind: "percent", min: 0, max: 1, step: 0.01, default: 0.9 },
+      { key: "edgeKm", label: "Viewer to edge", kind: "number", min: 10, max: 3000, step: 10, unit: "km", default: 60 },
+      { key: "originKm", label: "Viewer to origin", kind: "number", min: 100, max: 18000, step: 100, unit: "km", default: 9000 },
+      { key: "serverMs", label: "Server time", kind: "number", min: 1, max: 200, step: 1, unit: "ms", default: 12 },
+      { key: "requestsPerSec", label: "Requests", kind: "number", min: 100, max: 200000, step: 100, unit: "/s", default: 20000 },
+      { key: "bytesPerResponse", label: "Bytes per response", kind: "number", min: 1000, max: 5000000, step: 1000, default: 400000 },
+    ],
+  },
   "queue-backpressure": {
     id: "queue-backpressure",
     title: "Queueing and backpressure",

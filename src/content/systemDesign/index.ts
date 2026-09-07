@@ -1,3 +1,5 @@
+import { loadBalancing } from "./problems/loadBalancing";
+import { replication } from "./problems/replication";
 import { urlShortener } from "./problems/urlShortener";
 import { rateLimiter } from "./problems/rateLimiter";
 import { distributedCache } from "./problems/distributedCache";
@@ -24,6 +26,8 @@ import type { SystemDesignProblem } from "./types";
  * Original prose and diagrams throughout; no source content reproduced.
  */
 export const PROBLEMS: SystemDesignProblem[] = [
+  loadBalancing,
+  replication,
   urlShortener,
   rateLimiter,
   distributedCache,
