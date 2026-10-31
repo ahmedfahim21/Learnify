@@ -49,6 +49,8 @@ export const courses = pgTable(
     contentType: text("content_type").notNull(),
     humanLangs: text("human_langs").array(),
     outlineFetchedAt: timestamp("outline_fetched_at", { withTimezone: true }),
+    /** Place on the landing page's featured shelf (1 = first); null if not featured. Set by scripts/warmFeatured.ts. */
+    featuredRank: integer("featured_rank"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("courses_discipline_idx").on(table.disciplineId)],
@@ -247,6 +249,38 @@ export const doubts = pgTable(
   (table) => [index("doubts_user_lecture_idx").on(table.userId, table.lectureId, table.createdAt)],
 );
 
+/**
+ * A student's spaced-repetition state for one flashcard (SM-2, see
+ * lib/mastery/schedule.ts), plus a snapshot of the card in the language they
+ * reviewed it in, so Today can show due cards without rebuilding packs.
+ * `cardId` is stable across languages and pack rebuilds (lib/flashcards/ids.ts).
+ */
+export const cardReviews = pgTable(
+  "card_reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    cardId: text("card_id").notNull(),
+    lang: text("lang").notNull(),
+    front: text("front").notNull(),
+    back: text("back").notNull(),
+    startSec: real("start_sec").notNull(),
+    repetitions: integer("repetitions").notNull().default(0),
+    intervalDays: real("interval_days").notNull().default(0),
+    easeFactor: real("ease_factor").notNull().default(2.5),
+    reviews: integer("reviews").notNull().default(0),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    lastReviewedAt: timestamp("last_reviewed_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    unique("card_reviews_user_card_unique").on(table.userId, table.cardId),
+    index("card_reviews_user_due_idx").on(table.userId, table.dueAt),
+  ],
+);
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Lecture = typeof lectures.$inferSelect;
@@ -258,3 +292,4 @@ export type StudyPackRow = typeof studyPacks.$inferSelect;
 export type NewStudyPackRow = typeof studyPacks.$inferInsert;
 export type Doubt = typeof doubts.$inferSelect;
 export type NewDoubt = typeof doubts.$inferInsert;
+export type CardReview = typeof cardReviews.$inferSelect;
