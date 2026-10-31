@@ -1,20 +1,23 @@
 "use client";
 
-import { Keyboard, Languages, Mic } from "lucide-react";
+import { Keyboard, Mic, SlidersHorizontal } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CheckpointPanel } from "@/components/lecture/CheckpointPanel";
+import { LearningSetup } from "@/components/lecture/LearningSetup";
 import { StudyTabs, type Tab } from "@/components/lecture/StudyTabs";
 import { useCheckpoints } from "@/components/lecture/useCheckpoints";
+import { usePreferences } from "@/components/lecture/usePreferences";
 import { useYouTubePlayer } from "@/components/player/useYouTubePlayer";
 import { isLang, LANGUAGES, type Lang } from "@/lib/languages";
 import { describeStatus } from "@/lib/lectures/describeStatus";
 import type { LectureView } from "@/lib/lectures/view";
 import { useSession } from "@/lib/authClient";
 import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/openui/contexts";
+import { FIRST_MODE } from "@/lib/preferences";
 
 /**
  * The lecture player: the official video in YouTube's embedded player (its
@@ -23,8 +26,11 @@ import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/ope
  * check, a doubt, the controls), and under it, full width, the study modes the
  * model writes in the student's language: notes, quiz, flashcards, map.
  *
- * Reads GET /api/lectures/[id]; while anything is missing it asks POST
- * /prepare to build it and polls again, backing off from 2 s to 10 s.
+ * Nothing is generated until the student has said how they want to learn
+ * (LearningSetup). Then it asks POST /prepare for only what they need: the
+ * free English captions that notes and quizzes are written from, and the
+ * study pack only once they want checks, flashcards or the map. It polls
+ * GET /api/lectures/[id] meanwhile, backing off from 2 s to 10 s.
  */
 
 // The doubt panel (recorder, OpenUI renderer) loads when a doubt is first opened.
@@ -34,9 +40,9 @@ const DoubtPanel = dynamic(() => import("@/components/lecture/DoubtPanel").then(
 });
 
 const LANG_KEY = "learnify.lang";
-const CHECKS_KEY = "learnify.checks";
 
-function initialLang(): Lang {
+/** The language to suggest in setup: one chosen before, else the browser's. */
+function suggestLang(): Lang {
   try {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved && isLang(saved)) return saved;
@@ -51,13 +57,8 @@ function initialLang(): Lang {
   return "ta";
 }
 
-function remember(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Not remembered across visits; still applies now.
-  }
-}
+const GOAL_LABEL = { understand: "Understand", practise: "Test myself", revise: "Revise" } as const;
+const LEVEL_LABEL = { simpler: "Go easy", standard: "Just right", harder: "Challenge me" } as const;
 
 type Blocker = { kind: "signin" | "limit" | "error"; message: string } | null;
 
@@ -65,8 +66,14 @@ export default function LecturePage() {
   const { lectureId } = useParams<{ lectureId: string }>();
   const startAt = Number(useSearchParams().get("t"));
   const { user } = useSession();
-  const [lang, setLang] = useState<Lang | null>(null);
-  const [checksOn, setChecksOn] = useState(true);
+  const { state: prefsState, save: savePrefs, edit: editPrefs, cancel: cancelPrefs } = usePreferences();
+  const prefs = prefsState.phase === "ready" || prefsState.phase === "editing" ? prefsState.prefs : null;
+  const lang = prefs?.lang ?? null;
+  const checksOn = prefs?.checks ?? false;
+  const [suggestedLang, setSuggestedLang] = useState<Lang>("ta");
+  /** The student asked for flashcards or the map, which need the study pack. */
+  const [packWanted, setPackWanted] = useState(false);
+  const scope = checksOn || packWanted ? "full" : "transcript";
   const [view, setView] = useState<LectureView | null>(null);
   const [blocker, setBlocker] = useState<Blocker>(null);
   const [now, setNow] = useState(0);
@@ -75,32 +82,35 @@ export default function LecturePage() {
   /** Where the video was paused to ask a doubt; null while no doubt is open. */
   const [doubtAt, setDoubtAt] = useState<number | null>(null);
 
-  useEffect(() => {
-    setLang(initialLang());
-    try {
-      setChecksOn(localStorage.getItem(CHECKS_KEY) !== "off");
-    } catch {
-      // Default (checks on) stands.
-    }
-  }, []);
+  useEffect(() => setSuggestedLang(suggestLang()), []);
 
-  // Fetch, ask for whatever is missing, and poll with backoff until ready.
+  // Open on the mode the student's goal calls for.
+  const goal = prefs?.goal;
   useEffect(() => {
-    if (!lang) return;
+    if (goal) setTab(FIRST_MODE[goal]);
+  }, [goal]);
+
+  // Fetch the lecture; once preferences are set, ask for what's missing in
+  // scope and poll with backoff until it's there.
+  const prefsSet = prefs !== null;
+  useEffect(() => {
     let cancelled = false;
     let delay = 2000;
     let timer: ReturnType<typeof setTimeout>;
     setBlocker(null);
 
     async function tick() {
-      const res = await fetch(`/api/lectures/${lectureId}?lang=${lang}`);
-      const body = await res.json();
+      const res = await fetch(`/api/lectures/${lectureId}?lang=${lang ?? "en"}`);
+      const body = (await res.json()) as LectureView & { error?: string };
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
       if (cancelled) return;
       setView(body);
-      if (body.status.ready) return;
+      // Nothing is generated before the student has chosen how to learn.
+      if (!prefsSet || !lang) return;
+      const wanted = body.status.stages.filter((s) => scope === "full" || (s.lang === "en" && s.stage === "transcript"));
+      if (wanted.every((s) => s.state === "ready")) return;
 
-      const prep = await fetch(`/api/lectures/${lectureId}/prepare?lang=${lang}`, { method: "POST" });
+      const prep = await fetch(`/api/lectures/${lectureId}/prepare?lang=${lang}&scope=${scope}`, { method: "POST" });
       if (cancelled) return;
       if (prep.status === 401) return setBlocker({ kind: "signin", message: "Sign in to prepare this lecture in your language." });
       if (prep.status === 429) return setBlocker({ kind: "limit", message: (await prep.json()).error });
@@ -117,7 +127,7 @@ export default function LecturePage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [lectureId, lang]);
+  }, [lectureId, lang, scope, prefsSet]);
 
   const player = useYouTubePlayer(view?.lecture.youtubeId ?? null);
   const controls = useMemo(() => ({ play: player.play, pause: player.pause, seek: player.seek }), [player.play, player.pause, player.seek]);
@@ -216,15 +226,11 @@ export default function LecturePage() {
     player.play();
   }
 
-  function chooseLang(next: Lang) {
-    setLang(next);
-    remember(LANG_KEY, next);
-  }
-
   function toggleChecks() {
-    setChecksOn((on) => {
-      remember(CHECKS_KEY, on ? "off" : "on");
-      return !on;
+    if (!prefs) return;
+    savePrefs({ ...prefs, checks: !prefs.checks }).catch((err: Error) => {
+      console.error("saving the checks preference failed:", err);
+      setBlocker({ kind: "error", message: `Couldn't save that: ${err.message}` });
     });
   }
 
@@ -291,23 +297,28 @@ export default function LecturePage() {
           <aside className="min-w-0 space-y-4">
             {rail ?? (
               <div className="space-y-4 rounded-2xl border border-(--color-line) bg-(--color-surface) p-4">
-                <label className="block space-y-1.5">
-                  <span className="label flex items-center gap-1.5">
-                    <Languages size={14} aria-hidden /> Study in
+                <button
+                  type="button"
+                  onClick={editPrefs}
+                  disabled={!prefs}
+                  className="tile flex w-full items-center gap-3 rounded-xl border border-(--color-line) bg-(--color-node) p-3 text-left disabled:opacity-60"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="label block">How you learn</span>
+                    {prefs ? (
+                      <span className="block truncate">
+                        <span lang={LANGUAGES[prefs.lang].sarvam}>{LANGUAGES[prefs.lang].native}</span>
+                        <span className="text-(--color-mist)"> · {GOAL_LABEL[prefs.goal]} · {LEVEL_LABEL[prefs.level]}</span>
+                      </span>
+                    ) : prefsState.phase === "error" ? (
+                      <span className="block text-sm text-(--color-alert)">Couldn&apos;t load them: {prefsState.message}</span>
+                    ) : (
+                      <span className="block text-(--color-mist)">Not chosen yet</span>
+                    )}
                   </span>
-                  <select
-                    value={lang ?? "ta"}
-                    onChange={(e) => chooseLang(e.target.value as Lang)}
-                    className="min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-node) px-3 text-(--color-fg)"
-                  >
-                    {Object.entries(LANGUAGES).map(([code, l]) => (
-                      <option key={code} value={code}>
-                        {l.native}
-                        {l.native !== l.name ? ` · ${l.name}` : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                  <SlidersHorizontal size={16} className="shrink-0 text-(--color-mist)" aria-hidden />
+                  <span className="sr-only">Change</span>
+                </button>
 
                 <button
                   type="button"
@@ -325,7 +336,7 @@ export default function LecturePage() {
                   </span>
                 </button>
 
-                {checks.length > 0 && (
+                {prefs && (
                   <button
                     type="button"
                     onClick={toggleChecks}
@@ -333,7 +344,7 @@ export default function LecturePage() {
                     className="flex min-h-11 w-full items-center justify-between gap-3 text-sm text-(--color-mist) hover:text-(--color-fg)"
                   >
                     <span>
-                      Pop-up checks {checksOn ? <span className="font-mono">· {flow.doneCount}/{checks.length}</span> : "off"}
+                      Pop-up checks {checksOn ? (checks.length ? <span className="font-mono">· {flow.doneCount}/{checks.length}</span> : "on") : "off"}
                     </span>
                     <span
                       aria-hidden
@@ -406,13 +417,25 @@ export default function LecturePage() {
             onTab={setTab}
             lectureId={lectureId}
             lang={lang ?? "en"}
+            level={prefs?.level ?? "standard"}
             transcriptReady={Boolean(english)}
             pack={view?.pack ?? null}
+            packRequested={scope === "full"}
+            onRequestPack={() => setPackWanted(true)}
             packNote={
               packFailed
                 ? `Couldn't build the study material: ${packFailed.state === "failed" ? packFailed.error : ""}`
-                : "Building the flashcards and concept map. This takes under a minute the first time anyone opens a lecture."
+                : "Building the flashcards and concept map. This takes under a minute the first time anyone asks for them."
             }
+          />
+        )}
+        {(prefsState.phase === "unset" || prefsState.phase === "editing") && (
+          <LearningSetup
+            key={prefsState.phase}
+            initial={prefsState.phase === "editing" ? prefsState.prefs : null}
+            suggestedLang={suggestedLang}
+            onSave={savePrefs}
+            onCancel={prefsState.phase === "editing" ? cancelPrefs : undefined}
           />
         )}
         </div>

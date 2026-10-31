@@ -13,6 +13,9 @@ import { screenLibrary } from "@/lib/openui/screenLibrary";
  * A study screen the model writes for this lecture — interactive notes or a
  * practice quiz — in the student's language, streamed in as it's built and
  * then shared with every student. Loads OpenUI only with the tab (dynamic).
+ *
+ * A screen nobody has asked for yet is never written automatically: the
+ * student presses the button, because each one costs a generation.
  */
 
 type Kind = "notes" | "quiz";
@@ -31,14 +34,16 @@ const VARIANTS: { variant: Variant; label: string }[] = [
   { variant: "harder", label: "Harder" },
 ];
 
-const COPY: Record<Kind, { what: string; building: string }> = {
-  notes: { what: "interactive notes", building: "Writing notes from the lecture" },
-  quiz: { what: "a practice quiz", building: "Writing a quiz from the lecture" },
+const COPY: Record<Kind, { what: string; building: string; make: string }> = {
+  notes: { what: "notes", building: "Writing notes from the lecture", make: "Write my notes" },
+  quiz: { what: "quiz", building: "Writing a quiz from the lecture", make: "Make my quiz" },
 };
 
-export default function GeneratedScreen({ lectureId, lang, kind }: { lectureId: string; lang: Lang; kind: Kind }) {
+const STYLE: Record<Variant, string> = { simpler: "the simpler style", standard: "the standard style", harder: "the harder style" };
+
+export default function GeneratedScreen({ lectureId, lang, kind, level }: { lectureId: string; lang: Lang; kind: Kind; level: Variant }) {
   const { user, isPending } = useSession();
-  const [variant, setVariant] = useState<Variant>("standard");
+  const [variant, setVariant] = useState<Variant>(level);
   const [state, setState] = useState<State>({ phase: "loading" });
   const busy = useRef(false);
   const query = `lang=${lang}&variant=${variant}`;
@@ -85,7 +90,7 @@ export default function GeneratedScreen({ lectureId, lang, kind }: { lectureId: 
     }
   }, [kind, url]);
 
-  // Load the shared screen; build it the first time a signed-in student opens it.
+  // Load the shared screen, if anyone has made one; never build it unasked.
   useEffect(() => {
     if (isPending) return;
     let cancelled = false;
@@ -94,8 +99,7 @@ export default function GeneratedScreen({ lectureId, lang, kind }: { lectureId: 
       .then(async (res) => {
         if (cancelled) return;
         if (res.status === 404) {
-          if (user) generate();
-          else setState({ phase: "missing" });
+          setState({ phase: "missing" });
           return;
         }
         const body = await res.json();
@@ -109,7 +113,7 @@ export default function GeneratedScreen({ lectureId, lang, kind }: { lectureId: 
     return () => {
       cancelled = true;
     };
-  }, [url, user, isPending, generate, kind]);
+  }, [url, isPending, kind]);
 
   const generating = state.phase === "generating";
   const program = state.phase === "ready" || state.phase === "generating" ? state.program : null;
@@ -169,16 +173,31 @@ export default function GeneratedScreen({ lectureId, lang, kind }: { lectureId: 
           <div className="h-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
         </div>
       ) : state.phase === "missing" ? (
-        <div className="kolam space-y-2 rounded-(--radius) border border-(--color-line) p-5">
-          <p>
-            Nobody has opened {COPY[kind].what} for this lecture in {LANGUAGES[lang].native} yet.
+        <div className="kolam flex flex-col items-start gap-4 rounded-2xl border border-(--color-line) p-6">
+          <p className="text-xl">
+            No {COPY[kind].what} in <span lang={LANGUAGES[lang].sarvam}>{LANGUAGES[lang].native}</span> in {STYLE[variant]} yet.
           </p>
-          <p className="text-sm text-(--color-mist)">
-            <Link href={`/signin?next=/lecture/${lectureId}`} className="link">
-              Sign in
-            </Link>{" "}
-            and it will be written for you from the lecture, then shared with everyone.
-          </p>
+          {user ? (
+            <>
+              <p className="text-(--color-mist)">
+                It&apos;s written from the lecture in a few seconds, uses one of today&apos;s AI generations, and is then shared with everyone.
+              </p>
+              <button
+                type="button"
+                onClick={generate}
+                className="tile inline-flex min-h-12 items-center gap-2 rounded-full bg-(--color-signal) px-6 text-white"
+              >
+                <Sparkles size={16} aria-hidden /> {COPY[kind].make}
+              </button>
+            </>
+          ) : (
+            <p className="text-(--color-mist)">
+              <Link href={`/signin?next=/lecture/${lectureId}`} className="link">
+                Sign in
+              </Link>{" "}
+              to have it written from the lecture; it&apos;s then shared with everyone.
+            </p>
+          )}
         </div>
       ) : state.phase === "error" ? (
         <div className="space-y-3" role="alert">

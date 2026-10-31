@@ -1,11 +1,12 @@
 "use client";
 
-import { BookOpen, Layers, type LucideIcon, Network, Trophy } from "lucide-react";
+import { BookOpen, Layers, type LucideIcon, Network, Sparkles, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRef } from "react";
 
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import type { ViewPack } from "@/lib/lectures/view";
+import type { Level } from "@/lib/preferences";
 import { StudyNavContext } from "@/lib/openui/contexts";
 
 /**
@@ -37,14 +38,19 @@ interface Props {
   onTab: (tab: Tab) => void;
   lectureId: string;
   lang: Lang;
+  /** How hard to pitch generated screens: the variant they open on. */
+  level: Level;
   /** Generated screens need the English transcript to ground them in. */
   transcriptReady: boolean;
   pack: ViewPack | null;
+  /** Whether the study pack has been asked for (it costs generations, so it waits until it is). */
+  packRequested: boolean;
+  onRequestPack: () => void;
   /** Why the pack tabs are empty, when they are: still building, or failed. */
   packNote: string | null;
 }
 
-export function StudyTabs({ tab, onTab, lectureId, lang, transcriptReady, pack, packNote }: Props) {
+export function StudyTabs({ tab, onTab, lectureId, lang, level, transcriptReady, pack, packRequested, onRequestPack, packNote }: Props) {
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   const move = (delta: number) => {
@@ -117,14 +123,29 @@ export function StudyTabs({ tab, onTab, lectureId, lang, transcriptReady, pack, 
         >
           {tab === "notes" || tab === "quiz" ? (
             transcriptReady ? (
-              <GeneratedScreen key={`${tab}-${lang}`} lectureId={lectureId} lang={lang} kind={tab} />
+              <GeneratedScreen key={`${tab}-${lang}-${level}`} lectureId={lectureId} lang={lang} kind={tab} level={level} />
             ) : (
               <StudyPlaceholder note="Fetching the lecture's captions; notes and quizzes are written from them." />
             )
           ) : pack ? (
             <StudyProgram pack={pack} tab={tab} />
-          ) : (
+          ) : packRequested ? (
             <StudyPlaceholder note={packNote} />
+          ) : (
+            <div className="kolam flex flex-col items-start gap-4 rounded-2xl border border-(--color-line) p-6">
+              <p className="text-xl">{tab === "cards" ? "Flashcards" : "A concept map"} for this lecture, in {LANGUAGES[lang].native}.</p>
+              <p className="text-(--color-mist)">
+                Flashcards, the concept map and the pop-up checks are one study pack, written once and shared with everyone.
+              </p>
+              <button
+                type="button"
+                onClick={onRequestPack}
+                className="tile inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-white"
+                style={{ background: MODES[tab].colour }}
+              >
+                <Sparkles size={16} aria-hidden /> Make the study pack
+              </button>
+            </div>
           )}
         </div>
       </section>
