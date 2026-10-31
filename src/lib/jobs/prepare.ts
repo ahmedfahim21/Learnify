@@ -35,7 +35,15 @@ export interface StageKey {
  * The study pack (checks, flashcards, concept map) is generated in English and
  * then translated, which is a handful of calls rather than one per sentence.
  */
-export function stagesFor(lang: Lang): StageKey[] {
+/**
+ * How much to prepare. "transcript" is the free caption fetch that notes and
+ * quizzes are written from; "full" adds the study pack (Sarvam calls), built
+ * only once a student asks for checks, flashcards or the concept map.
+ */
+export type PrepScope = "transcript" | "full";
+
+export function stagesFor(lang: Lang, scope: PrepScope = "full"): StageKey[] {
+  if (scope === "transcript") return [{ lang: "en", stage: "transcript" }];
   if (lang === "en") return [{ lang: "en", stage: "transcript" }, { lang: "en", stage: "pack" }];
   return [
     { lang: "en", stage: "transcript" },
@@ -126,11 +134,16 @@ export interface RunReport {
   stoppedAt: (StageKey & { reason: "budget" | "busy" | "failed" | "error"; detail?: string }) | null;
 }
 
-export async function runStages(lectureId: string, lang: Lang, deps: PrepareDeps = livePrepareDeps): Promise<RunReport> {
+export async function runStages(
+  lectureId: string,
+  lang: Lang,
+  deps: PrepareDeps = livePrepareDeps,
+  scope: PrepScope = "full",
+): Promise<RunReport> {
   const started = deps.now();
   const built: StageKey[] = [];
 
-  for (const key of stagesFor(lang)) {
+  for (const key of stagesFor(lang, scope)) {
     if (await deps.hasOutput(lectureId, key)) continue;
     if (deps.now() - started > STAGE_BUDGET_MS) return { built, stoppedAt: { ...key, reason: "budget" } };
 

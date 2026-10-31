@@ -25,8 +25,15 @@ vi.mock("@/lib/transcripts/store", () => ({
   dbDeps: { getLecture: mocks.getLecture, getStored: mocks.getStoredTranscript },
 }));
 vi.mock("@/lib/study/store", () => ({ dbPackDeps: { getStored: mocks.getStoredPack } }));
-vi.mock("@/lib/jobs/prepare", () => ({ lectureStatus: mocks.lectureStatus, runStages: mocks.runStages }));
-vi.mock("@/lib/jobs/claim", () => ({ stagesStartedToday: mocks.stagesStartedToday }));
+vi.mock("@/lib/jobs/prepare", async (importOriginal) => ({
+  stagesFor: (await importOriginal<typeof import("@/lib/jobs/prepare")>()).stagesFor,
+  lectureStatus: mocks.lectureStatus,
+  runStages: mocks.runStages,
+}));
+vi.mock("@/lib/jobs/claim", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/claim")>()),
+  stagesStartedToday: mocks.stagesStartedToday,
+}));
 vi.mock("@/lib/session", () => ({ getCurrentUserId: mocks.getCurrentUserId }));
 
 const { GET: viewGET } = await import("./[lectureId]/route");
@@ -148,7 +155,7 @@ describe("POST /api/lectures/[lectureId]/prepare", () => {
     expect(await res.json()).toEqual({ status: statusOf(false) });
     expect(mocks.after).toHaveBeenCalledTimes(1);
     await mocks.after.mock.calls[0][0]();
-    expect(mocks.runStages).toHaveBeenCalledWith(ID, "ta");
+    expect(mocks.runStages).toHaveBeenCalledWith(ID, "ta", undefined, "full");
   });
 
   it("refuses to start new work anonymously", async () => {

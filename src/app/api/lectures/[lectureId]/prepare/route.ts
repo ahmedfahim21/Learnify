@@ -1,7 +1,7 @@
 import { after } from "next/server";
 
 import { stagesStartedToday } from "@/lib/jobs/claim";
-import { lectureStatus, runStages } from "@/lib/jobs/prepare";
+import { lectureStatus, type PrepScope, runStages, stagesFor } from "@/lib/jobs/prepare";
 import { parseLectureRequest } from "@/lib/lectures/view";
 import { getCurrentUserId } from "@/lib/session";
 import { dbDeps as transcriptDeps } from "@/lib/transcripts/store";
@@ -24,6 +24,9 @@ type RouteContext = { params: Promise<{ lectureId: string }> };
  * the player polls this until `status.ready`, and each call claims whatever
  * stage is free and builds it in the background.
  *
+ * `scope=transcript` fetches only the free English captions that notes and
+ * quizzes are written from; `scope=full` (the default) adds the study pack.
+ *
  * Anyone may poll a lecture that's ready or already being built. Starting new
  * work costs Sarvam calls, so it needs a signed-in user and is capped across
  * everyone per UTC day.
@@ -32,20 +35,27 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
   const parsed = parseLectureRequest((await context.params).lectureId, new URL(request.url).searchParams.get("lang"));
   if (parsed instanceof Response) return parsed;
   const { lectureId, lang } = parsed;
+  const scopeParam = new URL(request.url).searchParams.get("scope") ?? "full";
+  if (scopeParam !== "transcript" && scopeParam !== "full") {
+    return Response.json({ error: "scope must be transcript or full." }, { status: 400 });
+  }
+  const scope: PrepScope = scopeParam;
 
   const lecture = await transcriptDeps.getLecture(lectureId);
   if (!lecture) return Response.json({ error: "No such lecture." }, { status: 404 });
   if (!lecture.youtubeId) return Response.json({ error: "This lecture has no video." }, { status: 422 });
 
   const status = await lectureStatus(lectureId, lang);
-  if (status.ready) return Response.json({ status });
+  const wanted = stagesFor(lang, scope);
+  const inScope = status.stages.filter((s) => wanted.some((w) => w.lang === s.lang && w.stage === s.stage));
+  if (inScope.every((s) => s.state === "ready")) return Response.json({ status });
 
-  const needsNewWork = status.stages.some((s) => s.state === "pending" || (s.state === "failed" && s.willRetry));
+  const needsNewWork = inScope.some((s) => s.state === "pending" || (s.state === "failed" && s.willRetry));
   if (needsNewWork) {
     if (!(await getCurrentUserId())) {
       return Response.json({ error: "Sign in to prepare this lecture.", status }, { status: 401 });
     }
-    if (status.stages.some((s) => s.state === "pending") && (await stagesStartedToday()) >= prepDailyLimit()) {
+    if (inScope.some((s) => s.state === "pending") && (await stagesStartedToday()) >= prepDailyLimit()) {
       return Response.json(
         { error: "Today's limit for preparing new lectures is reached. Try again after midnight UTC.", status },
         { status: 429 },
@@ -55,7 +65,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
 
   after(async () => {
     try {
-      const report = await runStages(lectureId, lang);
+      const report = await runStages(lectureId, lang, undefined, scope);
       if (report.stoppedAt && report.stoppedAt.reason !== "busy") {
         console.info(`prepare ${lectureId}/${lang} stopped at ${report.stoppedAt.lang}/${report.stoppedAt.stage}: ${report.stoppedAt.reason}`);
       }

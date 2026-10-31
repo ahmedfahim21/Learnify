@@ -53,6 +53,11 @@ describe("stagesFor", () => {
       { lang: "en", stage: "pack" },
     ]);
   });
+
+  it("limits the transcript scope to the free English caption fetch", () => {
+    expect(stagesFor("ta", "transcript")).toEqual([{ lang: "en", stage: "transcript" }]);
+    expect(stagesFor("en", "transcript")).toEqual([{ lang: "en", stage: "transcript" }]);
+  });
 });
 
 describe("runStages", () => {
@@ -63,6 +68,14 @@ describe("runStages", () => {
     expect(vi.mocked(d.build).mock.calls.map((c) => c[1])).toEqual(stagesFor("ta"));
     expect(d.finish).toHaveBeenCalledTimes(3);
     expect(d.fail).not.toHaveBeenCalled();
+  });
+
+  it("builds only the transcript in transcript scope, never a pack", async () => {
+    const d = deps();
+    const report = await runStages("lec-1", "ta", d, "transcript");
+    expect(report).toEqual({ built: [{ lang: "en", stage: "transcript" }], stoppedAt: null });
+    expect(vi.mocked(d.build).mock.calls.map((c) => c[1])).toEqual([{ lang: "en", stage: "transcript" }]);
+    expect(d.claim).toHaveBeenCalledTimes(1);
   });
 
   it("skips stages whose output already exists, without claiming them", async () => {
