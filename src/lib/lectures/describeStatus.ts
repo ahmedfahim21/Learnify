@@ -27,6 +27,9 @@ export function describeStatus(status: LectureStatus): StatusLine | null {
         : `Translating the study material into ${name}`;
 
   if (stage.state === "failed") {
+    if (stage.willRetry && stage.error && /HTTP 429|rate limit/i.test(stage.error)) {
+      return { text: `${what}: Sarvam is busy, picking up where it left off shortly`, tone: "retrying" };
+    }
     return stage.willRetry
       ? { text: `${what} hit a problem; trying again`, tone: "retrying" }
       : { text: `${what} failed: ${stage.error ?? "unknown error"}`, tone: "failed" };

@@ -31,6 +31,12 @@ describe("describeStatus", () => {
     expect(describeStatus(status([stage as never]))).toEqual({ text, tone: "working" });
   });
 
+  it("explains a rate-limited stage as waiting, not failing", () => {
+    expect(
+      describeStatus(status([{ lang: "hi", stage: "transcript", state: "failed", error: "Sarvam /translate failed (HTTP 429): Rate limit exceeded", willRetry: true }])),
+    ).toEqual({ text: "Preparing Hindi subtitles: Sarvam is busy, picking up where it left off shortly", tone: "retrying" });
+  });
+
   it("says a failed stage will be retried, or why it failed for good", () => {
     expect(describeStatus(status([{ lang: "en", stage: "pack", state: "failed", error: "x", willRetry: true }]))).toEqual({
       text: "Building checks, flashcards and the concept map hit a problem; trying again",

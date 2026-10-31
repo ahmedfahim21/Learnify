@@ -19,6 +19,8 @@ export type Stage = Job["stage"];
 export const STALE_AFTER_SEC = 90;
 /** A failed stage is retried on a later request, up to this many attempts in all. */
 export const MAX_ATTEMPTS = 3;
+/** …but not before this long has passed, so polling can't hammer a struggling Sarvam. */
+export const RETRY_COOLDOWN_SEC = 30;
 
 export interface Claim {
   job: Job;
@@ -73,7 +75,10 @@ export async function claimStage(lectureId: string, lang: Lang, stage: Stage): P
         eq(jobs.lang, lang),
         eq(jobs.stage, stage),
         lt(jobs.attempts, MAX_ATTEMPTS),
-        or(and(eq(jobs.status, "running"), lt(jobs.heartbeatAt, stale)), eq(jobs.status, "failed")),
+        or(
+          and(eq(jobs.status, "running"), lt(jobs.heartbeatAt, stale)),
+          and(eq(jobs.status, "failed"), lt(jobs.updatedAt, sql`now() - make_interval(secs => ${RETRY_COOLDOWN_SEC})`)),
+        ),
       ),
     )
     .returning();
@@ -116,12 +121,27 @@ export function finish(claim: Claim): Promise<void> {
   return ownedUpdate(claim, { status: "done", partial: null, error: null });
 }
 
-export async function fail(claim: Claim, error: string): Promise<void> {
+/**
+ * Record a failed stage. A transient failure (Sarvam rate-limiting us) doesn't
+ * use up one of the stage's attempts: it says nothing about whether the stage
+ * can succeed, only that it should wait. The cooldown still applies.
+ */
+export async function fail(claim: Claim, error: string, opts: { transient?: boolean } = {}): Promise<void> {
   // Recorded even if the claim was lost meanwhile, as long as nobody finished it.
   await getDb()
     .update(jobs)
-    .set({ status: "failed", error: error.slice(0, 2000), updatedAt: sql`now()` })
+    .set({
+      status: "failed",
+      error: error.slice(0, 2000),
+      updatedAt: sql`now()`,
+      ...(opts.transient ? { attempts: sql`greatest(${jobs.attempts} - 1, 0)` } : {}),
+    })
     .where(and(eq(jobs.id, claim.job.id), eq(jobs.claimToken, claim.token)));
+}
+
+/** Sarvam's rate limit, however deep in a wrapped error message it surfaced. */
+export function isRateLimited(message: string): boolean {
+  return /HTTP 429|rate limit/i.test(message);
 }
 
 export async function jobsFor(lectureId: string, lang: Lang): Promise<Job[]> {

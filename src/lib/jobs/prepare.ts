@@ -7,7 +7,7 @@ import { STUDY_PROMPT_VERSION } from "@/lib/study/generate";
 import { ensurePack } from "@/lib/study/store";
 import { dbDeps as transcriptDeps, ensureTranscript } from "@/lib/transcripts/store";
 
-import { type Claim, type ClaimResult, claimStage, fail, finish, heartbeat, jobsFor, LostClaimError, MAX_ATTEMPTS, type Stage } from "./claim";
+import { type Claim, type ClaimResult, claimStage, fail, finish, heartbeat, isRateLimited, jobsFor, LostClaimError, MAX_ATTEMPTS, type Stage } from "./claim";
 
 /**
  * Prepare a lecture in a language: English subtitles, then that language's,
@@ -147,8 +147,11 @@ export async function runStages(lectureId: string, lang: Lang, deps: PrepareDeps
         return { built, stoppedAt: { ...key, reason: "busy" } };
       }
       const message = err instanceof Error ? err.message : String(err);
-      console.error(`job failed ${tag} (attempt ${result.claim.job.attempts}/${MAX_ATTEMPTS}): ${message}`);
-      await deps.fail(result.claim, message);
+      const transient = isRateLimited(message);
+      console.error(
+        `job failed ${tag} (attempt ${result.claim.job.attempts}/${MAX_ATTEMPTS}${transient ? ", rate-limited: not counted" : ""}): ${message}`,
+      );
+      await deps.fail(result.claim, message, { transient });
       return { built, stoppedAt: { ...key, reason: "error", detail: message } };
     }
   }
