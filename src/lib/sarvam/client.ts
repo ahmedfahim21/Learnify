@@ -3,8 +3,9 @@
  * (sarvam-105b), text translation, speech-to-text (Saaras) and text-to-speech
  * (Bulbul). No SDK — four endpoints don't justify a dependency.
  *
- * Server-only: reads SARVAM_API_KEY from the environment. 429, 5xx and dropped
- * connections are retried with exponential backoff (honouring Retry-After);
+ * Server-only: reads SARVAM_API_KEY from the environment. 5xx and dropped
+ * connections are retried with exponential backoff, and 429 with more
+ * attempts and a slower one (all honouring Retry-After);
  * every other failure throws a SarvamError carrying the endpoint, status and
  * Sarvam's own message. A timeout is not retried: the long calls (study packs)
  * are the ones that time out, and retrying them doubles the cost.
@@ -17,6 +18,7 @@ import { createLimiter } from "./limiter";
 
 const BASE = "https://api.sarvam.ai";
 const MAX_RETRY_WAIT_MS = 30_000;
+const RATE_LIMIT_ATTEMPTS = 6;
 
 const limiter = createLimiter(
   Number.isInteger(Number(process.env.SARVAM_MAX_CONCURRENCY)) && Number(process.env.SARVAM_MAX_CONCURRENCY) > 0
@@ -119,11 +121,14 @@ export async function sarvamFetch(
 
     logCall({ endpoint, status: res.status, ms: Date.now() - started, attempt, tag });
     if (res.ok) return res;
-    const retriable = res.status === 429 || res.status >= 500;
-    if (!retriable || attempt >= retries) {
+    // A rate limit clears with time, not with a quick second try: it gets more
+    // attempts and a slower backoff (1, 2, 4, 8, 16 s) than a server error.
+    const limited = res.status === 429;
+    const retriable = limited || res.status >= 500;
+    if (!retriable || attempt >= (limited ? Math.max(retries, RATE_LIMIT_ATTEMPTS) : retries)) {
       throw new SarvamError(endpoint, res.status, await errorDetail(res));
     }
-    const backoff = 500 * 2 ** (attempt - 1) + Math.random() * 250;
+    const backoff = (limited ? 1000 : 500) * 2 ** (attempt - 1) + Math.random() * 250;
     const wait = Math.min(MAX_RETRY_WAIT_MS, Math.max(backoff, retryAfterMs(res.headers.get("retry-after")) ?? 0));
     await res.body?.cancel();
     await sleep(wait);

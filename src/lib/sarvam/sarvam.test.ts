@@ -180,6 +180,22 @@ describe("sarvamFetch resilience", () => {
     expect(sleeps[0]).toBeGreaterThanOrEqual(7000);
   });
 
+  it("keeps retrying a rate limit longer than a server error, with slower backoff", async () => {
+    const sleeps: number[] = [];
+    const limited = vi.fn(async () => json({ error: { message: "Rate limit exceeded" } }, 429));
+    vi.stubGlobal("fetch", limited);
+    await expect(sarvamFetch("/translate", "{}", { sleep: async (ms) => void sleeps.push(ms) })).rejects.toThrow(
+      /HTTP 429\): Rate limit exceeded/,
+    );
+    expect(limited).toHaveBeenCalledTimes(6);
+    expect(sleeps.map((ms) => Math.floor(ms / 1000))).toEqual([1, 2, 4, 8, 16]);
+
+    const down = vi.fn(async () => json({ error: { message: "down" } }, 503));
+    vi.stubGlobal("fetch", down);
+    await expect(sarvamFetch("/translate", "{}", noSleep)).rejects.toThrow(/HTTP 503/);
+    expect(down).toHaveBeenCalledTimes(3);
+  });
+
   it("caps a huge Retry-After at 30 s", async () => {
     const sleeps: number[] = [];
     vi.stubGlobal(
