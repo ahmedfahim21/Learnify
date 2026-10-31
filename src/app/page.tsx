@@ -12,7 +12,7 @@ import { FeaturedShelf } from "@/components/site/FeaturedShelf";
  */
 
 const HeroDemo = dynamic(() => import("@/components/site/HeroDemo"), {
-  loading: () => <div className="h-96 animate-pulse rounded-2xl bg-(--color-raised)" />,
+  loading: () => <div className="h-[30rem] animate-pulse rounded-3xl bg-(--color-raised)" />,
 });
 
 // Steps numbered in three scripts: Devanagari, Bengali, Tamil.
@@ -81,15 +81,8 @@ export default function HomePage() {
           </ul>
         </div>
 
-        {/* Proof, not a picture: a quiz the model wrote, answerable right here. */}
-        <figure className="space-y-3">
-          <div className="rounded-3xl border border-(--color-line) bg-(--color-node) p-5 shadow-(--shadow-card) sm:p-7">
-            <HeroDemo />
-          </div>
-          <figcaption className="px-2 text-sm text-(--color-mist)">
-            Try it: written by AI in Tamil from an IIT Madras calculus lecture.
-          </figcaption>
-        </figure>
+        {/* Proof, not a picture: one real lecture and what was written from it. */}
+        <HeroDemo />
       </section>
 
       <section className="wrap space-y-8" aria-labelledby="how-heading">
