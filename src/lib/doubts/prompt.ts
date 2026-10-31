@@ -1,5 +1,5 @@
 import { LANGUAGES, type Lang } from "@/lib/languages";
-import type { doubtLibrary } from "@/lib/openui/doubtLibrary";
+import type { DoubtCore } from "@/lib/openui/doubtSpec";
 import { segmentsBetween, type Segment } from "@/lib/transcripts/merge";
 
 /**
@@ -28,7 +28,7 @@ export interface DoubtInput {
   concepts: { title: string; startSec: number }[];
 }
 
-export function doubtMessages(input: DoubtInput, library: typeof doubtLibrary) {
+export function doubtMessages(input: DoubtInput, library: DoubtCore) {
   const { name } = LANGUAGES[input.lang];
   const from = Math.max(0, input.atSec - DOUBT_WINDOW_BEFORE_SEC);
   const to = input.atSec + DOUBT_WINDOW_AFTER_SEC;

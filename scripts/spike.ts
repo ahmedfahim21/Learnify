@@ -14,7 +14,7 @@ import { join } from "node:path";
 import { doubtMessages } from "@/lib/doubts/prompt";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import { fetchCourseOutline } from "@/lib/nptel/client";
-import { doubtLibrary } from "@/lib/openui/doubtLibrary";
+import { doubtCore } from "@/lib/openui/doubtSpec";
 import { checkOpenUi } from "@/lib/openui/validate";
 import { chat, chatJson, chatStream } from "@/lib/sarvam/client";
 import { translateSegments, type TranslatorName } from "@/lib/sarvam/translateSegments";
@@ -214,7 +214,7 @@ async function main() {
     for (const [n, d] of doubts.entries()) {
       const messages = doubtMessages(
         { lectureTitle: lesson.title, lang, atSec: d.atSec, question: d.question, english, concepts },
-        doubtLibrary,
+        doubtCore,
       );
       let text = "";
       let t: number;
@@ -228,7 +228,7 @@ async function main() {
         text = res.content;
         t = took;
       }
-      const check = checkOpenUi(text.trim(), doubtLibrary);
+      const check = checkOpenUi(text.trim(), doubtCore);
       doubtsTotal++;
       if (check.ok) doubtsValid++;
       results.push({ ...d, ms: t, streamed: n === 0, ok: check.ok, problems: check.problems, openui: text });
