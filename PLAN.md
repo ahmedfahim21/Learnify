@@ -294,7 +294,11 @@ The launch set is English plus the 10 Indic languages supported by both `sarvam-
    - `transcripts` rows exist only when complete; build status and errors move to the jobs table in step 5, rather than `status`/`error` columns here.
    - A human NPTEL track is used only if its length is within 10% of the English; otherwise it is likely a different cut and the lecture is machine-translated.
    - Lectures are keyed by outline position, not NPTEL lesson id: Basic Calculus reuses lesson id 1 for an appended "Live Session" unit.
-4. Sarvam client (retry, timeout, SSE). Translator interface and id-aligned batches, checkpointed per batch.
+4. Sarvam client (retry, timeout, SSE). Translator interface and id-aligned batches, checkpointed per batch. **Done.** As built:
+   - at most `SARVAM_MAX_CONCURRENCY` (default 4) calls in flight per instance, held until response headers arrive
+   - retries on 429, 5xx and dropped connections, honouring `Retry-After` (capped at 30 s); timeouts are reported, not retried
+   - one log line per attempt (`endpoint`, `status`, `ms`, `attempt`, `tag`) plus chat token usage; never the key or payload
+   - translation takes `already` (segments done by an interrupted run) and calls `onTranslated` after each segment, so the step 5 job can save and resume; Mayura is the default translator
 5. Staged jobs: a `jobs` row per `(lectureId, lang, stage)` with `heartbeatAt`. `prepare` claims a job and runs it in `after()`, with `maxDuration = 300`. Conditional-`UPDATE` takeover. Then the study pack generation, the validator, and the `/api/lectures/*` routes.
 6. OpenUI library and typed serializer (answer key stripped). Player, subtitle bar, checkpoint panel, study tabs. Indic fonts.
 7. Doubts: STT (signed in, metered), the answer stream, TTS (by doubt id), the doubt sheet.
