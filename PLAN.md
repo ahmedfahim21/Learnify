@@ -305,7 +305,14 @@ The launch set is English plus the 10 Indic languages supported by both `sarvam-
    - **Study packs now default to `sarvam-105b-conversations`** (`STUDY_PACK_MODEL=sarvam-105b` to switch back). On the spike lectures it gave 6/6 valid packs first time, ~6 s and ~2K tokens each, 8/9 keys right; `sarvam-105b` took 5 calls and ~207K tokens for one pack. Packs are normalised before validation: replay windows repaired, letter labels stripped, options shuffled by a seed (one run had every key in slot B). `STUDY_PROMPT_VERSION` is 2.
    - Pack translation runs every prose field through Mayura; ids, timestamps and answer keys are copied, never translated.
    - Sarvam rate limits are real under load (29 of 101 calls were 429 in one run): 429s get 6 attempts with 1–16 s backoff.
-6. OpenUI library and typed serializer (answer key stripped). Player, subtitle bar, checkpoint panel, study tabs. Indic fonts.
+6. OpenUI library and typed serializer (answer key stripped). Player, subtitle bar, checkpoint panel, study tabs. Indic fonts. **Done.** As built, and checked in the browser on Basic Calculus L1 in Hindi:
+   - Player: `useYouTubePlayer` (IFrame API loaded once, own-seek timestamps, blocked-embed detection, YouTube's own caption layer unloaded so it doesn't duplicate ours). `checkpointClock` fires a check only on natural playback across it (2x speed and stalled background tabs included; never on a seek; quiet after its own replay seek).
+   - Check flow verified end to end: crossing 250 s paused the video; a wrong answer replayed 3:36–4:09 and re-asked; the right answer (by keyboard) showed the explanation in peacock green.
+   - Subtitle bar: target language over dimmer English, long sentences shown in timed pages instead of clamped.
+   - Study tabs render OpenUI programs from `serializeStudy` (round-trip tested against OpenUI's own parser). Concept map is a top-to-bottom React Flow tree (left-to-right shrank nodes unreadably in the side panel).
+   - Indic design: warm paper canvas, indigo / turmeric / peacock / kumkum accents (all text pairs ≥4.5:1 except tertiary metadata), kolam dot motif, shirorekha label rule, hero cycling through each language in its own script, Noto faces per script with `preload: false` (fonts on a page without Indic text: 11 → 4).
+   - Fixed along the way: unlayered base CSS was overriding Tailwind utilities (white text on the indigo button); element defaults now live in `@layer base`.
+   - Not done: flashcard review persistence (SM-2) and Today come with step 8; the lecture page's first load is 230 kB, mostly React Flow and OpenUI, worth lazy-loading the map.
 7. Doubts: STT (signed in, metered), the answer stream, TTS (by doubt id), the doubt sheet.
 8. Browse, landing, today, and warming the featured shelf.
 
