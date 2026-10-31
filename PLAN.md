@@ -26,6 +26,14 @@ These change the plan, so they come first.
    - The Thesys gateway is optional. We call our own model and validate the output ourselves.
    - Zod is already a dependency (`zod ^4.4.3`). lang-core has a `postinstall` telemetry hook. Before installing, find its opt-out env var and document it.
 
+## Direction (2026-11-01): generative UI first
+
+Translating transcripts cost the most Sarvam credit and isn't the point. Now:
+
+- **No subtitle bar and no translated transcripts.** The English transcript (NPTEL or YouTube captions, free) is fetched only as the source the model writes from. Students can turn on YouTube's own captions in the player.
+- **Generated study screens are the product.** The model writes interactive notes (key ideas, reveal-to-check questions, worked examples) and practice quizzes (multiple choice, true/false, fill in the blank, match, put in order) directly in the student's language as OpenUI Lang, answers included, graded instantly in the browser. Styles: simpler / standard / harder; "New quiz" rewrites one. One `sarvam-105b-conversations` call per screen (~4–7 s); stored per lecture, language, kind and style, and shared by everyone. Generating needs sign-in and uses one of the day's AI generations (shared with doubts), refunded on failure.
+- Checks in the video, voice doubts, flashcards (SM-2) and the concept map stay; the study pack is generated in English and translated in a few batched calls.
+
 ## 1. Scope
 
 ### 1a. Archive the system-design product
