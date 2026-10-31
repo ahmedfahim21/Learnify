@@ -3,12 +3,26 @@
  * (sarvam-105b), text translation, speech-to-text (Saaras) and text-to-speech
  * (Bulbul). No SDK — four endpoints don't justify a dependency.
  *
- * Server-only: reads SARVAM_API_KEY from the environment. 429 and 5xx are
- * retried with exponential backoff; every other failure throws a SarvamError
- * carrying the endpoint, status and Sarvam's own message.
+ * Server-only: reads SARVAM_API_KEY from the environment. 429, 5xx and dropped
+ * connections are retried with exponential backoff (honouring Retry-After);
+ * every other failure throws a SarvamError carrying the endpoint, status and
+ * Sarvam's own message. A timeout is not retried: the long calls (study packs)
+ * are the ones that time out, and retrying them doubles the cost.
+ *
+ * At most SARVAM_MAX_CONCURRENCY calls (default 4) are in flight per server
+ * instance; the rest queue. Every attempt logs one line, without secrets.
  */
 
+import { createLimiter } from "./limiter";
+
 const BASE = "https://api.sarvam.ai";
+const MAX_RETRY_WAIT_MS = 30_000;
+
+const limiter = createLimiter(
+  Number.isInteger(Number(process.env.SARVAM_MAX_CONCURRENCY)) && Number(process.env.SARVAM_MAX_CONCURRENCY) > 0
+    ? Number(process.env.SARVAM_MAX_CONCURRENCY)
+    : 4,
+);
 
 export class SarvamError extends Error {
   constructor(
@@ -30,6 +44,8 @@ function apiKey(): string {
 export interface RequestOptions {
   timeoutMs?: number;
   retries?: number;
+  /** What the call is for, e.g. "lecture 325080ef/hi translate", so logs can be traced to work. */
+  tag?: string;
   /** Injected for tests; defaults to setTimeout. */
   sleep?: (ms: number) => Promise<void>;
 }
@@ -47,27 +63,70 @@ async function errorDetail(res: Response): Promise<string> {
   }
 }
 
-/** POST with retry on 429/5xx. Returns the successful Response unread. */
+/** One structured log line per Sarvam attempt. Never includes the key or the payload. */
+export function logCall(entry: {
+  endpoint: string;
+  status: number | "timeout" | "network";
+  ms: number;
+  attempt: number;
+  tag?: string;
+}) {
+  console.info(`sarvam ${JSON.stringify(entry)}`);
+}
+
+/** Seconds or an HTTP date, per RFC 9110; null when absent or unparseable. */
+export function retryAfterMs(header: string | null, now: number = Date.now()): number | null {
+  if (!header) return null;
+  const secs = Number(header);
+  if (Number.isFinite(secs)) return Math.max(0, secs * 1000);
+  const at = Date.parse(header);
+  return Number.isNaN(at) ? null : Math.max(0, at - now);
+}
+
+/** POST with retry on 429/5xx/dropped connection. Returns the successful Response unread. */
 export async function sarvamFetch(
   endpoint: string,
   body: BodyInit,
-  { timeoutMs = 60_000, retries = 3, sleep = defaultSleep }: RequestOptions = {},
+  { timeoutMs = 60_000, retries = 3, sleep = defaultSleep, tag }: RequestOptions = {},
   headers: Record<string, string> = { "content-type": "application/json" },
 ): Promise<Response> {
-  for (let attempt = 0; ; attempt++) {
-    const res = await fetch(`${BASE}${endpoint}`, {
-      method: "POST",
-      headers: { "api-subscription-key": apiKey(), ...headers },
-      body,
-      signal: AbortSignal.timeout(timeoutMs),
-    });
+  const key = apiKey();
+  for (let attempt = 1; ; attempt++) {
+    const started = Date.now();
+    let res: Response;
+    try {
+      // The slot is held until the response headers arrive; callers read the
+      // body straight away, and a stream holding a slot for its whole length
+      // would starve short calls behind one long answer.
+      res = await limiter.run(() =>
+        fetch(`${BASE}${endpoint}`, {
+          method: "POST",
+          headers: { "api-subscription-key": key, ...headers },
+          body,
+          signal: AbortSignal.timeout(timeoutMs),
+        }),
+      );
+    } catch (err) {
+      const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+      logCall({ endpoint, status: timedOut ? "timeout" : "network", ms: Date.now() - started, attempt, tag });
+      if (timedOut) throw new SarvamError(endpoint, 0, `timed out after ${timeoutMs}ms`);
+      if (attempt >= retries) {
+        throw new SarvamError(endpoint, 0, `network error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      await sleep(500 * 2 ** (attempt - 1) + Math.random() * 250);
+      continue;
+    }
+
+    logCall({ endpoint, status: res.status, ms: Date.now() - started, attempt, tag });
     if (res.ok) return res;
     const retriable = res.status === 429 || res.status >= 500;
-    if (!retriable || attempt >= retries - 1) {
+    if (!retriable || attempt >= retries) {
       throw new SarvamError(endpoint, res.status, await errorDetail(res));
     }
+    const backoff = 500 * 2 ** (attempt - 1) + Math.random() * 250;
+    const wait = Math.min(MAX_RETRY_WAIT_MS, Math.max(backoff, retryAfterMs(res.headers.get("retry-after")) ?? 0));
     await res.body?.cancel();
-    await sleep(500 * 2 ** attempt + Math.random() * 250);
+    await sleep(wait);
   }
 }
 
@@ -130,6 +189,11 @@ interface ChatResponseBody {
 export async function chat(req: ChatRequest, opts?: RequestOptions): Promise<ChatResult> {
   const res = await sarvamFetch("/v1/chat/completions", chatBody(req, false), opts);
   const body = (await res.json()) as ChatResponseBody;
+  if (body.usage) {
+    console.info(
+      `sarvam ${JSON.stringify({ endpoint: "/v1/chat/completions", model: req.model ?? "sarvam-105b", tag: opts?.tag, tokens: { prompt: body.usage.prompt_tokens ?? 0, completion: body.usage.completion_tokens ?? 0 } })}`,
+    );
+  }
   const choice = body.choices?.[0];
   const content = choice?.message?.content;
   if (typeof content !== "string") {

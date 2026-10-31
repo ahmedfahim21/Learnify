@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
-import { chat, chatJson, SarvamError, sseData, translate } from "./client";
-import { AlignmentError, alignBatch, splitForLimit } from "./translateSegments";
+import { chat, chatJson, retryAfterMs, SarvamError, sarvamFetch, sseData, translate } from "./client";
+import { AlignmentError, alignBatch, splitForLimit, translateSegments } from "./translateSegments";
 
 const noSleep = { sleep: async () => {} };
 
@@ -9,11 +9,14 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 }
 
+let info: MockInstance<typeof console.info>;
 beforeEach(() => {
   process.env.SARVAM_API_KEY = "sk_test";
+  info = vi.spyOn(console, "info").mockImplementation(() => {});
 });
 afterEach(() => {
   vi.unstubAllGlobals();
+  info.mockRestore();
   delete process.env.SARVAM_API_KEY;
 });
 
@@ -161,5 +164,147 @@ describe("splitForLimit", () => {
 
   it("refuses a word that can never fit instead of truncating it", () => {
     expect(() => splitForLimit("x".repeat(11), 10)).toThrow(/longer than 10/);
+  });
+});
+
+describe("sarvamFetch resilience", () => {
+  it("waits at least Retry-After before retrying a 429", async () => {
+    const sleeps: number[] = [];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("{}", { status: 429, headers: { "retry-after": "7" } }))
+      .mockResolvedValueOnce(json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    await sarvamFetch("/translate", "{}", { sleep: async (ms) => void sleeps.push(ms) });
+    expect(sleeps).toHaveLength(1);
+    expect(sleeps[0]).toBeGreaterThanOrEqual(7000);
+  });
+
+  it("caps a huge Retry-After at 30 s", async () => {
+    const sleeps: number[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response("{}", { status: 503, headers: { "retry-after": "3600" } }))
+        .mockResolvedValueOnce(json({})),
+    );
+    await sarvamFetch("/translate", "{}", { sleep: async (ms) => void sleeps.push(ms) });
+    expect(sleeps).toEqual([30_000]);
+  });
+
+  it("retries a dropped connection, then succeeds", async () => {
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("fetch failed")).mockResolvedValueOnce(json({}));
+    vi.stubGlobal("fetch", fetchMock);
+    const res = await sarvamFetch("/translate", "{}", noSleep);
+    expect(res.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives up on repeated network errors with a SarvamError", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+    await expect(sarvamFetch("/translate", "{}", noSleep)).rejects.toMatchObject({
+      name: "SarvamError",
+      status: 0,
+      detail: "network error: fetch failed",
+    });
+  });
+
+  it("reports a timeout without retrying it", async () => {
+    const timeout = Object.assign(new Error("The operation was aborted due to timeout"), { name: "TimeoutError" });
+    const fetchMock = vi.fn().mockRejectedValue(timeout);
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(sarvamFetch("/v1/chat/completions", "{}", { ...noSleep, timeoutMs: 1234 })).rejects.toMatchObject({
+      endpoint: "/v1/chat/completions",
+      status: 0,
+      detail: "timed out after 1234ms",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs every attempt with endpoint, status, attempt and tag, never the key or body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValueOnce(json({}, 500)).mockResolvedValueOnce(json({ translated_text: "x" })),
+    );
+    await translate({ input: "secret lecture text", source: "en-IN", target: "ta-IN" }, { ...noSleep, tag: "lecture abc/ta" });
+    const lines = info.mock.calls.map((c) => String(c[0]));
+    expect(lines).toHaveLength(2);
+    const entries = lines.map((l) => JSON.parse(l.replace(/^sarvam /, "")));
+    expect(entries.map(({ endpoint, status, attempt, tag }) => ({ endpoint, status, attempt, tag }))).toEqual([
+      { endpoint: "/translate", status: 500, attempt: 1, tag: "lecture abc/ta" },
+      { endpoint: "/translate", status: 200, attempt: 2, tag: "lecture abc/ta" },
+    ]);
+    expect(entries.every((e) => typeof e.ms === "number")).toBe(true);
+    expect(lines.join("\n")).not.toMatch(/sk_test|secret lecture text/);
+  });
+
+  it("logs chat token usage", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => json({ choices: [{ message: { content: "hi" } }], usage: { prompt_tokens: 10, completion_tokens: 2 } })),
+    );
+    await chat({ messages: [], model: "sarvam-105b-conversations" }, { tag: "doubt 1" });
+    expect(info.mock.calls.map((c) => String(c[0]))).toContain(
+      'sarvam {"endpoint":"/v1/chat/completions","model":"sarvam-105b-conversations","tag":"doubt 1","tokens":{"prompt":10,"completion":2}}',
+    );
+  });
+});
+
+describe("retryAfterMs", () => {
+  it("reads seconds and HTTP dates, and ignores junk", () => {
+    expect(retryAfterMs("5")).toBe(5000);
+    expect(retryAfterMs("Sat, 31 Oct 2026 12:00:10 GMT", Date.parse("Sat, 31 Oct 2026 12:00:00 GMT"))).toBe(10_000);
+    expect(retryAfterMs(null)).toBeNull();
+    expect(retryAfterMs("soon")).toBeNull();
+  });
+});
+
+describe("translateSegments: resuming", () => {
+  const segs = [
+    { i: 0, startSec: 0, endSec: 2, text: "one" },
+    { i: 1, startSec: 2, endSec: 4, text: "two" },
+    { i: 2, startSec: 4, endSec: 6, text: "three" },
+  ];
+
+  it("skips segments already translated and reports each new one", async () => {
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) =>
+      json({ translated_text: `ta:${JSON.parse(init.body as string).input}` }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const reported: { i: number; text: string }[] = [];
+
+    const out = await translateSegments(segs, "ta", {
+      already: new Map([[1, "இரண்டு"]]),
+      onTranslated: (items) => void reported.push(...items),
+    });
+
+    expect(out).toEqual([
+      { i: 0, startSec: 0, endSec: 2, text: "ta:one" },
+      { i: 1, startSec: 2, endSec: 4, text: "இரண்டு" },
+      { i: 2, startSec: 4, endSec: 6, text: "ta:three" },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(reported.sort((a, b) => a.i - b.i)).toEqual([
+      { i: 0, text: "ta:one" },
+      { i: 2, text: "ta:three" },
+    ]);
+  });
+
+  it("stops when saving progress fails, rather than translating on unsaved", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ translated_text: "x" })));
+    await expect(
+      translateSegments(segs, "ta", {
+        onTranslated: async () => Promise.reject(new Error("db write failed")),
+      }),
+    ).rejects.toThrow("db write failed");
+  });
+
+  it("makes no calls when everything is already translated", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const out = await translateSegments(segs, "ta", { already: new Map(segs.map((s) => [s.i, `t${s.i}`])) });
+    expect(out.map((s) => s.text)).toEqual(["t0", "t1", "t2"]);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
