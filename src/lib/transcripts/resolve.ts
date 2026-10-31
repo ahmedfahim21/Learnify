@@ -17,7 +17,8 @@ import { type Cue, parseVtt } from "./vtt";
 export interface TranscriptSources {
   nptelVtt: (ref: string) => Promise<string>;
   youtubeCues: (videoId: string) => Promise<Cue[]>;
-  translate: (english: Segment[], lang: Lang) => Promise<{ segments: Segment[]; model: string }>;
+  /** `tag` labels the Sarvam calls in logs, e.g. "lecture 325080ef/hi". */
+  translate: (english: Segment[], lang: Lang, tag?: string) => Promise<{ segments: Segment[]; model: string }>;
 }
 
 export interface LectureRefs {
@@ -91,6 +92,7 @@ export async function resolveLanguage(
   lang: Lang,
   english: Resolved,
   sources: TranscriptSources,
+  tag?: string,
 ): Promise<Resolved> {
   if (lang === "en") return english;
   const attempts: string[] = [];
@@ -113,7 +115,7 @@ export async function resolveLanguage(
   }
 
   try {
-    const { segments, model } = await sources.translate(english.segments, lang);
+    const { segments, model } = await sources.translate(english.segments, lang, tag);
     return { source: "sarvam", segments, durationSec: english.durationSec, model, attempts };
   } catch (err) {
     attempts.push(`machine translation: ${reason(err)}`);

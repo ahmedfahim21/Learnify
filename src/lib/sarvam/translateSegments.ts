@@ -7,7 +7,7 @@ import { chatJson, translate } from "./client";
  * Translate a lecture's English segments into one target language, keeping
  * each segment's timestamps.
  *
- * Two translators sit behind one interface so the spike can A/B them:
+ * Two translators sit behind one interface (the spike A/B'd them; Mayura won):
  * - `sarvam105b`: batches of segments in one structured-output call to
  *   sarvam-105b-conversations (sub-second; the reasoning model took ~20 s
  *   for two sentences). The
@@ -89,7 +89,7 @@ function systemPrompt(lang: Lang, glossary: string[]): string {
     .join("\n");
 }
 
-async function translateBatch105b(batch: Segment[], lang: Lang, glossary: string[]) {
+async function translateBatch105b(batch: Segment[], lang: Lang, glossary: string[], tag?: string) {
   const { value } = await chatJson<{ items: TranslatedItem[] }>({
     messages: [
       { role: "system", content: systemPrompt(lang, glossary) },
@@ -98,7 +98,7 @@ async function translateBatch105b(batch: Segment[], lang: Lang, glossary: string
     model: "sarvam-105b-conversations",
     jsonSchema: { name: "subtitle_batch", schema: batchSchema },
     maxTokens: 8192,
-  });
+  }, { tag });
   return alignBatch(batch, value.items, lang);
 }
 
@@ -107,15 +107,16 @@ async function translateWithSplit(
   batch: Segment[],
   lang: Lang,
   glossary: string[],
+  tag?: string,
 ): Promise<Map<number, string>> {
   try {
-    return await translateBatch105b(batch, lang, glossary);
+    return await translateBatch105b(batch, lang, glossary, tag);
   } catch (err) {
     if (!(err instanceof AlignmentError) || batch.length === 1) throw err;
     const mid = Math.ceil(batch.length / 2);
     const [a, b] = await Promise.all([
-      translateWithSplit(batch.slice(0, mid), lang, glossary),
-      translateWithSplit(batch.slice(mid), lang, glossary),
+      translateWithSplit(batch.slice(0, mid), lang, glossary, tag),
+      translateWithSplit(batch.slice(mid), lang, glossary, tag),
     ]);
     return new Map([...a, ...b]);
   }
@@ -142,40 +143,59 @@ export function splitForLimit(text: string, max: number): string[] {
 }
 
 export interface TranslateOptions {
+  /** Defaults to Mayura, which the spike chose (PLAN.md section 6). */
   translator?: TranslatorName;
   glossary?: string[];
   batchSize?: number;
-  /** Called after each batch so long jobs can checkpoint progress. */
-  onProgress?: (done: number, total: number) => void;
+  /** Segments translated by an earlier, interrupted run: kept, never re-sent. */
+  already?: ReadonlyMap<number, string>;
+  /**
+   * Called with each newly translated group (one segment for Mayura, one batch
+   * for 105b) before moving on, so a job can save progress and resume from it.
+   * A rejection stops the translation.
+   */
+  onTranslated?: (items: TranslatedItem[]) => void | Promise<void>;
+  /** Log tag for the Sarvam calls, e.g. "lecture 325080ef/hi". */
+  tag?: string;
 }
 
 export async function translateSegments(
   segments: Segment[],
   lang: Lang,
-  { translator = "sarvam105b", glossary = [], batchSize = 40, onProgress }: TranslateOptions = {},
+  { translator = "mayura", glossary = [], batchSize = 40, already, onTranslated, tag }: TranslateOptions = {},
 ): Promise<Segment[]> {
   const translated = new Map<number, string>();
+  for (const s of segments) {
+    const prior = already?.get(s.i);
+    if (prior) translated.set(s.i, prior);
+  }
+  const todo = segments.filter((s) => !translated.has(s.i));
 
   if (translator === "mayura") {
     const target = LANGUAGES[lang].sarvam;
     let next = 0;
     const worker = async () => {
-      while (next < segments.length) {
-        const s = segments[next++];
+      while (next < todo.length) {
+        const s = todo[next++];
         const parts: string[] = [];
         for (const piece of splitForLimit(s.text, MAYURA_MAX_CHARS)) {
-          parts.push(await translate({ input: piece, source: "en-IN", target }));
+          parts.push(await translate({ input: piece, source: "en-IN", target }, { tag }));
         }
-        translated.set(s.i, parts.join(" "));
-        onProgress?.(translated.size, segments.length);
+        const text = parts.join(" ");
+        translated.set(s.i, text);
+        await onTranslated?.([{ i: s.i, text }]);
       }
     };
     await Promise.all(Array.from({ length: MAYURA_CONCURRENCY }, worker));
   } else {
-    for (let start = 0; start < segments.length; start += batchSize) {
-      const batch = segments.slice(start, start + batchSize);
-      for (const [i, text] of await translateWithSplit(batch, lang, glossary)) translated.set(i, text);
-      onProgress?.(translated.size, segments.length);
+    for (let start = 0; start < todo.length; start += batchSize) {
+      const batch = todo.slice(start, start + batchSize);
+      const items: TranslatedItem[] = [];
+      for (const [i, text] of await translateWithSplit(batch, lang, glossary, tag)) {
+        translated.set(i, text);
+        items.push({ i, text });
+      }
+      await onTranslated?.(items);
     }
   }
 

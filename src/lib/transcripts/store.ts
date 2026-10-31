@@ -31,8 +31,8 @@ export const MACHINE_TRANSLATOR = "mayura:v1";
 export const liveSources: TranscriptSources = {
   nptelVtt: fetchNptelVtt,
   youtubeCues: fetchYouTubeCues,
-  translate: async (english, lang) => ({
-    segments: await translateSegments(english, lang, { translator: "mayura" }),
+  translate: async (english, lang, tag) => ({
+    segments: await translateSegments(english, lang, { translator: "mayura", tag }),
     model: MACHINE_TRANSLATOR,
   }),
 };
@@ -100,7 +100,7 @@ export async function ensureTranscript(
   }
   if (lang === "en") return english;
 
-  const resolved = await resolveLanguage(lecture, lang, toResolved(english), deps.sources);
+  const resolved = await resolveLanguage(lecture, lang, toResolved(english), deps.sources, `lecture ${lectureId}/${lang}`);
   logFallbacks(lectureId, lang, resolved);
   return deps.save(toRow(lectureId, lang, resolved));
 }
