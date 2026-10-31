@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { CourseCard, CourseCardSkeleton } from "@/components/courses/CourseCard";
 import type { CourseDto } from "@/lib/courses/repo";
 
 /**
@@ -43,21 +44,16 @@ export function FeaturedShelf() {
           All courses →
         </Link>
       </div>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {courses === null
-          ? Array.from({ length: 6 }, (_, i) => <li key={i} className="h-32 animate-pulse rounded-2xl bg-(--color-raised)" />)
+          ? Array.from({ length: SHOWN }, (_, i) => (
+              <li key={i}>
+                <CourseCardSkeleton />
+              </li>
+            ))
           : courses.slice(0, SHOWN).map((c) => (
               <li key={c.id}>
-                <Link
-                  href={`/courses/${c.id}`}
-                  className="tile flex h-full flex-col gap-1 rounded-2xl border border-(--color-line) bg-(--color-node) p-5 hover:border-(--color-signal)"
-                >
-                  <p className="label">{c.disciplineName}</p>
-                  <p className="text-lg leading-snug">{c.title.replace(/^NOC:\s*/, "")}</p>
-                  <p className="mt-auto pt-2 text-sm text-(--color-mist)">
-                    {c.professor} · {c.institute}
-                  </p>
-                </Link>
+                <CourseCard course={c} />
               </li>
             ))}
       </ul>
