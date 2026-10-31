@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { snapReplays, type StudyPack, studyPackJsonSchema, validatePack } from "./pack";
+import { normalisePack, snapReplays, type StudyPack, studyPackJsonSchema, validatePack } from "./pack";
 
 const ctx = {
   durationSec: 1000,
@@ -123,5 +123,73 @@ describe("snapReplays", () => {
     expect({ ...out.checkpoints[0], replayTo: 0 }).toEqual({ ...p.checkpoints[0], replayTo: 0 });
     expect(out.concepts).toEqual(p.concepts);
     expect(out.flashcards).toEqual(p.flashcards);
+  });
+});
+
+describe("normalisePack", () => {
+  // 10-second sentences, so replay ends snap to the next boundary.
+  const segs = Array.from({ length: 100 }, (_, n) => ({ startSec: n * 10, endSec: n * 10 + 10 }));
+  const withCheck = (over: Partial<StudyPack["checkpoints"][number]>): StudyPack => {
+    const p = pack();
+    p.checkpoints[0] = { ...p.checkpoints[0], ...over };
+    return p;
+  };
+
+  it("cuts a replay that runs past its check", () => {
+    const { pack: out, repairs } = normalisePack(withCheck({ atSec: 310, replayFrom: 250, replayTo: 330 }), segs);
+    expect(out.checkpoints[0]).toMatchObject({ replayFrom: 250, replayTo: 310 });
+    expect(repairs).toContain("c1: replay ended 20s after the check; cut at the check");
+  });
+
+  it("turns a reversed or too-short replay into the 60s before its end", () => {
+    // 280 snaps to the end of its sentence (290); 300 snaps to 310, the check.
+    expect(normalisePack(withCheck({ atSec: 310, replayFrom: 300, replayTo: 280 }), segs).pack.checkpoints[0]).toMatchObject({
+      replayFrom: 220,
+      replayTo: 290,
+    });
+    expect(normalisePack(withCheck({ atSec: 310, replayFrom: 296, replayTo: 300 }), segs).pack.checkpoints[0]).toMatchObject({
+      replayFrom: 240,
+      replayTo: 310,
+    });
+  });
+
+  it("keeps the last 150s of an over-long replay", () => {
+    expect(normalisePack(withCheck({ atSec: 400, replayFrom: 20, replayTo: 400 }), segs).pack.checkpoints[0]).toMatchObject({
+      replayFrom: 250,
+      replayTo: 400,
+    });
+  });
+
+  it("leaves a good replay's start alone and reports no replay repair", () => {
+    const { pack: out, repairs } = normalisePack(pack(), segs);
+    expect(out.checkpoints[0]).toMatchObject({ replayFrom: 200, replayTo: 310 });
+    expect(repairs.filter((r) => r.includes("replay"))).toEqual([]);
+  });
+
+  it("strips letter labels and shuffles options, keeping the same right answer", () => {
+    const p = withCheck({ options: ["A) zero", "B) one", "C) two", "D) three"], answerIndex: 1 });
+    const { pack: out, repairs } = normalisePack(p, segs);
+    const cp = out.checkpoints[0];
+    expect([...cp.options].sort()).toEqual(["one", "three", "two", "zero"]);
+    expect(cp.options[cp.answerIndex]).toBe("one");
+    expect(repairs).toContain("c1: stripped letter labels from options");
+  });
+
+  it("shuffles deterministically, and doesn't pin every answer to one slot", () => {
+    const a = normalisePack(pack(), segs).pack.checkpoints[0];
+    const b = normalisePack(pack(), segs).pack.checkpoints[0];
+    expect(a).toEqual(b);
+    const slots = new Set(
+      Array.from({ length: 12 }, (_, n) => normalisePack(withCheck({ id: `k${n}`, answerIndex: 1 }), segs).pack.checkpoints[0].answerIndex),
+    );
+    expect(slots.size).toBeGreaterThan(1);
+  });
+
+  it("changes nothing outside checkpoints", () => {
+    const p = pack();
+    const out = normalisePack(p, segs).pack;
+    expect(out.concepts).toEqual(p.concepts);
+    expect(out.flashcards).toEqual(p.flashcards);
+    expect(out.recap).toEqual(p.recap);
   });
 });

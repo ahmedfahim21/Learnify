@@ -178,3 +178,76 @@ export function snapReplays(pack: StudyPack, segments: { startSec: number; endSe
     }),
   };
 }
+
+const LETTER_LABEL = /^\s*(?:\(?[A-Da-d][).:]|[A-Da-d]\s+-)\s+/;
+
+/** FNV-1a: a small stable hash, so a check's option order is the same every time it's normalised. */
+function hash(text: string): number {
+  let h = 0x811c9dc5;
+  for (let n = 0; n < text.length; n++) {
+    h ^= text.charCodeAt(n);
+    h = Math.imul(h, 0x01000193);
+  }
+  return h >>> 0;
+}
+
+/** Deterministic Fisher–Yates driven by a seeded LCG. */
+function shuffledOrder(length: number, seed: number): number[] {
+  const order = [...Array(length).keys()];
+  let state = seed || 1;
+  for (let n = length - 1; n > 0; n--) {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    const k = state % (n + 1);
+    [order[n], order[k]] = [order[k], order[n]];
+  }
+  return order;
+}
+
+export interface Normalised {
+  pack: StudyPack;
+  /** Human-readable notes on what was repaired, for the log. */
+  repairs: string[];
+}
+
+/**
+ * Repair what models reliably get mechanically wrong, before validation:
+ *
+ * - replay windows: each replay must end at or before its check and cover the
+ *   10–150 s that explains it. A replay ending after the check is cut at the
+ *   check; a reversed or too-short one becomes the 60 s before its end; an
+ *   over-long one keeps its last 150 s. The end then snaps to the end of the
+ *   sentence it lands in (see snapReplays).
+ * - options: "B) …" letter labels are stripped, and options are shuffled into
+ *   an order seeded by the check id, with answerIndex remapped. Models put the
+ *   right answer in the same slot far too often (every key was B in one run).
+ *
+ * Questions, answers, and every other timestamp are left as the model wrote
+ * them; validatePack still rejects anything this doesn't cover.
+ */
+export function normalisePack(pack: StudyPack, segments: { startSec: number; endSec: number }[]): Normalised {
+  const repairs: string[] = [];
+  const checkpoints = pack.checkpoints.map((cp) => {
+    let { replayFrom, replayTo } = cp;
+    if (replayTo > cp.atSec) {
+      repairs.push(`${cp.id}: replay ended ${Math.round(replayTo - cp.atSec)}s after the check; cut at the check`);
+      replayTo = cp.atSec;
+    }
+    const length = replayTo - replayFrom;
+    if (length < 10) {
+      repairs.push(`${cp.id}: replay was ${Math.round(length)}s; using the 60s before its end`);
+      replayFrom = Math.max(0, replayTo - 60);
+    } else if (length > 150) {
+      repairs.push(`${cp.id}: replay was ${Math.round(length)}s; keeping its last 150s`);
+      replayFrom = replayTo - 150;
+    }
+
+    const stripped = cp.options.map((o) => o.replace(LETTER_LABEL, ""));
+    if (stripped.some((o, n) => o !== cp.options[n])) repairs.push(`${cp.id}: stripped letter labels from options`);
+    const order = shuffledOrder(stripped.length, hash(cp.id + cp.question));
+    const options = order.map((n) => stripped[n]);
+    const answerIndex = order.indexOf(cp.answerIndex);
+
+    return { ...cp, replayFrom, replayTo, options, answerIndex };
+  });
+  return { pack: snapReplays({ ...pack, checkpoints }, segments), repairs };
+}

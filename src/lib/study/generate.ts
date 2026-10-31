@@ -1,7 +1,7 @@
 import { type ChatMessage, chatJson, SarvamError } from "@/lib/sarvam/client";
 import type { Segment } from "@/lib/transcripts/merge";
 
-import { snapReplays, type StudyPack, studyPackJsonSchema, validatePack } from "./pack";
+import { normalisePack, type StudyPack, studyPackJsonSchema, validatePack } from "./pack";
 
 /**
  * Build a lecture's English study pack with one sarvam-105b call over the
@@ -9,7 +9,8 @@ import { snapReplays, type StudyPack, studyPackJsonSchema, validatePack } from "
  * retry with the exact errors; a second failure throws with them.
  */
 
-export const STUDY_PROMPT_VERSION = 1;
+// Bumped from 1: packs are now normalised (replay repair, shuffled options).
+export const STUDY_PROMPT_VERSION = 2;
 
 export class PackValidationError extends Error {
   constructor(readonly errors: string[]) {
@@ -43,9 +44,23 @@ export interface GenerateResult {
   usage: { promptTokens: number; completionTokens: number }[];
 }
 
+export type PackModel = "sarvam-105b" | "sarvam-105b-conversations";
+
+/**
+ * Which model writes study packs. The conversations model is the default: on
+ * the same three lectures it produced 6/6 valid packs first time in ~6 s and
+ * ~2K tokens each, with 8/9 answer keys right. sarvam-105b took 5 calls and
+ * ~207K tokens for one pack (two runs truncated at 64K, one used placeholder
+ * ids). STUDY_PACK_MODEL=sarvam-105b switches back.
+ */
+export function packModel(): PackModel {
+  return process.env.STUDY_PACK_MODEL === "sarvam-105b" ? "sarvam-105b" : "sarvam-105b-conversations";
+}
+
 export async function generateStudyPack(
   lectureTitle: string,
   segments: Segment[],
+  model: PackModel = packModel(),
 ): Promise<GenerateResult> {
   const durationSec = Math.ceil(segments.at(-1)?.endSec ?? 0);
   const ctx = { durationSec, segments };
@@ -65,18 +80,20 @@ export async function generateStudyPack(
       const res = await chatJson<StudyPack>(
         {
           messages,
-          model: "sarvam-105b",
+          model,
           jsonSchema: { name: "study_pack", schema: studyPackJsonSchema },
-          // Reasoning tokens count against max_tokens: 20-37 minute lectures
-          // used 21-40K completion tokens at "low", and one run still overran
-          // 64K, so a truncated attempt is retried once.
-          maxTokens: 64_000,
-          reasoningEffort: "low",
+          // Reasoning tokens count against max_tokens on sarvam-105b: 20-37
+          // minute lectures used 21-40K completion tokens at "low", and some
+          // runs overran 64K. The conversations model doesn't reason and caps
+          // output at 8,192.
+          ...(model === "sarvam-105b" ? { maxTokens: 64_000, reasoningEffort: "low" as const } : { maxTokens: 8192 }),
         },
         { timeoutMs: 300_000, retries: 2 },
       );
       if (res.result.usage) usage.push(res.result.usage);
-      value = snapReplays(res.value, segments);
+      const normalised = normalisePack(res.value, segments);
+      if (normalised.repairs.length) console.info(`study pack "${lectureTitle}" repairs: ${normalised.repairs.join("; ")}`);
+      value = normalised.pack;
       content = res.result.content;
     } catch (err) {
       const truncated = err instanceof SarvamError && /truncated/.test(err.detail);
