@@ -221,6 +221,9 @@ export interface Normalised {
  *   an order seeded by the check id, with answerIndex remapped. Models put the
  *   right answer in the same slot far too often (every key was B in one run).
  *
+ * - check timing: a check more than 180 s after its explanation moves to the
+ *   end of its replay window, right after the part it tests.
+ *
  * Questions, answers, and every other timestamp are left as the model wrote
  * them; validatePack still rejects anything this doesn't cover.
  */
@@ -249,5 +252,14 @@ export function normalisePack(pack: StudyPack, segments: { startSec: number; end
 
     return { ...cp, replayFrom, replayTo, options, answerIndex };
   });
-  return { pack: snapReplays({ ...pack, checkpoints }, segments), repairs };
+  const snapped = snapReplays({ ...pack, checkpoints }, segments);
+
+  // A check placed long after the part it tests: the replay window is where
+  // the model found the explanation, so the check moves to the end of it.
+  snapped.checkpoints = snapped.checkpoints.map((cp) => {
+    if (cp.atSec - cp.replayTo <= MAX_REPLAY_TO_CHECK_SEC) return cp;
+    repairs.push(`${cp.id}: fired ${Math.round(cp.atSec - cp.replayTo)}s after its explanation; moved to ${Math.round(cp.replayTo)}s`);
+    return { ...cp, atSec: cp.replayTo };
+  });
+  return { pack: snapped, repairs };
 }

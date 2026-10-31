@@ -185,6 +185,13 @@ describe("normalisePack", () => {
     expect(slots.size).toBeGreaterThan(1);
   });
 
+  it("moves a check that fires long after its explanation to the end of the replay", () => {
+    const { pack: out, repairs } = normalisePack(withCheck({ atSec: 900, replayFrom: 240, replayTo: 300 }), segs);
+    expect(out.checkpoints[0]).toMatchObject({ atSec: 310, replayFrom: 240, replayTo: 310 });
+    expect(repairs).toContain("c1: fired 590s after its explanation; moved to 310s");
+    expect(validatePack(out, { durationSec: 1000, segments: segs }).filter((e) => e.includes("after its explanation"))).toEqual([]);
+  });
+
   it("changes nothing outside checkpoints", () => {
     const p = pack();
     const out = normalisePack(p, segs).pack;
