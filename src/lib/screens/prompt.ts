@@ -110,6 +110,7 @@ export function screenMessages(
       "Output only openui-lang statements: no prose, no markdown fences, nothing after the last statement.",
       "Put every component in its own statement and reference it from its parent; root must be Screen.",
       "Paragraph takes one string, plus an optional second for a follow-on paragraph.",
+      "Write maths inline as LaTeX between single dollar signs, like $r_{12}^2$ or $\\frac{1}{2}mv^2$. Only subscripts, superscripts, \\frac, \\sqrt, Greek letters and relation symbols are drawn; no matrices, environments or \\begin.",
       "Never write seconds, timestamps or the word \"transcript\" in any text the student reads; say \"the lecture\", and point at moments only with TimeChip or sec arguments.",
     ],
     examples: [input.kind === "notes" ? NOTES_EXAMPLE : QUIZ_EXAMPLE],

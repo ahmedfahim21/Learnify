@@ -48,6 +48,7 @@ export function doubtMessages(input: DoubtInput, library: DoubtCore) {
       "Arguments are positional only. Never write `title:`, `sec:`, `label=` or any named argument.",
       "Output only openui-lang statements: no prose, no markdown fences, nothing after the last statement.",
       "Put every component in its own statement and reference it from root's parts array.",
+      "Write maths inline as LaTeX between single dollar signs, like $r_{12}^2$ or $\\frac{1}{2}mv^2$. Only subscripts, superscripts, \\frac, \\sqrt, Greek letters and relation symbols are drawn; no matrices, environments or \\begin.",
       "Never write seconds or timestamps in Paragraph text (no \"216s\"); point at a moment only with a TimeChip.",
     ],
     examples: [EXAMPLE],

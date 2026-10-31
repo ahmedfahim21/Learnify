@@ -4,6 +4,7 @@ import { createLibrary, defineComponent } from "@openuidev/react-lang";
 import { useContext } from "react";
 
 import { LectureClockContext } from "./contexts";
+import { Tex, TexExpression } from "./math";
 import { AnswerSpec, CalloutSpec, FormulaSpec, ParagraphSpec, StepsSpec, TimeChipSpec } from "./doubtSpec";
 
 export { type LectureClock, LectureClockContext } from "./contexts";
@@ -32,8 +33,8 @@ export const Paragraph = defineComponent({
   props: ParagraphSpec.props,
   component: ({ props }) => (
     <>
-      <p className="leading-relaxed">{props.text}</p>
-      {props.continuation ? <p className="leading-relaxed">{props.continuation}</p> : null}
+      <p className="leading-relaxed"><Tex text={props.text} /></p>
+      {props.continuation ? <p className="leading-relaxed"><Tex text={props.continuation} /></p> : null}
     </>
   ),
 });
@@ -45,7 +46,7 @@ export const Steps = defineComponent({
   component: ({ props }) => (
     <ol className="list-decimal space-y-1 pl-5">
       {props.items.map((item, n) => (
-        <li key={n}>{item}</li>
+        <li key={n}><Tex text={item} /></li>
       ))}
     </ol>
   ),
@@ -57,8 +58,8 @@ export const Formula = defineComponent({
   props: FormulaSpec.props,
   component: ({ props }) => (
     <figure className="rounded-[var(--radius)] bg-[var(--color-surface)] px-3 py-2">
-      <code className="font-mono">{props.expression}</code>
-      {props.caption ? <figcaption className="text-[var(--color-mist)]">{props.caption}</figcaption> : null}
+      <span className="text-lg"><TexExpression text={props.expression} /></span>
+      {props.caption ? <figcaption className="text-[var(--color-mist)]"><Tex text={props.caption} /></figcaption> : null}
     </figure>
   ),
 });
@@ -79,7 +80,7 @@ export const TimeChip = defineComponent({
         className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius)] border border-[var(--color-line)] px-2 text-[var(--color-signal)] disabled:opacity-50"
       >
         <span className="font-mono">{formatTime(sec)}</span>
-        <span>{props.label}</span>
+        <span><Tex text={props.label} /></span>
       </button>
     );
   },
@@ -96,7 +97,7 @@ export const Callout = defineComponent({
       className={`space-y-1 border-l-2 pl-3 ${props.kind === "outside" ? "border-(--color-warn)" : "border-(--color-signal)"}`}
     >
       <p className="label">{props.kind === "outside" ? "Beyond this lecture" : "Note"}</p>
-      <p>{props.text}</p>
+      <p><Tex text={props.text} /></p>
     </aside>
   ),
 });
