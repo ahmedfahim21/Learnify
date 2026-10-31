@@ -1,5 +1,5 @@
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 import * as schema from "./schema";
 
@@ -8,7 +8,12 @@ type Database = ReturnType<typeof drizzle<typeof schema>>;
 let cached: Database | null = null;
 
 /**
- * Lazily construct the Drizzle client.
+ * Lazily construct the Drizzle client over Supabase Postgres.
+ *
+ * `DATABASE_URL` is Supabase's transaction pooler (Supavisor, port 6543),
+ * which suits serverless functions but doesn't support prepared statements —
+ * hence `prepare: false`. Migrations use the direct connection instead (see
+ * drizzle.config.ts).
  *
  * The connection is created on first use rather than at module load, so
  * importing this module (e.g. during `next build`) never requires
@@ -24,8 +29,8 @@ export function getDb(): Database {
     );
   }
 
-  const sql = neon(connectionString);
-  cached = drizzle(sql, { schema });
+  const client = postgres(connectionString, { prepare: false });
+  cached = drizzle(client, { schema });
   return cached;
 }
 

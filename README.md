@@ -1,84 +1,107 @@
 # Learnify
 
-**An agentic tutor that teaches through generative UI.**
+**Watch an IIT lecture in English, learn it in your language.**
 
-Learnify turns any topic into a live, adaptive tutoring session. Instead of
-serving pre-written courses, the tutor — Claude on AWS Bedrock — generates each
-screen as you learn: explanations, checks, flashcards, diagrams, and exercises
-stream in as declarative UI and adapt in real time to how you answer.
+Learnify takes an [NPTEL](https://nptel.ac.in) lecture, keeps the official
+video playing in YouTube's embedded player, and builds a learning layer around
+it in Hindi, Bengali, Tamil, Telugu, Kannada, Malayalam, Marathi, Gujarati,
+Odia and Punjabi:
 
-## What it does
+- **Subtitles in your language.** English captions are translated with their
+  timestamps kept and shown under the video. When NPTEL already has a human
+  translation, that's what you see.
+- **Checks during the video.** At the right moments the video pauses for a
+  short question in your language. If you get it wrong, it replays the part that
+  explains it.
+- **Ask a doubt by voice.** Pause and ask, for example in Tamil, "why did he
+  divide by n here?" The answer is grounded in what the lecturer just said. It
+  arrives as a generated explanation card and can be read aloud.
+- **Study screens for each lecture.** A concept map, flashcards and a recap.
+  Every item links to its timestamp.
 
-- **Generative classroom** — The tutor streams each screen live as declarative
-  JSON ([A2UI](https://github.com/google/A2UI)). Explanations, checks,
-  flashcards, diagrams, ordering and matching exercises, and code snippets
-  render from a vetted widget catalog and adapt in real time to how you answer.
-- **Mastery engine** — Every topic decomposes into a prerequisite concept graph.
-  Per-concept mastery is tracked with spaced repetition (EMA + SM-2), and a
-  daily **Today** dashboard surfaces what's due, what's weak, and your streak —
-  turning learning into a habit.
-- **Tutor memory** — The tutor remembers *how* you learn across sessions — your
-  style, interests, and past misconceptions — so a football fan keeps getting
-  football analogies, even on an unrelated topic.
-- **Learn from anything** — Attach a PDF, article URL, or YouTube video and the
-  tutor teaches grounded in your sources, with citation chips that jump to the
-  exact quote, page, or timestamp.
-- **Zero-friction demo** — Run a full live session with no login. Sign in to
-  persist your mastery graph and memory across devices.
+Each lecture is processed once per language and cached, so the second student
+to open it costs nothing. The build plan and its review are in
+[`PLAN.md`](./PLAN.md).
 
 ## How it works
 
-A session is an agent loop: Claude emits UI through strict tool calls as A2UI
-blocks, the client renders them from a sandboxed widget catalog, and your
-interactions (answers, recall ratings, clicks) stream back as the next turn.
-Objective answers are graded server-side and feed the mastery engine; attached
-sources are passed as citation-enabled context. The renderer only ever
-interprets data — it never executes model-authored code.
+| Piece | What does it |
+| --- | --- |
+| Course bank | NPTEL's own `__data.json` payloads: 3,484 courses, each lesson's YouTube id and caption files (`src/lib/nptel`) |
+| Transcript | NPTEL's VTT captions from Google Drive or SWAYAM's bucket, merged into sentence segments (`src/lib/transcripts`) |
+| Subtitles | Sarvam `mayura:v1` in `code-mixed` mode, one segment at a time, timestamps never touched (`src/lib/sarvam`) |
+| Study material | `sarvam-105b` reads the whole transcript once and returns concepts, checks, flashcards and a recap as strict JSON, then a validator checks every timestamp (`src/lib/study`) |
+| Doubt answers | `sarvam-105b-conversations` writes [OpenUI](https://www.openui.com) Lang against Learnify's own component library, validated before it is stored (`src/lib/openui`, `src/lib/doubts`) |
+| Voice | Saaras (`codemix`) for spoken doubts, Bulbul to read answers aloud |
+| Storage and sign-in | Supabase Postgres via Drizzle, Supabase Auth (Google, GitHub) |
 
-## Stack
-
-Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 ·
-`@anthropic-ai/bedrock-sdk` (strict tool-use A2UI emission) · A2UI declarative
-UI · Neon Postgres + Drizzle ORM · Supermemory · Vercel
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
 
-- Node.js 18.18+ (20+ recommended) and npm
-- A [Neon](https://neon.tech) Postgres database (required at runtime)
-- AWS credentials with Bedrock access to Claude models (required at runtime)
+- Node.js 20+ and npm
+- A [Supabase](https://supabase.com) project
+- A [Sarvam](https://dashboard.sarvam.ai) API key
 
 ### Setup
 
-1. Clone and install:
+1. Install, with OpenUI's install-time telemetry turned off:
 
    ```shell
    git clone https://github.com/ahmedfahim21/Learnify.git
    cd Learnify
-   npm install
+   OPENUI_TELEMETRY_DISABLED=1 npm install
    ```
 
-2. Copy the environment template and fill in your keys:
+2. Copy the environment template and fill it in. Each variable has a comment
+   saying where to find it:
 
    ```shell
    cp .env.example .env
    ```
 
-   See [`.env.example`](./.env.example) for the full list (AWS Bedrock
-   credentials, model IDs, and `DATABASE_URL`).
+3. In the Supabase dashboard:
+   - enable Google and/or GitHub under **Authentication > Sign In / Providers**
+   - add `http://localhost:3000/auth/callback` under **Authentication > URL Configuration > Redirect URLs**
 
-3. Apply the database migrations to your Neon database:
+4. Apply the migrations. They create the tables, link them to `auth.users`, and
+   turn on row-level security:
 
    ```shell
    npm run db:migrate
    ```
 
-4. Start the dev server and open [http://localhost:3000](http://localhost:3000):
+5. Start the dev server and open [http://localhost:3000](http://localhost:3000):
 
    ```shell
    npm run dev
    ```
+
+## Testing
+
+```shell
+npm test
+```
+
+```shell
+npm run typecheck
+```
+
+```shell
+npm run lint
+```
+
+Unit tests cover NPTEL decoding against saved real payloads, caption parsing
+against real NPTEL tracks, the Sarvam client with a mocked network,
+translation alignment, study-pack validation, the API routes, and a check that
+every table has row-level security.
+
+To check model quality on real lectures, run the Sarvam spike. It calls Sarvam,
+so it needs `SARVAM_API_KEY`, and writes `spike-output/report.md`:
+
+```shell
+OPENUI_TELEMETRY_DISABLED=1 npx tsx --env-file=.env --tsconfig tsconfig.json scripts/spike.ts
+```
 
 ### Scripts
 
@@ -86,13 +109,16 @@ UI · Neon Postgres + Drizzle ORM · Supermemory · Vercel
 | --- | --- |
 | `npm run dev` | Start the Next.js dev server |
 | `npm run build` | Production build |
+| `npm test` | Run the unit tests |
+| `npm run typecheck` | TypeScript, no emit |
 | `npm run lint` | ESLint |
 | `npm run db:generate` | Generate a Drizzle migration from the schema |
-| `npm run db:migrate` | Apply migrations to the database |
+| `npm run db:migrate` | Apply migrations (uses `DIRECT_URL`) |
 | `npm run db:studio` | Open Drizzle Studio |
 
-## Legacy
+## Licence of the content
 
-The 2023 codebase is archived under [`legacy/`](./legacy) with full git history
-preserved. Follow the rebuild in
-[issue #50](https://github.com/ahmedfahim21/Learnify/issues/50).
+Lectures are by IIT and IISc faculty via NPTEL, under
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
+Translations and study material Learnify generates from them are shared under
+the same licence.

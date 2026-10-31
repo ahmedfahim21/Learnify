@@ -1,0 +1,90 @@
+WEBVTT
+
+00:00.870 --> 00:16.640
+Welcome to this online course on programming,
+I am Shankar Balachandran from the Computer
+
+00:16.640 --> 00:20.690
+Science Engineering Department at IIT, Madras.
+
+00:20.690 --> 00:26.190
+This course is designed in such a way that
+it can be spread across 5 weeks and you are
+
+00:26.190 --> 00:30.060
+going to have about 2 lectures every week.
+
+00:30.060 --> 00:37.810
+So, total of 10 lectures and this course is
+also designed in such a way that you can take
+
+00:37.810 --> 00:46.180
+this in 15 minute chunks called modules and
+you would be given a small practice test,
+
+00:46.180 --> 00:47.309
+right after the every module.
+
+00:47.309 --> 00:49.829
+So, let us jump right into the course.
+
+00:49.829 --> 00:54.219
+So, before getting into programming we need
+to understand little bit about what computers
+
+00:54.219 --> 00:55.460
+are about.
+
+00:55.460 --> 01:01.809
+What you are seeing in this picture here is
+ENIAC the, so called first digital computer,
+
+01:01.809 --> 01:04.110
+which was build in the 1940s.
+
+01:04.110 --> 01:11.430
+And you can see how huge it is, it is almost
+like house in size, it was massive compared
+
+01:11.430 --> 01:16.260
+to the modern personal computer standards
+by no means ENIAC can be called the personal
+
+01:16.260 --> 01:25.020
+computer, it had 17,000 vacuum tubes, 5 million
+hand solder joints, it weighed quite a bit
+
+01:25.020 --> 01:31.710
+and it is use consumed 150 kilo watts of power,
+no way this would be a personal computer.
+
+01:31.710 --> 01:40.540
+However, June 2, 2000 what you seeing on this
+picture is a micro photograph of Pentium 4
+
+01:40.540 --> 01:47.680
+and it was designed in the year 2000 and deployed
+in the market, it could run at 1.5 gigahertz.
+
+01:47.680 --> 01:53.490
+That means, it can do 1.5 billion operations
+per second, it had 42 million transistors
+
+01:53.490 --> 01:56.230
+as opposed to this puny ENIAC.
+
+01:56.230 --> 02:02.530
+And it was build in this technology called
+0.18 micron technology, which means the transistors
+
+02:02.530 --> 02:07.390
+and the gates that were used to design as
+small as 0.18 micron.
+
+02:07.390 --> 02:15.129
+So, in the 40 or 50 years computers have moved
+quite far away from the first notion of digital
+
+02:15.129 --> 02:16.129
+computer.
+

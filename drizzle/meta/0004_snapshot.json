@@ -1,217 +1,69 @@
 {
-  "id": "378ee984-cc23-4c98-b66e-051050b59617",
-  "prevId": "ae699373-4307-4d73-9c1f-655683e2ce53",
+  "id": "14bf917a-c41d-460f-a047-a5330e913eb2",
+  "prevId": "a2d01ba4-b2b6-4236-a6cb-68ae1db22582",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.concept_edges": {
-      "name": "concept_edges",
+    "public.courses": {
+      "name": "courses",
       "schema": "",
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "integer",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "topic_id": {
-          "name": "topic_id",
-          "type": "uuid",
-          "primaryKey": false,
           "notNull": true
         },
-        "from_concept_id": {
-          "name": "from_concept_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "to_concept_id": {
-          "name": "to_concept_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "concept_edges_topic_id_topics_id_fk": {
-          "name": "concept_edges_topic_id_topics_id_fk",
-          "tableFrom": "concept_edges",
-          "tableTo": "topics",
-          "columnsFrom": [
-            "topic_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "concept_edges_from_concept_id_concepts_id_fk": {
-          "name": "concept_edges_from_concept_id_concepts_id_fk",
-          "tableFrom": "concept_edges",
-          "tableTo": "concepts",
-          "columnsFrom": [
-            "from_concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "concept_edges_to_concept_id_concepts_id_fk": {
-          "name": "concept_edges_to_concept_id_concepts_id_fk",
-          "tableFrom": "concept_edges",
-          "tableTo": "concepts",
-          "columnsFrom": [
-            "to_concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "concept_edges_unique": {
-          "name": "concept_edges_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "topic_id",
-            "from_concept_id",
-            "to_concept_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.concepts": {
-      "name": "concepts",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "topic_id": {
-          "name": "topic_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "slug": {
-          "name": "slug",
+        "title": {
+          "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
+        "professor": {
+          "name": "professor",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "summary": {
-          "name": "summary",
+        "institute": {
+          "name": "institute",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "difficulty": {
-          "name": "difficulty",
+        "discipline_id": {
+          "name": "discipline_id",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
-          "default": 1
+          "notNull": true
         },
-        "order_index": {
-          "name": "order_index",
-          "type": "integer",
+        "discipline_name": {
+          "name": "discipline_name",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": true
         },
-        "mastery": {
-          "name": "mastery",
-          "type": "real",
+        "content_type": {
+          "name": "content_type",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": 0
+          "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
+        "human_langs": {
+          "name": "human_langs",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outline_fetched_at": {
+          "name": "outline_fetched_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "concepts_topic_id_topics_id_fk": {
-          "name": "concepts_topic_id_topics_id_fk",
-          "tableFrom": "concepts",
-          "tableTo": "topics",
-          "columnsFrom": [
-            "topic_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "concepts_topic_slug_unique": {
-          "name": "concepts_topic_slug_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "topic_id",
-            "slug"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.learner_notes": {
-      "name": "learner_notes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": false
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
+        "synced_at": {
+          "name": "synced_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -219,17 +71,11 @@
         }
       },
       "indexes": {
-        "learner_notes_user_idx": {
-          "name": "learner_notes_user_idx",
+        "courses_discipline_idx": {
+          "name": "courses_discipline_idx",
           "columns": [
             {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
+              "expression": "discipline_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -241,29 +87,15 @@
           "with": {}
         }
       },
-      "foreignKeys": {
-        "learner_notes_user_id_users_id_fk": {
-          "name": "learner_notes_user_id_users_id_fk",
-          "tableFrom": "learner_notes",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.mastery": {
-      "name": "mastery",
+    "public.generation_usage": {
+      "name": "generation_usage",
       "schema": "",
       "columns": {
         "id": {
@@ -279,65 +111,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "concept_id": {
-          "name": "concept_id",
-          "type": "uuid",
+        "day": {
+          "name": "day",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
-        "score": {
-          "name": "score",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "repetitions": {
-          "name": "repetitions",
+        "used": {
+          "name": "used",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
-        },
-        "interval_days": {
-          "name": "interval_days",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "ease_factor": {
-          "name": "ease_factor",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 2.5
-        },
-        "evidence_count": {
-          "name": "evidence_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "last_reviewed_at": {
-          "name": "last_reviewed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "due_at": {
-          "name": "due_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
@@ -347,65 +132,16 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "mastery_user_due_idx": {
-          "name": "mastery_user_due_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "due_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "mastery_user_id_users_id_fk": {
-          "name": "mastery_user_id_users_id_fk",
-          "tableFrom": "mastery",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "mastery_concept_id_concepts_id_fk": {
-          "name": "mastery_concept_id_concepts_id_fk",
-          "tableFrom": "mastery",
-          "tableTo": "concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "mastery_user_concept_unique": {
-          "name": "mastery_user_concept_unique",
+        "generation_usage_user_day_unique": {
+          "name": "generation_usage_user_day_unique",
           "nullsNotDistinct": false,
           "columns": [
             "user_id",
-            "concept_id"
+            "day"
           ]
         }
       },
@@ -413,8 +149,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.review_events": {
-      "name": "review_events",
+    "public.lectures": {
+      "name": "lectures",
       "schema": "",
       "columns": {
         "id": {
@@ -424,147 +160,50 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "concept_id": {
-          "name": "concept_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "session_id": {
-          "name": "session_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "quality": {
-          "name": "quality",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "score_before": {
-          "name": "score_before",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "score_after": {
-          "name": "score_after",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "due_at": {
-          "name": "due_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "review_events_user_id_users_id_fk": {
-          "name": "review_events_user_id_users_id_fk",
-          "tableFrom": "review_events",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "review_events_concept_id_concepts_id_fk": {
-          "name": "review_events_concept_id_concepts_id_fk",
-          "tableFrom": "review_events",
-          "tableTo": "concepts",
-          "columnsFrom": [
-            "concept_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "review_events_session_id_sessions_id_fk": {
-          "name": "review_events_session_id_sessions_id_fk",
-          "tableFrom": "review_events",
-          "tableTo": "sessions",
-          "columnsFrom": [
-            "session_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.session_events": {
-      "name": "session_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "session_id": {
-          "name": "session_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "seq": {
-          "name": "seq",
+        "course_id": {
+          "name": "course_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
         },
-        "type": {
-          "name": "type",
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nptel_lesson_id": {
+          "name": "nptel_lesson_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit_name": {
+          "name": "unit_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "role": {
-          "name": "role",
+        "title": {
+          "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "payload": {
-          "name": "payload",
+        "youtube_id": {
+          "name": "youtube_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "concepts_covered": {
+          "name": "concepts_covered",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vtt_refs": {
+          "name": "vtt_refs",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true
@@ -579,12 +218,12 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "session_events_session_id_sessions_id_fk": {
-          "name": "session_events_session_id_sessions_id_fk",
-          "tableFrom": "session_events",
-          "tableTo": "sessions",
+        "lectures_course_id_courses_id_fk": {
+          "name": "lectures_course_id_courses_id_fk",
+          "tableFrom": "lectures",
+          "tableTo": "courses",
           "columnsFrom": [
-            "session_id"
+            "course_id"
           ],
           "columnsTo": [
             "id"
@@ -595,128 +234,15 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "session_events_session_seq_unique": {
-          "name": "session_events_session_seq_unique",
+        "lectures_course_position_unique": {
+          "name": "lectures_course_position_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "session_id",
-            "seq"
+            "course_id",
+            "position"
           ]
         }
       },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.sessions": {
-      "name": "sessions",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "topic_id": {
-          "name": "topic_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'learn'"
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'active'"
-        },
-        "plan": {
-          "name": "plan",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "input_tokens": {
-          "name": "input_tokens",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "output_tokens": {
-          "name": "output_tokens",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "cache_read_tokens": {
-          "name": "cache_read_tokens",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "ended_at": {
-          "name": "ended_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "sessions_user_id_users_id_fk": {
-          "name": "sessions_user_id_users_id_fk",
-          "tableFrom": "sessions",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "sessions_topic_id_topics_id_fk": {
-          "name": "sessions_topic_id_topics_id_fk",
-          "tableFrom": "sessions",
-          "tableTo": "topics",
-          "columnsFrom": [
-            "topic_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -774,21 +300,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "streaks_user_id_users_id_fk": {
-          "name": "streaks_user_id_users_id_fk",
-          "tableFrom": "streaks",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "streaks_user_id_unique": {
@@ -803,8 +315,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.topics": {
-      "name": "topics",
+    "public.transcripts": {
+      "name": "transcripts",
       "schema": "",
       "columns": {
         "id": {
@@ -814,74 +326,38 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "user_id": {
-          "name": "user_id",
+        "lecture_id": {
+          "name": "lecture_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "title": {
-          "name": "title",
+        "lang": {
+          "name": "lang",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'new'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "topics_user_id_users_id_fk": {
-          "name": "topics_user_id_users_id_fk",
-          "tableFrom": "topics",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.users": {
-      "name": "users",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "email": {
-          "name": "email",
+        "source": {
+          "name": "source",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "name": {
-          "name": "name",
+        "segments": {
+          "name": "segments",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "duration_sec": {
+          "name": "duration_sec",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -895,14 +371,29 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "transcripts_lecture_id_lectures_id_fk": {
+          "name": "transcripts_lecture_id_lectures_id_fk",
+          "tableFrom": "transcripts",
+          "tableTo": "lectures",
+          "columnsFrom": [
+            "lecture_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "users_email_unique": {
-          "name": "users_email_unique",
+        "transcripts_lecture_lang_unique": {
+          "name": "transcripts_lecture_lang_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "email"
+            "lecture_id",
+            "lang"
           ]
         }
       },

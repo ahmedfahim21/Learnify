@@ -1,17 +1,464 @@
 @import "tailwindcss";
 
+/* ======================================================================
+   Learnify's design system.
+   
+   A warm paper foundation, accents drawn from Indian dyes (indigo, turmeric,
+   peacock, kumkum) used only as accent, and hierarchy carried by size and
+   colour rather than font weight. IBM Plex for Latin, Noto for each Indic
+   script, and a small radius rather than hard-square corners.
+
+   Light only, deliberately: one canvas to design against means the accents
+   and the code surfaces each have exactly one job, and nothing has to hold
+   contrast in two directions at once.
+   ====================================================================== */
+
+@theme {
+  /* ---- Foundation: light is the base, as in the source system ------- */
+  /* Foundation: handmade paper and lamp-black ink rather than screen white
+     and cool grey. Warm neutrals let the Indic accents below sit naturally. */
+  --color-ink: #fbf8f2;        /* the canvas: khadi / handmade paper */
+  --color-surface: #f5efe4;    /* cards, the subtitle bar */
+  --color-raised: #ede5d6;     /* hover / inset wells, skeletons */
+  --color-fg: #1d1914;         /* primary text: warm lamp-black */
+  --color-mist: #6b6255;       /* secondary text, chrome, placeholders */
+  --color-faint: #82786a;      /* tertiary: metadata, ticks, markers */
+  --color-line: #e4dac9;       /* 1px borders, hairline rules */
+  /* Drawing surfaces (concept map), slightly apart from the page. */
+  --color-canvas: #f8f3ea;
+  --color-node: #fffdf8;
+  --wash-selection: rgba(46, 63, 143, 0.14);
+  --shadow-card: 0 10px 28px rgba(29, 25, 20, 0.12);
+
+  /* ---- Accents (accent only, never a large fill or body text) -------
+     Named by role, coloured from Indian dyes and materials. Each holds at
+     least 4.5:1 against the paper canvas. */
+  --color-signal: #2e3f8f;   /* primary: indigo (neel) — interactive, live, progress */
+  --color-flow: #6a3d8f;     /* jamun purple — movement, secondary links */
+  --color-deep: #0f6b57;     /* peacock green (mor) — right answers, persistence */
+  --color-warn: #a35a00;     /* turmeric (haldi) — try again, retrying */
+  --color-alert: #b3263e;    /* kumkum — failure, the thing that breaks */
+  --color-accent: #b4532a;   /* terracotta — everything else that needs separating */
+
+  /* Corners: softened from the source system's hard square. Crisp enough to
+     stay technical, not so sharp it reads as austere over a 25-minute read. */
+  --radius: 3px;
+
+  /* Plex covers Latin; each Indic script falls through to its Noto face. */
+  --font-sans: var(--font-plex-sans), var(--font-deva), var(--font-beng), var(--font-taml),
+    var(--font-telu), var(--font-knda), var(--font-mlym), var(--font-gujr), var(--font-guru),
+    var(--font-orya), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
+  --measure: min(90vw, 76rem);
+  --measure-mid: 60rem;
+  --measure-prose: 44rem;
+
+  /* Diagram edge strokes, one per accent in DIAGRAM_COLORS. Edges are SVG,
+     so these have to be variables the theme can swap rather than classes. */
+  --diagram-slate: #64748b;
+  --diagram-blue: #2563eb;
+  --diagram-green: #059669;
+  --diagram-pink: #db2777;
+  --diagram-purple: #7c3aed;
+  --diagram-amber: #b45309;
+  --diagram-cyan: #0891b2;
+  --diagram-rose: #e11d48;
+  --diagram-teal: #0d9488;
+  --diagram-indigo: #4f46e5;
+}
+
+/* ---- Base -------------------------------------------------------------- */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  color-scheme: light;
+  interpolate-size: allow-keywords;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  background-color: var(--color-ink);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, sans-serif;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Element defaults live in the base layer so Tailwind utilities (text-white
+   on a link, a colour on a heading) override them. Unlayered, they would win
+   over every utility. */
+@layer base {
+  body {
+    background: var(--color-ink);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.7;
+    font-feature-settings: "kern", "liga", "calt";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
+  }
+
+  /* Hierarchy comes from size, tracking and colour — never weight. Plex Sans
+     is loaded at 400 only, so there is no bold to reach for by accident. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--color-fg);
+    text-wrap: balance;
+  }
+
+  code, pre, kbd, samp {
+    text-transform: none;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  ::selection {
+    background-color: var(--wash-selection);
+    color: var(--color-fg);
+  }
+
+  :focus-visible {
+    outline: 1px solid var(--color-signal);
+    outline-offset: 3px;
+  }
+}
+
+/* ---- Reusable primitives ------------------------------------------------ */
+
+.wrap {
+  max-width: var(--measure);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  position: relative;
+}
+.wrap-mid {
+  max-width: var(--measure-mid);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  position: relative;
+}
+.wrap-prose {
+  max-width: var(--measure-prose);
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+  position: relative;
+}
+
+/* Small tracked metadata — the "label" system. Space Mono, for technical
+   text: phase names, counts, difficulty, durations. */
+@utility label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.label-rule {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.label-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--color-line);
+}
+
+/* Bordered chip (tag / stat / phase marker). Barely-rounded rather than a
+   pill: it should read as a field in a spec, not a badge. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: 0.2rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  color: var(--color-mist);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.chip:hover {
+  border-color: var(--color-faint);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+.chip:active {
+  transform: scale(0.96);
+}
+button.chip {
+  background: transparent;
+  cursor: pointer;
+  line-height: inherit;
+}
+
+/* Actions. Distinct from .chip, which is a mono metadata tag — an action is
+   prose the reader is meant to click, so it sets in the sans face at a normal
+   sentence case, and the primary one carries fill so it outranks its
+   alternative instead of matching it. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--color-signal);
+  border-radius: var(--radius);
+  background: var(--color-signal);
+  color: var(--color-ink);
+  padding: 0.5rem 0.95rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+.btn:hover {
+  background: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
+  border-color: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
+}
+.btn:active {
+  transform: scale(0.99);
+}
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.btn-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--color-mist);
+  padding: 0.5rem 0.95rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+.btn-quiet:hover {
+  border-color: var(--color-faint);
+  background: var(--color-raised);
+  color: var(--color-fg);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A scoop dot — the smallest unit of colour in the system. Set --scoop. */
+.dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--scoop, var(--color-mist));
+  flex: none;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+.rise {
+  animation: rise 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rise-1 { animation-delay: 0.05s; }
+.rise-2 { animation-delay: 0.1s; }
+.rise-3 { animation-delay: 0.15s; }
+
+.arr {
+  display: inline-block;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+a:hover .arr-r { transform: translateX(3px); }
+a:hover .arr-d { transform: translateY(2px); }
+
+/* The one underlined link style used in running text. Signal azure is the
+   system's live/interactive colour. */
+@utility link {
+  color: var(--color-signal);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--color-signal) 45%, transparent);
+  transition: text-decoration-color 0.15s ease;
+}
+@utility link {
+  &:hover {
+    text-decoration-color: var(--color-signal);
+  }
+}
+
+/* ---- Long-form prose (recaps, doubt answers) ---------------------------------- */
+.prose {
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: color-mix(in srgb, var(--color-fg) 88%, transparent);
+  text-wrap: pretty;
+}
+.prose > * + * {
+  margin-top: 1.25em;
+}
+.prose strong {
+  font-weight: 400;
+  color: var(--color-fg);
+}
+.prose em {
+  font-style: italic;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  padding: 0.08em 0.35em;
+  border-radius: 0;
+}
+
+/* ---- Reduced motion ------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .rise, .rise-1, .rise-2, .rise-3 {
+    animation: none;
+  }
+}
+
+/* React Flow (the lecture concept map): the attribution stays (removing it is
+   a Pro-subscription feature) but sits quietly. */
+.react-flow__attribution {
+  background: transparent !important;
+  font-size: 9px;
+}
+.react-flow__attribution a {
+  color: var(--color-faint);
+}
+.react-flow__controls-button {
+  background: var(--color-node);
+  border-bottom: 1px solid var(--color-line);
+  fill: var(--color-mist);
+}
+.react-flow__controls-button:hover {
+  background: var(--color-raised);
+}
+
+/* ---- Indic text ----------------------------------------------------------
+   Stacked conjuncts and vowel signs clip at Latin line heights, and Indic
+   words run long: give them room and let them wrap anywhere. */
+:lang(hi), :lang(mr), :lang(bn), :lang(ta), :lang(te), :lang(kn), :lang(ml),
+:lang(gu), :lang(pa), :lang(od), :lang(or) {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Indic motifs --------------------------------------------------------
+   Used sparingly, the way a kolam sits at a threshold: on the landing hero
+   and on empty drawing surfaces, never behind reading text. */
+
+/* Kolam / rangoli dot grid: the pulli dots a kolam is drawn around. */
+.kolam {
+  background-image: radial-gradient(circle at center, color-mix(in srgb, var(--color-warn) 38%, transparent) 1.1px, transparent 1.6px);
+  background-size: 22px 22px;
+  background-position: 11px 11px;
+}
+
+/* Shirorekha: the headline bar of Devanagari and Bengali script, as a short
+   rule over a section label. */
+.shirorekha {
+  position: relative;
+  padding-top: 0.6rem;
+}
+.shirorekha::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.25rem;
+  height: 2px;
+  background: var(--color-warn);
+}
+
+/* The hero's cycling native-script word. */
+@keyframes lipi-in {
+  from { opacity: 0; transform: translateY(0.25em); }
+  to { opacity: 1; transform: none; }
+}
+.lipi-in {
+  display: inline-block;
+  animation: lipi-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lipi-in { animation: none; }
+}
+
+/* ---- Concept map (React Flow, in lib/openui/studyLibrary.tsx) ----------- */
+.react-flow .concept-node {
+  background: var(--color-node);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.react-flow .concept-node:hover {
+  border-color: var(--color-faint);
+}
+.react-flow .concept-node.selected {
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-signal) 14%, transparent);
+}
+.react-flow .concept-node .react-flow__handle {
+  opacity: 0;
+}
+.react-flow .concept-edge .react-flow__edge-path {
+  stroke: var(--color-faint);
+  stroke-width: 1.25;
+}
+.react-flow .concept-edge marker path,
+.react-flow__arrowhead polyline {
+  stroke: var(--color-faint);
+  fill: var(--color-faint);
 }
