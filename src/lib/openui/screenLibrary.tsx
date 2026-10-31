@@ -293,8 +293,10 @@ function Choices({
   icons?: ReactNode[];
 }) {
   const done = picked !== null;
+  // Short answers (a symbol, a number, a word) sit two-up even in a narrow card.
+  const short = options.every((o) => plainMath(o).length <= 24);
   return (
-    <div role="radiogroup" className={`grid gap-3 ${columns === 2 ? "grid-cols-2" : "@xl:grid-cols-2"}`}>
+    <div role="radiogroup" className={`grid gap-3 ${columns === 2 || short ? "grid-cols-2" : "@xl:grid-cols-2"}`}>
       {options.map((o, i) => {
         const right = done && i === correctIndex;
         const wrong = done && i === picked && i !== correctIndex;
