@@ -319,7 +319,13 @@ The launch set is English plus the 10 Indic languages supported by both `sarvam-
    - Live round trip on Basic Calculus L1 in Tamil: Bulbul spoke a code-mixed question (1.0 s), Saaras transcribed it word for word (0.34 s), the answer streamed first token at 1.5 s and finished at 2.0 s as valid OpenUI citing the lecture at 216 s, and Bulbul read it back (3.6 s).
    - Doubt panel: tap to record (25 s cap, countdown ring, input level meter), editable transcription, streamed answer through the OpenUI Renderer, read aloud, earlier doubts on the lecture, budget shown, mic-denied and signed-out states. "Beyond this lecture" asides are labelled in words. D opens it; checks stay quiet while it's open.
    - Not verified in a browser while signed in (that needs your Google account); the signed-in path is covered by route tests and the live run above.
-8. Browse, landing, today, and warming the featured shelf.
+8. Browse, landing, today, and warming the featured shelf. **Done.** As built:
+   - Flashcard review: one `card_reviews` table (SM-2 state plus a snapshot of the card in the student's language) instead of `mastery` + `review_events`. Card ids hash the lecture, time and English front, so they're the same in every language and survive pack rebuilds. Again / Hard / Good / Easy map to SM-2 qualities 1 / 3 / 4 / 5; reviews keep a daily streak on IST days. Verified live: Good → 1 day, Again → 8 hours, Good next day → 3 days, streak 2.
+   - Today (`/today`, `GET /api/today`): due cards across lectures, rated in place, each linking back to `/lecture/[id]?t=…`.
+   - Course browser: discipline chips (with counts) from the first page of `/api/courses`; human-subtitle languages shown in their own scripts.
+   - Featured shelf: `scripts/warmFeatured.ts` scores candidates from the starter disciplines (eligible only with ≥90% of lectures playable with English captions; ranked by human Indic languages, then discipline), sets `featured_rank` on 12, and warms their first 3 lectures in English plus up to 2 human-subtitle languages. The landing page shows it via `/api/courses?featured=1`.
+   - Lecture page first load 305 kB → 188 kB: OpenUI, React Flow and the doubt panel load on demand.
+   - Fixes found from real use while building this step: Saaras rejected Chrome's `audio/webm;codecs=opus` (now sent as `audio/webm`); one Mayura call per segment hit Sarvam's rate limit, so translation is now batched through `105b-conversations` with Mayura only for misses (a Hindi lecture: 5 batch calls + Mayura for misses, no 429s; a pack translation: 3 + 10); rate-limited stages no longer use up attempts and failed stages cool down 30 s; checks placed long after their explanation move to the end of it.
 
 ## 6. Spike results (2026-10-31, `scripts/spike.ts`)
 
