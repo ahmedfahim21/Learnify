@@ -71,6 +71,13 @@
       "when": 1793473728377,
       "tag": "0009_generated_screens",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793477140970,
+      "tag": "0010_learner_preferences",
+      "breakpoints": true
     }
   ]
 }

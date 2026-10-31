@@ -1,4 +1,5 @@
 import {
+  boolean,
   date,
   index,
   integer,
@@ -312,8 +313,24 @@ export type Transcript = typeof transcripts.$inferSelect;
 export type NewTranscript = typeof transcripts.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type StudyPackRow = typeof studyPacks.$inferSelect;
+/**
+ * How a student wants to learn, set once on their first lecture and editable
+ * after: the language screens are written in, what they're here for (which
+ * study mode opens first), how hard to pitch it (which screen variant), and
+ * whether checks pause the video. One row per user.
+ */
+export const learnerPreferences = pgTable("learner_preferences", {
+  userId: uuid("user_id").primaryKey(),
+  lang: text("lang").notNull(),
+  goal: text("goal").notNull(),
+  level: text("level").notNull(),
+  checks: boolean("checks").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type NewStudyPackRow = typeof studyPacks.$inferInsert;
 export type Doubt = typeof doubts.$inferSelect;
 export type NewDoubt = typeof doubts.$inferInsert;
 export type CardReview = typeof cardReviews.$inferSelect;
 export type GeneratedScreen = typeof generatedScreens.$inferSelect;
+export type LearnerPreferencesRow = typeof learnerPreferences.$inferSelect;

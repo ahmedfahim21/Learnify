@@ -29,8 +29,8 @@ const userTables = configs.filter((c) => c.columns.some((col) => col.name === "u
 
 describe("row-level security", () => {
   it("finds the schema's tables", () => {
-    expect(tables.sort()).toEqual(["card_reviews", "courses", "doubts", "generated_screens", "generation_usage", "jobs", "lectures", "streaks", "study_packs", "transcripts"]);
-    expect(userTables.sort()).toEqual(["card_reviews", "doubts", "generation_usage", "streaks"]);
+    expect(tables.sort()).toEqual(["card_reviews", "courses", "doubts", "generated_screens", "generation_usage", "jobs", "learner_preferences", "lectures", "streaks", "study_packs", "transcripts"]);
+    expect(userTables.sort()).toEqual(["card_reviews", "doubts", "generation_usage", "learner_preferences", "streaks"]);
   });
 
   it.each(tables)("is enabled on %s", (table) => {
