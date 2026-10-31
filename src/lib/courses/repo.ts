@@ -1,10 +1,11 @@
-import { and, asc, count, eq, gt, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { type Course, courses, type Lecture, lectures, type NewCourse, type NewLecture } from "@/db/schema";
+import { type Course, courses, generatedScreens, type Lecture, lectures, type NewCourse, type NewLecture, studyPacks } from "@/db/schema";
 import { type Lang, LANGUAGES } from "@/lib/languages";
 import { fetchCourseOutline } from "@/lib/nptel/client";
 import type { NptelCourseList, NptelLesson } from "@/lib/nptel/decode";
+import { STUDY_PROMPT_VERSION } from "@/lib/study/generate";
 
 /**
  * The course bank in Postgres. The full course list is mirrored by
@@ -247,6 +248,52 @@ export async function listCourses({ disciplineId, q, cursor, limit }: ListCourse
   return { courses: page, nextCursor: rows.length > limit ? page[page.length - 1].id : null };
 }
 
+// --- Context for lists ------------------------------------------------------
+
+/** How many lectures each course has, for courses whose outline is fetched. */
+export async function lectureCounts(courseIds: number[]): Promise<Map<number, number>> {
+  if (courseIds.length === 0) return new Map();
+  const rows = await getDb()
+    .select({ courseId: lectures.courseId, n: count() })
+    .from(lectures)
+    .where(inArray(lectures.courseId, courseIds))
+    .groupBy(lectures.courseId);
+  return new Map(rows.map((r) => [r.courseId, r.n]));
+}
+
+/** What's already written for each lecture, by language: free for the next student to open. */
+export interface Readiness {
+  notes: Lang[];
+  quiz: Lang[];
+  pack: Lang[];
+}
+
+export const NOT_READY: Readiness = { notes: [], quiz: [], pack: [] };
+
+export async function studyReadiness(lectureIds: string[]): Promise<Map<string, Readiness>> {
+  const out = new Map<string, Readiness>();
+  if (lectureIds.length === 0) return out;
+  const db = getDb();
+  const [screens, packs] = await Promise.all([
+    db
+      .selectDistinct({ lectureId: generatedScreens.lectureId, lang: generatedScreens.lang, kind: generatedScreens.kind })
+      .from(generatedScreens)
+      .where(inArray(generatedScreens.lectureId, lectureIds)),
+    db
+      .selectDistinct({ lectureId: studyPacks.lectureId, lang: studyPacks.lang })
+      .from(studyPacks)
+      .where(and(inArray(studyPacks.lectureId, lectureIds), eq(studyPacks.promptVersion, STUDY_PROMPT_VERSION))),
+  ]);
+  const entry = (id: string) => {
+    let r = out.get(id);
+    if (!r) out.set(id, (r = { notes: [], quiz: [], pack: [] }));
+    return r;
+  };
+  for (const s of screens) if (s.kind === "notes" || s.kind === "quiz") entry(s.lectureId)[s.kind].push(s.lang as Lang);
+  for (const p of packs) entry(p.lectureId).pack.push(p.lang as Lang);
+  return out;
+}
+
 // --- Response shapes --------------------------------------------------------
 // What the browser gets. Caption references (Drive ids, gs:// paths) stay on
 // the server: only the transcript pipeline fetches them.
@@ -260,6 +307,8 @@ export interface CourseDto {
   disciplineName: string;
   /** null until the course has been opened once and its outline fetched. */
   humanLangs: string[] | null;
+  /** null until the course has been opened once and its outline fetched. */
+  lectureCount: number | null;
 }
 
 export interface LectureDto {
@@ -271,9 +320,11 @@ export interface LectureDto {
   youtubeId: string | null;
   /** Language codes with an NPTEL human subtitle track for this lecture, English included. */
   captionLangs: Lang[];
+  /** Study screens already written for it, by language. */
+  ready: Readiness;
 }
 
-export function toCourseDto(c: Course): CourseDto {
+export function toCourseDto(c: Course, lectureCount: number | null = null): CourseDto {
   return {
     id: c.id,
     title: c.title,
@@ -282,10 +333,11 @@ export function toCourseDto(c: Course): CourseDto {
     disciplineId: c.disciplineId,
     disciplineName: c.disciplineName,
     humanLangs: c.humanLangs,
+    lectureCount: c.outlineFetchedAt ? lectureCount ?? 0 : null,
   };
 }
 
-export function toLectureDto(l: Lecture): LectureDto {
+export function toLectureDto(l: Lecture, ready: Readiness = NOT_READY): LectureDto {
   return {
     id: l.id,
     position: l.position,
@@ -294,5 +346,6 @@ export function toLectureDto(l: Lecture): LectureDto {
     title: l.title,
     youtubeId: l.youtubeId,
     captionLangs: (Object.keys(LANGUAGES) as Lang[]).filter((code) => l.vttRefs[LANGUAGES[code].nptelName]),
+    ready,
   };
 }

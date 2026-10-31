@@ -69,7 +69,7 @@ function preamble(kind: ScreenKind, variant: ScreenVariant, lang: Lang, title: s
         ? "This student wants a challenge: go deeper into why and when ideas apply, edge cases and application; questions should need reasoning, not recall."
         : "";
   return [
-    `You turn an IIT lecture into a study screen. Lecture: "${title}".`,
+    `You turn an NPTEL lecture into a study screen. Lecture: "${title}".`,
     language,
     ...task,
     style,

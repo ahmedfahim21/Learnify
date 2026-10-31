@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import {
@@ -55,9 +56,9 @@ const oriya = Noto_Sans_Oriya({ weight: "400", subsets: ["oriya"], variable: "--
 const indic = [devanagari, bengali, tamil, telugu, kannada, malayalam, gujarati, gurmukhi, oriya];
 
 const SITE_NAME = "Learnify";
-const TAGLINE = "Watch an IIT lecture in English, learn it in your language";
+const TAGLINE = "Watch an NPTEL lecture, learn it in your language";
 const DESCRIPTION =
-  "NPTEL lectures with subtitles in Tamil, Telugu, Kannada, Hindi and more, checks that pause the video at the right moment, spoken doubts answered from what the lecturer just said, and study screens that jump back to the timestamp.";
+  "Pick a free NPTEL lecture from over 100 Indian institutes, the IITs and IISc among them, watch it as it is, then learn it in Tamil, Hindi, Telugu, Kannada and more: notes, quizzes and flashcards written from that lecture, and doubts answered by voice.";
 
 /** Absolute URLs for OG tags need an origin. Set NEXT_PUBLIC_SITE_URL in the
  *  deployed environment; locally the dev origin is the honest answer. */
@@ -75,8 +76,9 @@ export const metadata: Metadata = {
   creator: "Ahmed Fahim",
   keywords: [
     "NPTEL",
+    "NPTEL lectures",
     "IIT lectures",
-    "Tamil subtitles",
+    "learn in Tamil",
     "Indian languages",
     "engineering lectures",
     "spaced repetition",
@@ -112,6 +114,8 @@ export default function RootLayout({
         <TopNav />
         <div className="flex-1">{children}</div>
         <Footer />
+        {/* Page views only; no cookies. Inert outside Vercel. */}
+        <Analytics />
       </body>
     </html>
   );

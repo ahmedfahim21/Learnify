@@ -7,11 +7,26 @@ import type { Course, Lecture } from "@/db/schema";
  * response shapes (every field, and that caption references never leave the
  * server), input validation, and whose fault a failure is.
  */
-const mocks = vi.hoisted(() => ({ listCourses: vi.fn(), listDisciplines: vi.fn(), listFeatured: vi.fn(), getCourseWithLectures: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  listCourses: vi.fn(),
+  listDisciplines: vi.fn(),
+  listFeatured: vi.fn(),
+  getCourseWithLectures: vi.fn(),
+  lectureCounts: vi.fn(),
+  studyReadiness: vi.fn(),
+}));
 
 vi.mock("@/lib/courses/repo", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/courses/repo")>();
-  return { ...real, listCourses: mocks.listCourses, listDisciplines: mocks.listDisciplines, listFeatured: mocks.listFeatured, getCourseWithLectures: mocks.getCourseWithLectures };
+  return {
+    ...real,
+    listCourses: mocks.listCourses,
+    listDisciplines: mocks.listDisciplines,
+    listFeatured: mocks.listFeatured,
+    getCourseWithLectures: mocks.getCourseWithLectures,
+    lectureCounts: mocks.lectureCounts,
+    studyReadiness: mocks.studyReadiness,
+  };
 });
 
 const { GET: listGET } = await import("./route");
@@ -54,6 +69,7 @@ const expectedCourse = {
   disciplineId: 106,
   disciplineName: "Computer Science and Engineering",
   humanLangs: ["hi", "ta"],
+  lectureCount: 42,
 };
 
 const ctx = (courseId: string) => ({ params: Promise.resolve({ courseId }) });
@@ -61,6 +77,8 @@ const ctx = (courseId: string) => ({ params: Promise.resolve({ courseId }) });
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.listDisciplines.mockResolvedValue([{ id: 106, name: "Computer Science and Engineering", courses: 412 }]);
+  mocks.lectureCounts.mockResolvedValue(new Map([[106106127, 42]]));
+  mocks.studyReadiness.mockResolvedValue(new Map());
 });
 
 describe("GET /api/courses", () => {
@@ -91,6 +109,13 @@ describe("GET /api/courses", () => {
     expect(mocks.listCourses).not.toHaveBeenCalled();
   });
 
+  it("leaves the lecture count null for a course nobody has opened, without counting it", async () => {
+    mocks.listCourses.mockResolvedValue({ courses: [{ ...course, outlineFetchedAt: null }], nextCursor: null });
+    const body = await (await listGET(new Request("http://x/api/courses?cursor=1"))).json();
+    expect(body.courses).toEqual([{ ...expectedCourse, lectureCount: null }]);
+    expect(mocks.lectureCounts).toHaveBeenCalledWith([]);
+  });
+
   it("treats a blank search as no search", async () => {
     mocks.listCourses.mockResolvedValue({ courses: [], nextCursor: null });
     await listGET(new Request("http://x/api/courses?q=%20%20"));
@@ -111,7 +136,7 @@ describe("GET /api/courses/[courseId]", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body).toEqual({
-      course: expectedCourse,
+      course: { ...expectedCourse, lectureCount: 1 },
       lectures: [
         {
           id: "0b0e0c7e-5f1a-4f4b-9d55-6d2a4cbb4b11",
@@ -121,11 +146,22 @@ describe("GET /api/courses/[courseId]", () => {
           title: "Introduction to Computers and Programming",
           youtubeId: "DYFhgnaZCRE",
           captionLangs: ["en", "ta", "od"],
+          ready: { notes: [], quiz: [], pack: [] },
         },
       ],
     });
     expect(JSON.stringify(body)).not.toMatch(/1ef5G3pl|gs:\/\//);
     expect(mocks.getCourseWithLectures).toHaveBeenCalledWith(106106127);
+  });
+
+  it("says which study screens are already written for each lecture, by language", async () => {
+    mocks.getCourseWithLectures.mockResolvedValue({ course, lectures: [lecture] });
+    mocks.studyReadiness.mockResolvedValue(new Map([[lecture.id, { notes: ["hi", "bn"], quiz: ["hi"], pack: ["en", "hi"] }]]));
+
+    const body = await (await courseGET(new Request("http://x"), ctx("106106127"))).json();
+
+    expect(body.lectures[0].ready).toEqual({ notes: ["hi", "bn"], quiz: ["hi"], pack: ["en", "hi"] });
+    expect(mocks.studyReadiness).toHaveBeenCalledWith([lecture.id]);
   });
 
   it("404s an id that isn't in the bank", async () => {
