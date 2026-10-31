@@ -62,10 +62,10 @@ The system-design course site, its content and its tutor all go. The archive is 
   - `middleware.ts` refreshes the session.
   - `authClient.ts` uses `createBrowserClient` for sign-in and sign-out.
   - The `user_id` foreign keys point at `auth.users(id)`, declared in SQL like the current `0008_neon_auth.sql`. `schemaFilter: ["public"]` stays, so drizzle-kit never touches the `auth` schema.
-- **RLS:** Supabase exposes `public` tables over PostgREST to anyone holding the anon key. Every table gets **RLS enabled with no policies**, so PostgREST is closed and all reads and writes go through our API routes using the server-side Postgres role. A test checks that `relrowsecurity` is true for every table in `public`.
-- **Keys:**
-  - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are publishable and safe in the client.
-  - The service-role key is **not used**, so it never enters env or the bundle.
+- **RLS:** Supabase exposes `public` tables over PostgREST to anyone holding the publishable key. Every table gets **RLS enabled with no policies**, so PostgREST is closed and all reads and writes go through our API routes using the server-side Postgres role. `src/db/rls.test.ts` fails if any table in `schema.ts` lacks `ENABLE ROW LEVEL SECURITY` or its `auth.users` foreign key in a migration.
+- **Keys:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (Supabase's newer publishable key, replacing the anon key). The `NEXT_PUBLIC_` prefix is required for the browser client.
+- **Archive step as built:** the baseline has only `generation_usage` and `streaks`. `mastery` and `review_events` are created with `lectures` and flashcards (step 2 onward), because their foreign keys need those tables. `engine.ts`, `/today` and `/me` were concept-based and were removed; the pure SM-2 code (`schedule.ts`, `update.ts`) stays for flashcards.
+- The secret (service-role) key is **not used**, so it never enters env or the bundle.
 - **Users:** existing Neon Auth accounts don't carry over. Everyone signs up again on the new product.
 - **Dependencies:** remove `@neondatabase/auth` and `@neondatabase/serverless`. Add `@supabase/supabase-js`, `@supabase/ssr` and `postgres`.
 - `streaks`.
@@ -329,7 +329,7 @@ SARVAM_API_KEY=            # required
 DATABASE_URL=              # required: Supabase transaction pooler (port 6543)
 DIRECT_URL=                # drizzle-kit migrations: direct connection (port 5432)
 NEXT_PUBLIC_SUPABASE_URL=  # publishable
-NEXT_PUBLIC_SUPABASE_ANON_KEY=   # publishable; service-role key is never used
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=   # publishable; service-role key is never used
 DOUBT_DAILY_LIMIT=20
 DOUBT_UI_MODEL=sarvam      # sarvam | bedrock
 AWS_BEARER_TOKEN_BEDROCK= / AWS_REGION= / BEDROCK_MODEL=   # only if DOUBT_UI_MODEL=bedrock
