@@ -1,6 +1,7 @@
 import { z } from "zod";
 
-import { COURSE_PAGE_SIZE, listCourses, listDisciplines, listFeatured, toCourseDto } from "@/lib/courses/repo";
+import { COURSE_PAGE_SIZE, lectureCounts, listCourses, listDisciplines, listFeatured, toCourseDto } from "@/lib/courses/repo";
+import type { Course } from "@/db/schema";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,7 @@ export async function GET(request: Request): Promise<Response> {
   const { discipline, q, cursor, featured } = parsed.data;
   if (featured) {
     return Response.json(
-      { courses: (await listFeatured()).map(toCourseDto) },
+      { courses: await withCounts(await listFeatured()) },
       { headers: { "cache-control": "public, s-maxage=600, stale-while-revalidate=86400" } },
     );
   }
@@ -34,8 +35,13 @@ export async function GET(request: Request): Promise<Response> {
     cursor === undefined ? listDisciplines() : null,
   ]);
   return Response.json({
-    courses: page.courses.map(toCourseDto),
+    courses: await withCounts(page.courses),
     nextCursor: page.nextCursor,
     ...(disciplines ? { disciplines } : {}),
   });
+}
+
+async function withCounts(list: Course[]) {
+  const counts = await lectureCounts(list.filter((c) => c.outlineFetchedAt).map((c) => c.id));
+  return list.map((c) => toCourseDto(c, counts.get(c.id) ?? null));
 }

@@ -1,4 +1,4 @@
-import { getCourseWithLectures, toCourseDto, toLectureDto } from "@/lib/courses/repo";
+import { getCourseWithLectures, NOT_READY, studyReadiness, toCourseDto, toLectureDto } from "@/lib/courses/repo";
 import { NptelFetchError } from "@/lib/nptel/client";
 import { NptelFormatError } from "@/lib/nptel/decode";
 
@@ -20,9 +20,10 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
   try {
     const result = await getCourseWithLectures(courseId);
     if (!result) return Response.json({ error: "No such course." }, { status: 404 });
+    const ready = await studyReadiness(result.lectures.map((l) => l.id));
     return Response.json({
-      course: toCourseDto(result.course),
-      lectures: result.lectures.map(toLectureDto),
+      course: toCourseDto(result.course, result.lectures.length),
+      lectures: result.lectures.map((l) => toLectureDto(l, ready.get(l.id) ?? NOT_READY)),
     });
   } catch (err) {
     // NPTEL being down or changing its format isn't our 500: say whose it is.
