@@ -20,12 +20,12 @@ export const alt = "Learnify: watch an IIT lecture in English, learn it in your 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const INK = "#ffffff";
-const FG = "#0f1117";
-const MIST = "#656b78";
-const FAINT = "#8a8f9c";
-const LINE = "#e3e4e8";
-const SIGNAL = "#0b63d6";
+const INK = "#fbf8f2";
+const FG = "#1d1914";
+const MIST = "#6b6255";
+const FAINT = "#82786a";
+const LINE = "#e4dac9";
+const SIGNAL = "#2e3f8f";
 const RADIUS = 3;
 
 const LANGS = ["Hindi", "Tamil", "Telugu", "Kannada", "Malayalam", "Bengali", "Marathi", "Gujarati", "Odia", "Punjabi"];

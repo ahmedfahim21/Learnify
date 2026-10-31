@@ -3,9 +3,10 @@
 /* ======================================================================
    Learnify's design system.
    
-   A neutral foundation, accent used only as accent, and hierarchy carried by
-   size and colour rather than font weight. IBM Plex, a signal-azure primary,
-   and a small radius rather than hard-square corners.
+   A warm paper foundation, accents drawn from Indian dyes (indigo, turmeric,
+   peacock, kumkum) used only as accent, and hierarchy carried by size and
+   colour rather than font weight. IBM Plex for Latin, Noto for each Indic
+   script, and a small radius rather than hard-square corners.
 
    Light only, deliberately: one canvas to design against means the accents
    and the code surfaces each have exactly one job, and nothing has to hold
@@ -14,36 +15,39 @@
 
 @theme {
   /* ---- Foundation: light is the base, as in the source system ------- */
-  --color-ink: #ffffff;        /* the canvas */
-  --color-surface: #fafafb;    /* cards, boxes sitting on the canvas */
-  --color-raised: #f1f2f4;     /* hover / inset wells */
-  --color-fg: #0f1117;         /* primary text */
-  --color-mist: #656b78;       /* secondary text, chrome, placeholders */
-  --color-faint: #8a8f9c;      /* tertiary: metadata, ticks, markers */
-  --color-line: #e3e4e8;       /* 1px borders, hairline rules */
-  /* Diagram + code surfaces. Separate from --color-surface so the drawing
-     canvas can sit slightly apart from the page without hardcoded hex. */
-  --color-canvas: #f7f8fa;
-  --color-node: #ffffff;
-  --wash-selection: rgba(15, 17, 23, 0.12);
-  --shadow-card: 0 10px 28px rgba(15, 17, 23, 0.14);
+  /* Foundation: handmade paper and lamp-black ink rather than screen white
+     and cool grey. Warm neutrals let the Indic accents below sit naturally. */
+  --color-ink: #fbf8f2;        /* the canvas: khadi / handmade paper */
+  --color-surface: #f5efe4;    /* cards, the subtitle bar */
+  --color-raised: #ede5d6;     /* hover / inset wells, skeletons */
+  --color-fg: #1d1914;         /* primary text: warm lamp-black */
+  --color-mist: #6b6255;       /* secondary text, chrome, placeholders */
+  --color-faint: #82786a;      /* tertiary: metadata, ticks, markers */
+  --color-line: #e4dac9;       /* 1px borders, hairline rules */
+  /* Drawing surfaces (concept map), slightly apart from the page. */
+  --color-canvas: #f8f3ea;
+  --color-node: #fffdf8;
+  --wash-selection: rgba(46, 63, 143, 0.14);
+  --shadow-card: 0 10px 28px rgba(29, 25, 20, 0.12);
 
   /* ---- Accents (accent only, never a large fill or body text) -------
-     Named for their role in a system diagram. `signal` is the primary:
-     interactive, live, progress. Darkened here because the dark-mode values
-     are tuned to glow on ink and go weak on white. */
-  --color-signal: #0b63d6;   /* primary: interactive, live, progress */
-  --color-flow: #5b4bd6;     /* movement between components */
-  --color-deep: #0a7d76;     /* storage, persistence */
-  --color-warn: #a8620a;     /* pressure, saturation, trade-off */
-  --color-alert: #c9382f;    /* failure, loss, the thing that breaks */
-  --color-accent: #bd3f78;   /* everything else that needs separating */
+     Named by role, coloured from Indian dyes and materials. Each holds at
+     least 4.5:1 against the paper canvas. */
+  --color-signal: #2e3f8f;   /* primary: indigo (neel) — interactive, live, progress */
+  --color-flow: #6a3d8f;     /* jamun purple — movement, secondary links */
+  --color-deep: #0f6b57;     /* peacock green (mor) — right answers, persistence */
+  --color-warn: #a35a00;     /* turmeric (haldi) — try again, retrying */
+  --color-alert: #b3263e;    /* kumkum — failure, the thing that breaks */
+  --color-accent: #b4532a;   /* terracotta — everything else that needs separating */
 
   /* Corners: softened from the source system's hard square. Crisp enough to
      stay technical, not so sharp it reads as austere over a 25-minute read. */
   --radius: 3px;
 
-  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  /* Plex covers Latin; each Indic script falls through to its Noto face. */
+  --font-sans: var(--font-plex-sans), var(--font-deva), var(--font-beng), var(--font-taml),
+    var(--font-telu), var(--font-knda), var(--font-mlym), var(--font-gujr), var(--font-guru),
+    var(--font-orya), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
   --measure: min(90vw, 76rem);
@@ -82,48 +86,53 @@ html {
   }
 }
 
-body {
-  background: var(--color-ink);
-  color: var(--color-fg);
-  font-family: var(--font-sans);
-  font-size: 1rem;
-  font-weight: 400;
-  line-height: 1.7;
-  font-feature-settings: "kern", "liga", "calt";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-synthesis: none;
-}
+/* Element defaults live in the base layer so Tailwind utilities (text-white
+   on a link, a colour on a heading) override them. Unlayered, they would win
+   over every utility. */
+@layer base {
+  body {
+    background: var(--color-ink);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.7;
+    font-feature-settings: "kern", "liga", "calt";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-synthesis: none;
+  }
 
-/* Hierarchy comes from size, tracking and colour — never weight. Plex Sans
-   is loaded at 400 only, so there is no bold to reach for by accident. */
-h1, h2, h3, h4 {
-  font-family: var(--font-sans);
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  color: var(--color-fg);
-  text-wrap: balance;
-}
+  /* Hierarchy comes from size, tracking and colour — never weight. Plex Sans
+     is loaded at 400 only, so there is no bold to reach for by accident. */
+  h1, h2, h3, h4 {
+    font-family: var(--font-sans);
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: var(--color-fg);
+    text-wrap: balance;
+  }
 
-code, pre, kbd, samp {
-  text-transform: none;
-}
+  code, pre, kbd, samp {
+    text-transform: none;
+  }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-::selection {
-  background-color: var(--wash-selection);
-  color: var(--color-fg);
-}
+  ::selection {
+    background-color: var(--wash-selection);
+    color: var(--color-fg);
+  }
 
-:focus-visible {
-  outline: 1px solid var(--color-signal);
-  outline-offset: 3px;
+  :focus-visible {
+    outline: 1px solid var(--color-signal);
+    outline-offset: 3px;
+  }
 }
 
 /* ---- Reusable primitives ------------------------------------------------ */
@@ -369,4 +378,87 @@ a:hover .arr-d { transform: translateY(2px); }
 }
 .react-flow__controls-button:hover {
   background: var(--color-raised);
+}
+
+/* ---- Indic text ----------------------------------------------------------
+   Stacked conjuncts and vowel signs clip at Latin line heights, and Indic
+   words run long: give them room and let them wrap anywhere. */
+:lang(hi), :lang(mr), :lang(bn), :lang(ta), :lang(te), :lang(kn), :lang(ml),
+:lang(gu), :lang(pa), :lang(od), :lang(or) {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Indic motifs --------------------------------------------------------
+   Used sparingly, the way a kolam sits at a threshold: on the landing hero
+   and on empty drawing surfaces, never behind reading text. */
+
+/* Kolam / rangoli dot grid: the pulli dots a kolam is drawn around. */
+.kolam {
+  background-image: radial-gradient(circle at center, color-mix(in srgb, var(--color-warn) 38%, transparent) 1.1px, transparent 1.6px);
+  background-size: 22px 22px;
+  background-position: 11px 11px;
+}
+
+/* Shirorekha: the headline bar of Devanagari and Bengali script, as a short
+   rule over a section label. */
+.shirorekha {
+  position: relative;
+  padding-top: 0.6rem;
+}
+.shirorekha::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 2.25rem;
+  height: 2px;
+  background: var(--color-warn);
+}
+
+/* The hero's cycling native-script word. */
+@keyframes lipi-in {
+  from { opacity: 0; transform: translateY(0.25em); }
+  to { opacity: 1; transform: none; }
+}
+.lipi-in {
+  display: inline-block;
+  animation: lipi-in 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .lipi-in { animation: none; }
+}
+
+/* ---- Concept map (React Flow, in lib/openui/studyLibrary.tsx) ----------- */
+.react-flow .concept-node {
+  background: var(--color-node);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  line-height: 1.45;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  box-shadow: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.react-flow .concept-node:hover {
+  border-color: var(--color-faint);
+}
+.react-flow .concept-node.selected {
+  border-color: var(--color-signal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-signal) 14%, transparent);
+}
+.react-flow .concept-node .react-flow__handle {
+  opacity: 0;
+}
+.react-flow .concept-edge .react-flow__edge-path {
+  stroke: var(--color-faint);
+  stroke-width: 1.25;
+}
+.react-flow .concept-edge marker path,
+.react-flow__arrowhead polyline {
+  stroke: var(--color-faint);
+  fill: var(--color-faint);
 }
