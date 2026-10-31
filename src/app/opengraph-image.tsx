@@ -3,6 +3,8 @@ import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
 
+import { MARK } from "@/components/site/Logo";
+
 /**
  * The link preview card.
  *
@@ -50,9 +52,15 @@ export default async function OpengraphImage() {
           color: FG,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 30 }}>
-          <div style={{ width: 22, height: 22, borderRadius: RADIUS, background: SIGNAL }} />
-          <span>Learnify</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 34 }}>
+          <svg viewBox="0 0 32 32" width={52} height={52}>
+            <rect width="32" height="32" rx="8" fill={MARK.tile} />
+            <rect x="6" y="8" width="20" height="3.2" rx="1.6" fill={MARK.bar} />
+            <path d="M11.5 11.2 V24.6 L22.6 17.9 Z" fill={MARK.play} stroke={MARK.play} strokeWidth="1.2" strokeLinejoin="round" />
+          </svg>
+          <span style={{ display: "flex" }}>
+            Learn<span style={{ color: SIGNAL }}>ify</span>
+          </span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -60,7 +68,7 @@ export default async function OpengraphImage() {
             Watch an IIT lecture in English, learn it in your language.
           </div>
           <div style={{ fontSize: 28, color: MIST, maxWidth: 940, lineHeight: 1.4 }}>
-            Subtitles, in-video checks, spoken doubts and study screens for NPTEL lectures.
+            Notes, quizzes, flashcards and spoken doubts, written from NPTEL lectures in your language.
           </div>
         </div>
 

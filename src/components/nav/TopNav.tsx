@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+import { Logo } from "@/components/site/Logo";
 import { signOut, useSession } from "@/lib/authClient";
 
 const LINKS: { href: string; label: string }[] = [
@@ -18,33 +19,8 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-(--color-line) bg-(--color-ink)/85 backdrop-blur">
       <div className="wrap flex h-14 items-center justify-between">
-        <Link href="/" className="group flex items-center gap-2.5">
-          <svg viewBox="0 0 20 20" aria-hidden className="h-[18px] w-[18px]">
-            <rect
-              x="0.75"
-              y="0.75"
-              width="18.5"
-              height="18.5"
-              rx="2.5"
-              fill="var(--color-node)"
-              stroke="var(--color-line)"
-              strokeWidth="1.5"
-            />
-            <rect x="4" y="4.5" width="8" height="2.5" rx="1" fill="var(--color-signal)" />
-            <rect x="4" y="8.5" width="5" height="1.5" rx="0.75" fill="var(--color-faint)" />
-            <rect x="4" y="12.5" width="3.5" height="3.5" rx="1" fill="var(--color-deep)" />
-            <rect
-              x="10.5"
-              y="12.5"
-              width="5.5"
-              height="3.5"
-              rx="1"
-              fill="none"
-              stroke="var(--color-warn)"
-              strokeWidth="1.5"
-            />
-          </svg>
-          <span className="text-(--color-fg)">Learnify</span>
+        <Link href="/" aria-label="Learnify home" className="flex items-center">
+          <Logo size={26} />
         </Link>
         <nav className="flex items-center gap-1">
           {LINKS.map((link) => {
