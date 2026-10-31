@@ -21,7 +21,7 @@ const STEPS = [
     numeral: "१",
     numeralLang: "hi",
     title: "Pick a lecture",
-    body: "Any of 3,050 NPTEL courses by IIT and IISc faculty, played as the professor recorded it.",
+    body: "Any of 3,050 NPTEL courses from over 100 institutes, the IITs and IISc among them, played as the professor recorded it.",
   },
   {
     numeral: "২",
@@ -50,15 +50,15 @@ export default function HomePage() {
       <section className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-8">
           <h1 className="text-[2.6rem] leading-[1.08] tracking-tight sm:text-6xl">
-            <span className="sr-only">Watch an IIT lecture in English. Learn it in your language.</span>
+            <span className="sr-only">Watch an NPTEL lecture in English. Learn it in your language.</span>
             <span aria-hidden>
-              Watch an IIT lecture in English.
+              Watch an NPTEL lecture in English.
               <br />
               Learn it in <CyclingLanguage />
             </span>
           </h1>
           <p className="max-w-lg text-xl leading-relaxed text-(--color-mist)">
-            Free NPTEL lectures, turned into notes, quizzes and flashcards in the language you think in.
+            Free lectures from the IITs, IISc and over 100 other institutes, turned into notes, quizzes and flashcards in the language you think in.
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link

@@ -85,7 +85,7 @@ const batchSchema = {
 function systemPrompt(lang: Lang, glossary: string[]): string {
   const { name } = LANGUAGES[lang];
   return [
-    `You translate subtitles of an IIT engineering lecture from English into ${name}.`,
+    `You translate subtitles of an NPTEL lecture from English into ${name}.`,
     `Write the way an Indian engineering student speaks ${name}: natural ${name} grammar, but every technical or English-origin term stays in English, written in Latin script — never transliterated into ${name} script.`,
     `Example: "Computer Science Engineering Department" stays "Computer Science Engineering Department", not a ${name}-script spelling of it. The same goes for course, program, variable names, code, numbers and formulas.`,
     "Translate every item. Keep each item's `i` exactly. Do not merge, split, drop or reorder items. Do not add explanations.",

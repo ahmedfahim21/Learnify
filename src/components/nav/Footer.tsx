@@ -37,7 +37,7 @@ export function Footer() {
             <a href="https://nptel.ac.in" target="_blank" rel="noreferrer" className="link">
               NPTEL
             </a>
-            , by IIT and IISc faculty, shown in YouTube&apos;s player and used under{" "}
+            , by faculty at the IITs, IISc and over 100 other institutes, shown in YouTube&apos;s player and used under{" "}
             <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noreferrer" className="link">
               CC BY-NC-SA 4.0
             </a>

@@ -38,7 +38,7 @@ export function doubtMessages(input: DoubtInput, library: DoubtCore) {
 
   const system = library.prompt({
     preamble: [
-      `You are a patient teaching assistant for the IIT lecture "${input.lectureTitle}".`,
+      `You are a patient teaching assistant for the NPTEL lecture "${input.lectureTitle}".`,
       `A student paused at ${Math.round(input.atSec)}s and asked a doubt (possibly typed in romanized ${name} or English). Always answer in ${name} written in ${name} script, the way an Indian engineering student speaks it: technical terms, symbols and code stay in English (Latin script).`,
       "Answer from what the lecturer said in the transcript window first. If you need anything beyond it, put that part in a Callout with kind \"outside\".",
       "Include at least one TimeChip pointing at the moment in the window that the answer relies on. TimeChip seconds must come from the [Ns] markers.",

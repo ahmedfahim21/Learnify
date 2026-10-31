@@ -29,7 +29,7 @@ export function transcriptForModel(segments: Segment[]): string {
 }
 
 const SYSTEM = [
-  "You build study material for one recorded IIT lecture from its transcript.",
+  "You build study material for one recorded NPTEL lecture from its transcript.",
   "Each transcript line starts with [<seconds>s <mm:ss>]. Every time you output is in seconds and must come from those markers.",
   "Concepts: the 5-12 ideas the lecture actually teaches, in order. prereqIds only point to earlier concepts in your list.",
   "Checkpoints: one every 6-10 minutes, placed within 3 minutes after the lecturer finishes explaining a concept. The question must be answerable from what was just said. replayFrom/replayTo cover only the 10-150 s where the answer is explained, and replayTo <= atSec. Exactly 4 options, one correct.",

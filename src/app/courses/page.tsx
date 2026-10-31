@@ -77,7 +77,7 @@ export default function CoursesPage() {
       <div className="wrap space-y-2 pt-10 pb-6">
         <h1 className="text-4xl tracking-tight sm:text-5xl">Pick a course</h1>
         <p className="text-lg text-(--color-mist)">
-          {total ? `${total.toLocaleString("en-IN")} NPTEL video courses` : "NPTEL video courses"} from IIT and IISc faculty.
+          {total ? `${total.toLocaleString("en-IN")} NPTEL video courses` : "NPTEL video courses"} from over 100 Indian institutes, the IITs and IISc among them.
         </p>
       </div>
 
