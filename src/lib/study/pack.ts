@@ -222,7 +222,8 @@ export interface Normalised {
  *   right answer in the same slot far too often (every key was B in one run).
  *
  * - check timing: a check more than 180 s after its explanation moves to the
- *   end of its replay window, right after the part it tests.
+ *   end of its replay window, right after the part it tests; of two checks
+ *   within 60 s, the later is dropped.
  *
  * Questions, answers, and every other timestamp are left as the model wrote
  * them; validatePack still rejects anything this doesn't cover.
@@ -256,10 +257,24 @@ export function normalisePack(pack: StudyPack, segments: { startSec: number; end
 
   // A check placed long after the part it tests: the replay window is where
   // the model found the explanation, so the check moves to the end of it.
-  snapped.checkpoints = snapped.checkpoints.map((cp) => {
+  const moved = snapped.checkpoints.map((cp) => {
     if (cp.atSec - cp.replayTo <= MAX_REPLAY_TO_CHECK_SEC) return cp;
     repairs.push(`${cp.id}: fired ${Math.round(cp.atSec - cp.replayTo)}s after its explanation; moved to ${Math.round(cp.replayTo)}s`);
     return { ...cp, atSec: cp.replayTo };
   });
+
+  // Two checks within a minute of each other (often after a move): keep the
+  // earlier one. A dropped check costs a little practice; a failed pack costs
+  // every screen.
+  const kept: typeof moved = [];
+  for (const cp of [...moved].sort((a, b) => a.atSec - b.atSec)) {
+    const previous = kept.at(-1);
+    if (previous && cp.atSec - previous.atSec < MIN_CHECK_GAP_SEC) {
+      repairs.push(`${cp.id}: only ${Math.round(cp.atSec - previous.atSec)}s after ${previous.id}; dropped`);
+      continue;
+    }
+    kept.push(cp);
+  }
+  snapped.checkpoints = kept;
   return { pack: snapped, repairs };
 }

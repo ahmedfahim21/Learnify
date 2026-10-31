@@ -192,6 +192,17 @@ describe("normalisePack", () => {
     expect(validatePack(out, { durationSec: 1000, segments: segs }).filter((e) => e.includes("after its explanation"))).toEqual([]);
   });
 
+  it("drops the later of two checks less than a minute apart, keeping order", () => {
+    const p = pack();
+    p.checkpoints = [
+      { ...p.checkpoints[0], id: "late", atSec: 330, replayFrom: 280, replayTo: 320 },
+      { ...p.checkpoints[0], id: "early", atSec: 300, replayFrom: 250, replayTo: 290 },
+    ];
+    const { pack: out, repairs } = normalisePack(p, segs);
+    expect(out.checkpoints.map((c) => c.id)).toEqual(["early"]);
+    expect(repairs).toContain("late: only 30s after early; dropped");
+  });
+
   it("changes nothing outside checkpoints", () => {
     const p = pack();
     const out = normalisePack(p, segs).pack;
