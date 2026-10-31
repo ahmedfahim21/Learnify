@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import {
@@ -112,6 +113,8 @@ export default function RootLayout({
         <TopNav />
         <div className="flex-1">{children}</div>
         <Footer />
+        {/* Page views only; no cookies. Inert outside Vercel. */}
+        <Analytics />
       </body>
     </html>
   );
