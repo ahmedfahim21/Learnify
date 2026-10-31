@@ -37,3 +37,6 @@ next-env.d.ts
 
 # vercel
 .vercel
+
+# Sarvam spike output (scripts/spike.ts)
+spike-output/
