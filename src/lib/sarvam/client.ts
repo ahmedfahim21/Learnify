@@ -312,10 +312,11 @@ export async function translate(req: TranslateRequest, opts?: RequestOptions): P
 export async function transcribe(
   audio: Blob,
   languageCode: string,
-  opts?: RequestOptions,
+  opts?: RequestOptions & { filename?: string },
 ): Promise<{ transcript: string; languageCode: string | null }> {
   const form = new FormData();
-  form.set("file", audio, "doubt");
+  // A real extension helps Sarvam pick the codec (browsers record webm or mp4).
+  form.set("file", audio, opts?.filename ?? "doubt.webm");
   form.set("model", "saaras:v3");
   form.set("mode", "codemix");
   form.set("language_code", languageCode);

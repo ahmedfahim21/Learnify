@@ -48,6 +48,7 @@ export function doubtMessages(input: DoubtInput, library: typeof doubtLibrary) {
       "Arguments are positional only. Never write `title:`, `sec:`, `label=` or any named argument.",
       "Output only openui-lang statements: no prose, no markdown fences, nothing after the last statement.",
       "Put every component in its own statement and reference it from root's parts array.",
+      "Never write seconds or timestamps in Paragraph text (no \"216s\"); point at a moment only with a TimeChip.",
     ],
     examples: [EXAMPLE],
   });

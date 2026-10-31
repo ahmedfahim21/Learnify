@@ -98,11 +98,14 @@ export const Callout = defineComponent({
   description:
     "A short aside. kind 'note' for a tip, 'outside' when the content goes beyond what this lecture said.",
   props: z.object({ kind: z.enum(["note", "outside"]), text: z.string() }),
+  // "Beyond this lecture" is labelled in words, not just colour: a student
+  // should always know which parts the lecturer actually said.
   component: ({ props }) => (
     <aside
-      className={`border-l-2 pl-3 ${props.kind === "outside" ? "border-[var(--color-warn)]" : "border-[var(--color-signal)]"}`}
+      className={`space-y-1 border-l-2 pl-3 ${props.kind === "outside" ? "border-(--color-warn)" : "border-(--color-signal)"}`}
     >
-      {props.text}
+      <p className="label">{props.kind === "outside" ? "Beyond this lecture" : "Note"}</p>
+      <p>{props.text}</p>
     </aside>
   ),
 });
