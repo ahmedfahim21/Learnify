@@ -1,46 +1,43 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
-import { LANGUAGES, type Lang } from "@/lib/languages";
+import type { Lang } from "@/lib/languages";
 import type { ViewPack } from "@/lib/lectures/view";
-import type { Segment } from "@/lib/transcripts/merge";
 
 /**
- * Transcript, concept map, flashcards and recap, as tabs beside the player.
- * The study tabs render OpenUI programs built from the pack by the typed
- * serializer; until the pack exists they say what's being built.
+ * The study side of a lecture. Notes and Quiz are generated UI: the model
+ * writes them from the lecture in the student's language. Flashcards and the
+ * concept map render the lecture's study pack. Everything loads with its tab.
  */
 
-// OpenUI and React Flow load only when a study tab is first opened.
 const StudyProgram = dynamic(() => import("./StudyProgram"), {
   ssr: false,
   loading: () => <StudyPlaceholder note={null} />,
 });
+const GeneratedScreen = dynamic(() => import("./GeneratedScreen"), {
+  ssr: false,
+  loading: () => <StudyPlaceholder note={null} />,
+});
 
-export const TABS = ["transcript", "map", "cards", "recap"] as const;
+export const TABS = ["notes", "quiz", "cards", "map"] as const;
 export type Tab = (typeof TABS)[number];
-const LABELS: Record<Tab, string> = { transcript: "Transcript", map: "Concept map", cards: "Flashcards", recap: "Recap" };
-
-function formatTime(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
+const LABELS: Record<Tab, string> = { notes: "Notes", quiz: "Quiz", cards: "Flashcards", map: "Concept map" };
 
 interface Props {
   tab: Tab;
   onTab: (tab: Tab) => void;
+  lectureId: string;
   lang: Lang;
-  segments: Segment[] | null;
-  currentIndex: number;
-  onSeek: (sec: number) => void;
+  /** Generated screens need the English transcript to ground them in. */
+  transcriptReady: boolean;
   pack: ViewPack | null;
-  /** Why the study tabs are empty, when they are: still building, or failed. */
+  /** Why the pack tabs are empty, when they are: still building, or failed. */
   packNote: string | null;
 }
 
-export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pack, packNote }: Props) {
+export function StudyTabs({ tab, onTab, lectureId, lang, transcriptReady, pack, packNote }: Props) {
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   const move = (delta: number) => {
@@ -50,7 +47,7 @@ export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pa
   };
 
   return (
-    <div className="flex min-h-0 flex-col gap-3">
+    <div className="flex min-h-0 flex-col gap-4">
       <div
         role="tablist"
         aria-label="Study"
@@ -83,8 +80,12 @@ export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pa
       </div>
 
       <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="min-h-0">
-        {tab === "transcript" ? (
-          <Transcript lang={lang} segments={segments} currentIndex={currentIndex} onSeek={onSeek} />
+        {tab === "notes" || tab === "quiz" ? (
+          transcriptReady ? (
+            <GeneratedScreen key={`${tab}-${lang}`} lectureId={lectureId} lang={lang} kind={tab} />
+          ) : (
+            <StudyPlaceholder note="Fetching the lecture's captions; notes and quizzes are written from them." />
+          )
         ) : pack ? (
           <StudyProgram pack={pack} tab={tab} />
         ) : (
@@ -102,66 +103,5 @@ function StudyPlaceholder({ note }: { note: string | null }) {
       <div className="h-4 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
       {note && <p className="text-sm text-(--color-mist)">{note}</p>}
     </div>
-  );
-}
-
-function Transcript({
-  lang,
-  segments,
-  currentIndex,
-  onSeek,
-}: {
-  lang: Lang;
-  segments: Segment[] | null;
-  currentIndex: number;
-  onSeek: (sec: number) => void;
-}) {
-  const list = useRef<HTMLOListElement>(null);
-
-  // Keep the current line in view, without fighting a student who scrolled away.
-  useEffect(() => {
-    const el = list.current?.querySelector<HTMLElement>(`[data-i="${currentIndex}"]`);
-    if (!el || !list.current) return;
-    const box = list.current.getBoundingClientRect();
-    const line = el.getBoundingClientRect();
-    const nearView = line.top >= box.top - line.height * 3 && line.bottom <= box.bottom + line.height * 3;
-    if (!nearView) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
-  }, [currentIndex]);
-
-  if (!segments) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 6 }, (_, n) => (
-          <div key={n} className="h-10 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <ol ref={list} lang={LANGUAGES[lang].sarvam} className="max-h-[60vh] space-y-0.5 overflow-y-auto pr-1 lg:max-h-[calc(100vh-14rem)]">
-      {segments.map((s, n) => {
-        const current = n === currentIndex;
-        return (
-          <li key={s.i} data-i={n}>
-            <button
-              type="button"
-              onClick={() => onSeek(s.startSec)}
-              aria-current={current ? "true" : undefined}
-              className={`flex w-full gap-3 rounded-(--radius) border-l-2 px-2.5 py-1.5 text-left transition-colors ${
-                current
-                  ? "border-(--color-signal) bg-(--color-raised) text-(--color-fg)"
-                  : "border-transparent text-(--color-mist) hover:text-(--color-fg)"
-              }`}
-            >
-              <span className="mt-1 w-10 shrink-0 font-mono text-xs text-(--color-faint)">{formatTime(s.startSec)}</span>
-              <span>{s.text}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
   );
 }

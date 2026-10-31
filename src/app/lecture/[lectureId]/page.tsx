@@ -15,13 +15,12 @@ import { describeStatus } from "@/lib/lectures/describeStatus";
 import type { LectureView } from "@/lib/lectures/view";
 import { useSession } from "@/lib/authClient";
 import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/openui/contexts";
-import { pageAt } from "@/lib/player/subtitlePage";
-import { segmentAt } from "@/lib/transcripts/merge";
 
 /**
- * The lecture player: the official video in YouTube's embedded player, the
- * subtitle line in the chosen language under it, checks that pause at the
- * right moments, and the study tabs beside it.
+ * The lecture player: the official video in YouTube's embedded player (its
+ * own captions are the student's to turn on), checks that pause at the right
+ * moments, and beside it the study screens the model writes in the student's
+ * language — notes, quiz, flashcards, concept map.
  *
  * Reads GET /api/lectures/[id]; while anything is missing it asks POST
  * /prepare to build it and polls again, backing off from 2 s to 10 s.
@@ -34,9 +33,6 @@ const DoubtPanel = dynamic(() => import("@/components/lecture/DoubtPanel").then(
 });
 
 const LANG_KEY = "learnify.lang";
-/** About two lines of the subtitle bar; longer sentences advance in timed pages. */
-const SUBTITLE_PAGE_CHARS = 110;
-const ENGLISH_PAGE_CHARS = 130;
 const CHECKS_KEY = "learnify.checks";
 
 function initialLang(): Lang {
@@ -73,7 +69,7 @@ export default function LecturePage() {
   const [view, setView] = useState<LectureView | null>(null);
   const [blocker, setBlocker] = useState<Blocker>(null);
   const [now, setNow] = useState(0);
-  const [tab, setTab] = useState<Tab>("transcript");
+  const [tab, setTab] = useState<Tab>("notes");
   const [showKeys, setShowKeys] = useState(false);
   /** Where the video was paused to ask a doubt; null while no doubt is open. */
   const [doubtAt, setDoubtAt] = useState<number | null>(null);
@@ -170,13 +166,6 @@ export default function LecturePage() {
     [user, lang, lectureId],
   );
   const english = view?.subtitles.en ?? null;
-  const target = view?.subtitles.target ?? null;
-  const showingTarget = Boolean(target && lang !== "en");
-  const track = target ?? english;
-  const index = track ? segmentAt(track.segments, now) : -1;
-  const line = track && index >= 0 ? track.segments[index] : null;
-  const enIndex = english && showingTarget ? segmentAt(english.segments, now) : -1;
-  const enLine = english && enIndex >= 0 ? english.segments[enIndex] : null;
   const status = view ? describeStatus(view.status) : null;
   const clock = useMemo(
     () => ({ durationSec: english?.durationSec ?? Number.MAX_SAFE_INTEGER, seekTo: seekAndPlay }),
@@ -203,7 +192,8 @@ export default function LecturePage() {
         else player.play();
       } else if (k === "j") player.seek(now - 10);
       else if (k === "l") player.seek(now + 10);
-      else if (k === "t") setTab("transcript");
+      else if (k === "n") setTab("notes");
+      else if (k === "q") setTab("quiz");
       else if (k === "d") openDoubt();
       else if (k === "?") setShowKeys((v) => !v);
     };
@@ -252,7 +242,7 @@ export default function LecturePage() {
             )}
           </div>
 
-          {/* On phones the video and its subtitle stay on screen while the tabs scroll. */}
+          {/* On phones the video stays on screen while the study screens scroll. */}
           <div className="space-y-3 bg-(--color-ink) max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:pb-2">
             <div className="relative aspect-video overflow-hidden rounded-(--radius) bg-(--color-raised)">
               {player.blocked && view?.lecture.youtubeId ? (
@@ -266,47 +256,19 @@ export default function LecturePage() {
                   >
                     Open it on YouTube ↗
                   </a>
-                  <p className="text-sm text-(--color-mist)">Subtitles and study tabs still work here.</p>
+                  <p className="text-sm text-(--color-mist)">The study screens still work here.</p>
                 </div>
               ) : (
                 <div ref={player.containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
               )}
               {player.error && <p className="absolute inset-x-0 bottom-0 bg-(--color-ink)/90 p-3 text-sm text-(--color-alert)">{player.error}</p>}
             </div>
-
-            {!noTranscript && (
-              <div className="min-h-[6.5rem] rounded-(--radius) bg-(--color-surface) px-4 py-3" aria-live="off">
-                {track ? (
-                  <>
-                    {line ? (
-                      <p lang={LANGUAGES[track.lang].sarvam} className="text-[1.3rem] leading-[1.7] max-sm:text-lg">
-                        {pageAt(line.text, line.startSec, line.endSec, now, SUBTITLE_PAGE_CHARS)}
-                      </p>
-                    ) : (
-                      <p className="pt-1 text-(--color-faint)">
-                        {LANGUAGES[track.lang].native} subtitles appear here as the lecturer speaks.
-                      </p>
-                    )}
-                    {enLine && (
-                      <p className="text-[0.95rem] text-(--color-mist)">
-                        {pageAt(enLine.text, enLine.startSec, enLine.endSec, now, ENGLISH_PAGE_CHARS)}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="space-y-2 pt-1">
-                    <div className="h-5 w-4/5 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-                    <div className="h-4 w-3/5 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <label className="flex items-center gap-2 text-sm text-(--color-mist)">
               <Languages size={16} aria-hidden />
-              <span className="sr-only">Subtitle language</span>
+              <span className="sr-only">Study in</span>
               <select
                 value={lang ?? "ta"}
                 onChange={(e) => chooseLang(e.target.value as Lang)}
@@ -320,10 +282,6 @@ export default function LecturePage() {
                 ))}
               </select>
             </label>
-
-            {showingTarget && target && (
-              <span className="label">{target.source === "nptel" ? "Human translation · NPTEL" : "Machine translated · Sarvam"}</span>
-            )}
 
             <button
               type="button"
@@ -368,7 +326,7 @@ export default function LecturePage() {
               {[
                 ["Space / K", "Play or pause"],
                 ["J / L", "Back or forward 10 seconds"],
-                ["T", "Show the transcript"],
+                ["N / Q", "Show the notes or the quiz"],
                 ["D", "Ask a doubt about this moment"],
                 ["1–4, Enter", "Answer a check"],
                 ["?", "Show or hide these shortcuts"],
@@ -404,7 +362,7 @@ export default function LecturePage() {
           )}
           {noTranscript && (
             <p className="text-(--color-mist)">
-              There&apos;s no transcript for this lecture yet, so subtitles, checks and study screens aren&apos;t available. The video still plays.
+              There&apos;s no transcript for this lecture yet, so checks and study screens aren&apos;t available. The video still plays.
             </p>
           )}
         </section>
@@ -427,15 +385,14 @@ export default function LecturePage() {
               <StudyTabs
                 tab={tab}
                 onTab={setTab}
-                lang={track?.lang ?? lang ?? "en"}
-                segments={track?.segments ?? null}
-                currentIndex={index}
-                onSeek={seekAndPlay}
+                lectureId={lectureId}
+                lang={lang ?? "en"}
+                transcriptReady={Boolean(english)}
                 pack={view?.pack ?? null}
                 packNote={
                   packFailed
                     ? `Couldn't build the study material: ${packFailed.state === "failed" ? packFailed.error : ""}`
-                    : "Building the concept map, flashcards and recap. This takes about a minute the first time anyone opens a lecture."
+                    : "Building the flashcards and concept map. This takes under a minute the first time anyone opens a lecture."
                 }
               />
             )}

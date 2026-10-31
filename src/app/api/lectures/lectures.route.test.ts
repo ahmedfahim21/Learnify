@@ -83,7 +83,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/lectures/[lectureId]", () => {
-  it("returns the lecture, both subtitle tracks and the pack without answer keys", async () => {
+  it("returns the lecture, the English transcript only, and the pack without answer keys", async () => {
     const res = await viewGET(req("ta"), ctx());
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -92,7 +92,6 @@ describe("GET /api/lectures/[lectureId]", () => {
       status: statusOf(true),
       subtitles: {
         en: { lang: "en", source: "youtube", durationSec: 4, segments: [{ i: 0, startSec: 1, endSec: 4, text: "en:Hello." }] },
-        target: { lang: "ta", source: "sarvam", durationSec: 4, segments: [{ i: 0, startSec: 1, endSec: 4, text: "ta:Hello." }] },
       },
       pack: {
         ...pack,
@@ -114,7 +113,7 @@ describe("GET /api/lectures/[lectureId]", () => {
     mocks.getStoredPack.mockResolvedValue(null);
     mocks.lectureStatus.mockResolvedValue(statusOf(false));
     const body = await (await viewGET(req(), ctx())).json();
-    expect(body.subtitles).toEqual({ en: null, target: null });
+    expect(body.subtitles).toEqual({ en: null });
     expect(body.pack).toBeNull();
   });
 

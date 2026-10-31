@@ -39,7 +39,8 @@ export interface LectureView {
     youtubeId: string | null;
   };
   status: LectureStatus;
-  subtitles: { en: TrackDto | null; target: TrackDto | null };
+  /** The English transcript: grounding for generated screens and the clock's length. Not shown as subtitles. */
+  subtitles: { en: TrackDto | null };
   /** The pack without answer keys; flashcards carry ids stable across languages. */
   pack: ViewPack | null;
 }
@@ -50,10 +51,9 @@ export async function getLectureView(lectureId: string, lang: Lang): Promise<Lec
   const lecture = await transcriptDeps.getLecture(lectureId);
   if (!lecture) return null;
 
-  const [status, en, target, packRow, englishPack] = await Promise.all([
+  const [status, en, packRow, englishPack] = await Promise.all([
     lectureStatus(lectureId, lang),
     transcriptDeps.getStored(lectureId, "en"),
-    lang === "en" ? null : transcriptDeps.getStored(lectureId, lang),
     dbPackDeps.getStored(lectureId, lang),
     lang === "en" ? null : dbPackDeps.getStored(lectureId, "en"),
   ]);
@@ -70,7 +70,7 @@ export async function getLectureView(lectureId: string, lang: Lang): Promise<Lec
       youtubeId: lecture.youtubeId,
     },
     status,
-    subtitles: { en: track(en), target: lang === "en" ? track(en) : track(target) },
+    subtitles: { en: track(en) },
     pack: packRow
       ? {
           ...publicPack(packRow.payload),
