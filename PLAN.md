@@ -9,10 +9,10 @@ Learnify takes an NPTEL lecture, keeps the official video playing in YouTube's e
 
 These change the plan, so they come first.
 
-1. **NPTEL already publishes structured data.** The site is SvelteKit. Every page has a `__data.json` twin:
+1. **NPTEL already publishes structured data.** NPTEL's own website (nptel.ac.in, not Learnify) is built with SvelteKit, and every page on it has a `__data.json` twin. Learnify stays a Next.js app and only reads that JSON:
    - `https://nptel.ac.in/courses/__data.json` returns all **3,484 courses** with `id`, `title`, `professor`, `instituteName`, `disciplineId`, `contentType`, plus 26 disciplines and the institutes.
    - `https://nptel.ac.in/courses/{courseId}/__data.json` returns `courseOutline.units[].lessons[]` with `name`, **`youtube_id`**, and **`vtt_url`**: a map of language → Google Drive file id.
-   - The format is SvelteKit's devalue encoding (flat array plus index references). It needs a small decoder of about 20 lines, which we write ourselves.
+   - The JSON uses SvelteKit's devalue encoding (flat array plus index references). Learnify decodes it with about 20 lines of its own (`src/lib/nptel/decode.ts`) rather than adding a Svelte dependency.
 2. **NPTEL ships human-made transcripts, often already translated.** For course 106106127 (Programming, Data Structures and Algorithms using C, IIT Madras), 60 of 61 lessons have English VTT and 60 have Tamil VTT. Hindi, Malayalam and Telugu exist too. `drive.google.com/uc?export=download&id=<id>` returns plain `WEBVTT`. Human captions beat YouTube auto-captions, and a human Tamil track beats any machine translation.
 3. **Caption code exists in history.** `src/lib/sources/youtube.ts` in commit `c05a76c` has `parseYouTubeId`, a two-extractor fallback chain (`youtube-caption-extractor`, then `youtube-transcript-plus`), entity decoding and timestamped chunking. It was removed in `3594aef`. We restore the parts we need, without the `catch {}` blocks that swallow errors.
 4. **Sarvam's surface** (docs read 2026-10-31):
@@ -289,7 +289,11 @@ The launch set is English plus the 10 Indic languages supported by both `sarvam-
    - Rename the budget env to `DOUBT_DAILY_LIMIT`.
    - README stub. Typecheck, lint and tests green.
 2. `lib/nptel` decoder, client, Zod shape guard and saved fixtures. `courses` and `lectures` tables, the sync script, and `GET /api/courses` and `GET /api/courses/[courseId]`. **Done.** NPTEL states its licence once, site-wide, in its footer ("Creative Commons Attribution-ShareAlike, CC BY - NC - SA"), so there is no per-course licence to store; the site footer carries the attribution.
-3. Transcripts: VTT parser, cue merger, Drive fetch with id regex, size cap and the `WEBVTT` check; the YouTube fallback; the resolve chain.
+3. Transcripts: VTT parser, cue merger, Drive fetch with id regex, size cap and the `WEBVTT` check; the YouTube fallback; the resolve chain. **Done.** As built:
+   - One YouTube library (`youtube-caption-extractor`), not two: both call the same YouTube endpoint, so a second adds no resilience. It returns NPTEL's own uploaded captions. Whether YouTube blocks it from Vercel is unverified until deployed.
+   - `transcripts` rows exist only when complete; build status and errors move to the jobs table in step 5, rather than `status`/`error` columns here.
+   - A human NPTEL track is used only if its length is within 10% of the English; otherwise it is likely a different cut and the lecture is machine-translated.
+   - Lectures are keyed by outline position, not NPTEL lesson id: Basic Calculus reuses lesson id 1 for an appended "Live Session" unit.
 4. Sarvam client (retry, timeout, SSE). Translator interface and id-aligned batches, checkpointed per batch.
 5. Staged jobs: a `jobs` row per `(lectureId, lang, stage)` with `heartbeatAt`. `prepare` claims a job and runs it in `after()`, with `maxDuration = 300`. Conditional-`UPDATE` takeover. Then the study pack generation, the validator, and the `/api/lectures/*` routes.
 6. OpenUI library and typed serializer (answer key stripped). Player, subtitle bar, checkpoint panel, study tabs. Indic fonts.
@@ -343,7 +347,7 @@ AWS_BEARER_TOKEN_BEDROCK= / AWS_REGION= / BEDROCK_MODEL=   # only if DOUBT_UI_MO
 
 | # | Premise | Verdict | Evidence |
 |---|---|---|---|
-| P1 | NPTEL's `__data.json` is a usable course bank | Holds, with a guard. It is an internal SvelteKit endpoint with no contract. | 3,484 courses decoded today; robots.txt `Disallow:` is empty |
+| P1 | NPTEL's `__data.json` is a usable course bank | Holds, with a guard. It is an internal endpoint of NPTEL's SvelteKit site, with no contract. | 3,484 courses decoded today; robots.txt `Disallow:` is empty |
 | P2 | NPTEL VTTs on Drive can be fetched from a server | Holds, but fragile. Drive throttles and can return an HTML interstitial. Fetch each file once, store it, and require the body to start with `WEBVTT`. | fetched English and Tamil files for 106106127 |
 | P3 | We may republish derived material | Holds under **CC BY-NC-SA**: attribution, non-commercial, share-alike. Translations and study packs are derivatives, so they carry the same licence. | course page footer: "Distributed under … CC BY - NC - SA" |
 | P4 | sarvam-105b is good enough for translation, MCQs and OpenUI Lang | **Unproven.** Move the spike to the front. | none yet |
