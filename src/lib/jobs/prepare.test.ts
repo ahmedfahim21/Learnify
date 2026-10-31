@@ -42,10 +42,9 @@ beforeEach(() => {
 afterEach(() => spies.forEach((s) => s.mockRestore()));
 
 describe("stagesFor", () => {
-  it("builds English first, then the language, subtitles before packs", () => {
+  it("fetches only the English transcript, then builds packs, never a translated transcript", () => {
     expect(stagesFor("ta")).toEqual([
       { lang: "en", stage: "transcript" },
-      { lang: "ta", stage: "transcript" },
       { lang: "en", stage: "pack" },
       { lang: "ta", stage: "pack" },
     ]);
@@ -53,6 +52,11 @@ describe("stagesFor", () => {
       { lang: "en", stage: "transcript" },
       { lang: "en", stage: "pack" },
     ]);
+  });
+
+  it("limits the transcript scope to the free English caption fetch", () => {
+    expect(stagesFor("ta", "transcript")).toEqual([{ lang: "en", stage: "transcript" }]);
+    expect(stagesFor("en", "transcript")).toEqual([{ lang: "en", stage: "transcript" }]);
   });
 });
 
@@ -62,8 +66,16 @@ describe("runStages", () => {
     const report = await runStages("lec-1", "ta", d);
     expect(report).toEqual({ built: stagesFor("ta"), stoppedAt: null });
     expect(vi.mocked(d.build).mock.calls.map((c) => c[1])).toEqual(stagesFor("ta"));
-    expect(d.finish).toHaveBeenCalledTimes(4);
+    expect(d.finish).toHaveBeenCalledTimes(3);
     expect(d.fail).not.toHaveBeenCalled();
+  });
+
+  it("builds only the transcript in transcript scope, never a pack", async () => {
+    const d = deps();
+    const report = await runStages("lec-1", "ta", d, "transcript");
+    expect(report).toEqual({ built: [{ lang: "en", stage: "transcript" }], stoppedAt: null });
+    expect(vi.mocked(d.build).mock.calls.map((c) => c[1])).toEqual([{ lang: "en", stage: "transcript" }]);
+    expect(d.claim).toHaveBeenCalledTimes(1);
   });
 
   it("skips stages whose output already exists, without claiming them", async () => {
@@ -124,17 +136,17 @@ describe("runStages", () => {
       }),
     });
     const report = await runStages("lec-1", "ta", d);
-    expect(report).toEqual({ built: [{ lang: "en", stage: "transcript" }], stoppedAt: { lang: "ta", stage: "transcript", reason: "budget" } });
+    expect(report).toEqual({ built: [{ lang: "en", stage: "transcript" }], stoppedAt: { lang: "en", stage: "pack", reason: "budget" } });
   });
 });
 
 describe("lectureStatus", () => {
-  it("reports each stage as ready, running, failed or pending", async () => {
+  it("reports each stage as ready, running or failed", async () => {
     const status = await lectureStatus("lec-1", "ta", {
       hasOutput: async (_id, key) => key.lang === "en" && key.stage === "transcript",
       jobs: async () => [
-        job({ lang: "ta", stage: "transcript", status: "running", progress: { done: 40, total: 0 } }),
         job({ lang: "en", stage: "pack", status: "failed", attempts: 1, error: "truncated" }),
+        job({ lang: "ta", stage: "pack", status: "running", progress: { done: 4, total: 12 } }),
       ],
     });
     expect(status).toEqual({
@@ -142,9 +154,8 @@ describe("lectureStatus", () => {
       ready: false,
       stages: [
         { lang: "en", stage: "transcript", state: "ready" },
-        { lang: "ta", stage: "transcript", state: "running", progress: { done: 40, total: 0 } },
         { lang: "en", stage: "pack", state: "failed", error: "truncated", willRetry: true },
-        { lang: "ta", stage: "pack", state: "pending" },
+        { lang: "ta", stage: "pack", state: "running", progress: { done: 4, total: 12 } },
       ],
     });
   });

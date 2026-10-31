@@ -1,46 +1,56 @@
 "use client";
 
+import { BookOpen, Layers, type LucideIcon, Network, Sparkles, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import type { ViewPack } from "@/lib/lectures/view";
-import type { Segment } from "@/lib/transcripts/merge";
+import type { Level } from "@/lib/preferences";
+import { StudyNavContext } from "@/lib/openui/contexts";
 
 /**
- * Transcript, concept map, flashcards and recap, as tabs beside the player.
- * The study tabs render OpenUI programs built from the pack by the typed
- * serializer; until the pack exists they say what's being built.
+ * The study area under a lecture: four modes as tiles, then the open one. Notes and Quiz are generated UI: the model
+ * writes them from the lecture in the student's language. Flashcards and the
+ * concept map render the lecture's study pack. Everything loads with its tab.
  */
 
-// OpenUI and React Flow load only when a study tab is first opened.
 const StudyProgram = dynamic(() => import("./StudyProgram"), {
   ssr: false,
   loading: () => <StudyPlaceholder note={null} />,
 });
+const GeneratedScreen = dynamic(() => import("./GeneratedScreen"), {
+  ssr: false,
+  loading: () => <StudyPlaceholder note={null} />,
+});
 
-export const TABS = ["transcript", "map", "cards", "recap"] as const;
+export const TABS = ["notes", "quiz", "cards", "map"] as const;
 export type Tab = (typeof TABS)[number];
-const LABELS: Record<Tab, string> = { transcript: "Transcript", map: "Concept map", cards: "Flashcards", recap: "Recap" };
-
-function formatTime(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
+const MODES: Record<Tab, { label: string; hint: string; icon: LucideIcon; colour: string }> = {
+  notes: { label: "Notes", hint: "Read it, flip the cards", icon: BookOpen, colour: "var(--color-signal)" },
+  quiz: { label: "Quiz", hint: "Play for points", icon: Trophy, colour: "var(--color-accent)" },
+  cards: { label: "Flashcards", hint: "Remember it for good", icon: Layers, colour: "var(--color-flow)" },
+  map: { label: "Concept map", hint: "See how it connects", icon: Network, colour: "var(--color-deep)" },
+};
 
 interface Props {
   tab: Tab;
   onTab: (tab: Tab) => void;
+  lectureId: string;
   lang: Lang;
-  segments: Segment[] | null;
-  currentIndex: number;
-  onSeek: (sec: number) => void;
+  /** How hard to pitch generated screens: the variant they open on. */
+  level: Level;
+  /** Generated screens need the English transcript to ground them in. */
+  transcriptReady: boolean;
   pack: ViewPack | null;
-  /** Why the study tabs are empty, when they are: still building, or failed. */
+  /** Whether the study pack has been asked for (it costs generations, so it waits until it is). */
+  packRequested: boolean;
+  onRequestPack: () => void;
+  /** Why the pack tabs are empty, when they are: still building, or failed. */
   packNote: string | null;
 }
 
-export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pack, packNote }: Props) {
+export function StudyTabs({ tab, onTab, lectureId, lang, level, transcriptReady, pack, packRequested, onRequestPack, packNote }: Props) {
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   const move = (delta: number) => {
@@ -50,48 +60,96 @@ export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pa
   };
 
   return (
-    <div className="flex min-h-0 flex-col gap-3">
-      <div
-        role="tablist"
-        aria-label="Study"
-        className="flex gap-1 overflow-x-auto border-b border-(--color-line)"
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight") move(1);
-          else if (e.key === "ArrowLeft") move(-1);
-        }}
-      >
-        {TABS.map((t) => (
-          <button
-            key={t}
-            ref={(el) => {
-              tabRefs.current[t] = el;
-            }}
-            id={`tab-${t}`}
-            role="tab"
-            type="button"
-            aria-selected={tab === t}
-            aria-controls={`panel-${t}`}
-            tabIndex={tab === t ? 0 : -1}
-            onClick={() => onTab(t)}
-            className={`-mb-px min-h-11 shrink-0 border-b px-3 text-sm transition-colors ${
-              tab === t ? "border-(--color-signal) text-(--color-fg)" : "border-transparent text-(--color-mist) hover:text-(--color-fg)"
-            }`}
-          >
-            {LABELS[t]}
-          </button>
-        ))}
-      </div>
+    <StudyNavContext.Provider value={onTab}>
+      <section className="space-y-6" aria-label="Study this lecture">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-3xl">Study this lecture</h2>
+          <p className="text-(--color-mist)" lang={LANGUAGES[lang].sarvam}>
+            in {LANGUAGES[lang].native}
+          </p>
+        </div>
+        <div
+          role="tablist"
+          aria-label="Study mode"
+          className="grid grid-cols-2 gap-3 md:grid-cols-4"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight") move(1);
+            else if (e.key === "ArrowLeft") move(-1);
+          }}
+        >
+          {TABS.map((t) => {
+            const m = MODES[t];
+            const on = tab === t;
+            return (
+              <button
+                key={t}
+                ref={(el) => {
+                  tabRefs.current[t] = el;
+                }}
+                id={`tab-${t}`}
+                role="tab"
+                type="button"
+                aria-selected={on}
+                aria-controls={`panel-${t}`}
+                tabIndex={on ? 0 : -1}
+                onClick={() => onTab(t)}
+                className="tile flex items-center gap-3 rounded-2xl border-2 p-3 text-left sm:p-4"
+                style={{
+                  borderColor: on ? m.colour : "var(--color-line)",
+                  background: on ? `color-mix(in srgb, ${m.colour} 9%, var(--color-node))` : "var(--color-node)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white transition-transform"
+                  style={{ background: m.colour, transform: on ? "rotate(-6deg) scale(1.05)" : undefined }}
+                >
+                  <m.icon size={20} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-lg leading-tight">{m.label}</span>
+                  <span className="block truncate text-sm text-(--color-mist) max-sm:hidden">{m.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="min-h-0">
-        {tab === "transcript" ? (
-          <Transcript lang={lang} segments={segments} currentIndex={currentIndex} onSeek={onSeek} />
-        ) : pack ? (
-          <StudyProgram pack={pack} tab={tab} />
-        ) : (
-          <StudyPlaceholder note={packNote} />
-        )}
-      </div>
-    </div>
+        <div
+          id={`panel-${tab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${tab}`}
+          className={`rounded-2xl border border-(--color-line) bg-(--color-ink) p-4 sm:p-8 ${tab === "map" ? "" : "[&>*]:mx-auto [&>*]:max-w-3xl"}`}
+        >
+          {tab === "notes" || tab === "quiz" ? (
+            transcriptReady ? (
+              <GeneratedScreen key={`${tab}-${lang}-${level}`} lectureId={lectureId} lang={lang} kind={tab} level={level} />
+            ) : (
+              <StudyPlaceholder note="Fetching the lecture's captions; notes and quizzes are written from them." />
+            )
+          ) : pack ? (
+            <StudyProgram pack={pack} tab={tab} />
+          ) : packRequested ? (
+            <StudyPlaceholder note={packNote} />
+          ) : (
+            <div className="kolam flex flex-col items-start gap-4 rounded-2xl border border-(--color-line) p-6">
+              <p className="text-xl">{tab === "cards" ? "Flashcards" : "A concept map"} for this lecture, in {LANGUAGES[lang].native}.</p>
+              <p className="text-(--color-mist)">
+                Flashcards, the concept map and the pop-up checks are one study pack, written once and shared with everyone.
+              </p>
+              <button
+                type="button"
+                onClick={onRequestPack}
+                className="tile inline-flex min-h-12 items-center gap-2 rounded-full px-6 text-white"
+                style={{ background: MODES[tab].colour }}
+              >
+                <Sparkles size={16} aria-hidden /> Make the study pack
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+    </StudyNavContext.Provider>
   );
 }
 
@@ -102,66 +160,5 @@ function StudyPlaceholder({ note }: { note: string | null }) {
       <div className="h-4 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
       {note && <p className="text-sm text-(--color-mist)">{note}</p>}
     </div>
-  );
-}
-
-function Transcript({
-  lang,
-  segments,
-  currentIndex,
-  onSeek,
-}: {
-  lang: Lang;
-  segments: Segment[] | null;
-  currentIndex: number;
-  onSeek: (sec: number) => void;
-}) {
-  const list = useRef<HTMLOListElement>(null);
-
-  // Keep the current line in view, without fighting a student who scrolled away.
-  useEffect(() => {
-    const el = list.current?.querySelector<HTMLElement>(`[data-i="${currentIndex}"]`);
-    if (!el || !list.current) return;
-    const box = list.current.getBoundingClientRect();
-    const line = el.getBoundingClientRect();
-    const nearView = line.top >= box.top - line.height * 3 && line.bottom <= box.bottom + line.height * 3;
-    if (!nearView) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
-  }, [currentIndex]);
-
-  if (!segments) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 6 }, (_, n) => (
-          <div key={n} className="h-10 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <ol ref={list} lang={LANGUAGES[lang].sarvam} className="max-h-[60vh] space-y-0.5 overflow-y-auto pr-1 lg:max-h-[calc(100vh-14rem)]">
-      {segments.map((s, n) => {
-        const current = n === currentIndex;
-        return (
-          <li key={s.i} data-i={n}>
-            <button
-              type="button"
-              onClick={() => onSeek(s.startSec)}
-              aria-current={current ? "true" : undefined}
-              className={`flex w-full gap-3 rounded-(--radius) border-l-2 px-2.5 py-1.5 text-left transition-colors ${
-                current
-                  ? "border-(--color-signal) bg-(--color-raised) text-(--color-fg)"
-                  : "border-transparent text-(--color-mist) hover:text-(--color-fg)"
-              }`}
-            >
-              <span className="mt-1 w-10 shrink-0 font-mono text-xs text-(--color-faint)">{formatTime(s.startSec)}</span>
-              <span>{s.text}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ol>
   );
 }

@@ -462,3 +462,79 @@ a:hover .arr-d { transform: translateY(2px); }
   stroke: var(--color-faint);
   fill: var(--color-faint);
 }
+
+/* ---- Play (quiz and notes in lib/openui/screenLibrary.tsx) ---------------
+   Small, quick motions that answer the student: a pop for right, a shake for
+   not quite, a burst for a streak. Never on reading text. */
+@keyframes pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.shake { animation: shake 0.38s ease-in-out; }
+
+@keyframes float-up {
+  0% { opacity: 0; transform: translateY(6px) scale(0.9); }
+  25% { opacity: 1; transform: translateY(0) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-22px) scale(1); }
+}
+.float-up { animation: float-up 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Confetti: each piece flies to its own --dx/--dy, coloured by --c. */
+@keyframes burst {
+  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(0.6); }
+}
+.burst-piece {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 11px;
+  border-radius: 1px;
+  background: var(--c);
+  animation: burst 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+/* Flip cards (Reveal): both faces share one grid cell, so the card is as tall
+   as its longer face. */
+.flip { perspective: 1200px; }
+.flip-inner {
+  display: grid;
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  transform-style: preserve-3d;
+}
+.flip-inner > * {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flip-inner > .flip-back { transform: rotateY(180deg); }
+.flip[data-flipped="true"] .flip-inner { transform: rotateY(180deg); }
+
+/* A tile you can press: lifts on hover, settles on press. */
+.tile {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.tile:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(29, 25, 20, 0.08);
+}
+.tile:not(:disabled):active { transform: translateY(0); box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pop, .shake, .float-up, .burst-piece { animation: none; }
+  .burst-piece { display: none; }
+  .flip-inner { transition: none; }
+  .tile:not(:disabled):hover { transform: none; }
+}

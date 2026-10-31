@@ -1,30 +1,36 @@
 "use client";
 
-import { Keyboard, Languages, Mic } from "lucide-react";
+import { Keyboard, Mic, SlidersHorizontal } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CheckpointPanel } from "@/components/lecture/CheckpointPanel";
+import { LearningSetup } from "@/components/lecture/LearningSetup";
 import { StudyTabs, type Tab } from "@/components/lecture/StudyTabs";
 import { useCheckpoints } from "@/components/lecture/useCheckpoints";
+import { usePreferences } from "@/components/lecture/usePreferences";
 import { useYouTubePlayer } from "@/components/player/useYouTubePlayer";
 import { isLang, LANGUAGES, type Lang } from "@/lib/languages";
 import { describeStatus } from "@/lib/lectures/describeStatus";
 import type { LectureView } from "@/lib/lectures/view";
 import { useSession } from "@/lib/authClient";
 import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/openui/contexts";
-import { pageAt } from "@/lib/player/subtitlePage";
-import { segmentAt } from "@/lib/transcripts/merge";
+import { FIRST_MODE } from "@/lib/preferences";
 
 /**
- * The lecture player: the official video in YouTube's embedded player, the
- * subtitle line in the chosen language under it, checks that pause at the
- * right moments, and the study tabs beside it.
+ * The lecture player: the official video in YouTube's embedded player (its
+ * own captions are the student's to turn on), checks that pause at the right
+ * moments, a short rail beside it for whatever belongs to this moment (a
+ * check, a doubt, the controls), and under it, full width, the study modes the
+ * model writes in the student's language: notes, quiz, flashcards, map.
  *
- * Reads GET /api/lectures/[id]; while anything is missing it asks POST
- * /prepare to build it and polls again, backing off from 2 s to 10 s.
+ * Nothing is generated until the student has said how they want to learn
+ * (LearningSetup). Then it asks POST /prepare for only what they need: the
+ * free English captions that notes and quizzes are written from, and the
+ * study pack only once they want checks, flashcards or the map. It polls
+ * GET /api/lectures/[id] meanwhile, backing off from 2 s to 10 s.
  */
 
 // The doubt panel (recorder, OpenUI renderer) loads when a doubt is first opened.
@@ -34,12 +40,9 @@ const DoubtPanel = dynamic(() => import("@/components/lecture/DoubtPanel").then(
 });
 
 const LANG_KEY = "learnify.lang";
-/** About two lines of the subtitle bar; longer sentences advance in timed pages. */
-const SUBTITLE_PAGE_CHARS = 110;
-const ENGLISH_PAGE_CHARS = 130;
-const CHECKS_KEY = "learnify.checks";
 
-function initialLang(): Lang {
+/** The language to suggest in setup: one chosen before, else the browser's. */
+function suggestLang(): Lang {
   try {
     const saved = localStorage.getItem(LANG_KEY);
     if (saved && isLang(saved)) return saved;
@@ -54,13 +57,8 @@ function initialLang(): Lang {
   return "ta";
 }
 
-function remember(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Not remembered across visits; still applies now.
-  }
-}
+const GOAL_LABEL = { understand: "Understand", practise: "Test myself", revise: "Revise" } as const;
+const LEVEL_LABEL = { simpler: "Go easy", standard: "Just right", harder: "Challenge me" } as const;
 
 type Blocker = { kind: "signin" | "limit" | "error"; message: string } | null;
 
@@ -68,42 +66,51 @@ export default function LecturePage() {
   const { lectureId } = useParams<{ lectureId: string }>();
   const startAt = Number(useSearchParams().get("t"));
   const { user } = useSession();
-  const [lang, setLang] = useState<Lang | null>(null);
-  const [checksOn, setChecksOn] = useState(true);
+  const { state: prefsState, save: savePrefs, edit: editPrefs, cancel: cancelPrefs } = usePreferences();
+  const prefs = prefsState.phase === "ready" || prefsState.phase === "editing" ? prefsState.prefs : null;
+  const lang = prefs?.lang ?? null;
+  const checksOn = prefs?.checks ?? false;
+  const [suggestedLang, setSuggestedLang] = useState<Lang>("ta");
+  /** The student asked for flashcards or the map, which need the study pack. */
+  const [packWanted, setPackWanted] = useState(false);
+  const scope = checksOn || packWanted ? "full" : "transcript";
   const [view, setView] = useState<LectureView | null>(null);
   const [blocker, setBlocker] = useState<Blocker>(null);
   const [now, setNow] = useState(0);
-  const [tab, setTab] = useState<Tab>("transcript");
+  const [tab, setTab] = useState<Tab>("notes");
   const [showKeys, setShowKeys] = useState(false);
   /** Where the video was paused to ask a doubt; null while no doubt is open. */
   const [doubtAt, setDoubtAt] = useState<number | null>(null);
 
-  useEffect(() => {
-    setLang(initialLang());
-    try {
-      setChecksOn(localStorage.getItem(CHECKS_KEY) !== "off");
-    } catch {
-      // Default (checks on) stands.
-    }
-  }, []);
+  useEffect(() => setSuggestedLang(suggestLang()), []);
 
-  // Fetch, ask for whatever is missing, and poll with backoff until ready.
+  // Open on the mode the student's goal calls for.
+  const goal = prefs?.goal;
   useEffect(() => {
-    if (!lang) return;
+    if (goal) setTab(FIRST_MODE[goal]);
+  }, [goal]);
+
+  // Fetch the lecture; once preferences are set, ask for what's missing in
+  // scope and poll with backoff until it's there.
+  const prefsSet = prefs !== null;
+  useEffect(() => {
     let cancelled = false;
     let delay = 2000;
     let timer: ReturnType<typeof setTimeout>;
     setBlocker(null);
 
     async function tick() {
-      const res = await fetch(`/api/lectures/${lectureId}?lang=${lang}`);
-      const body = await res.json();
+      const res = await fetch(`/api/lectures/${lectureId}?lang=${lang ?? "en"}`);
+      const body = (await res.json()) as LectureView & { error?: string };
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
       if (cancelled) return;
       setView(body);
-      if (body.status.ready) return;
+      // Nothing is generated before the student has chosen how to learn.
+      if (!prefsSet || !lang) return;
+      const wanted = body.status.stages.filter((s) => scope === "full" || (s.lang === "en" && s.stage === "transcript"));
+      if (wanted.every((s) => s.state === "ready")) return;
 
-      const prep = await fetch(`/api/lectures/${lectureId}/prepare?lang=${lang}`, { method: "POST" });
+      const prep = await fetch(`/api/lectures/${lectureId}/prepare?lang=${lang}&scope=${scope}`, { method: "POST" });
       if (cancelled) return;
       if (prep.status === 401) return setBlocker({ kind: "signin", message: "Sign in to prepare this lecture in your language." });
       if (prep.status === 429) return setBlocker({ kind: "limit", message: (await prep.json()).error });
@@ -120,7 +127,7 @@ export default function LecturePage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [lectureId, lang]);
+  }, [lectureId, lang, scope, prefsSet]);
 
   const player = useYouTubePlayer(view?.lecture.youtubeId ?? null);
   const controls = useMemo(() => ({ play: player.play, pause: player.pause, seek: player.seek }), [player.play, player.pause, player.seek]);
@@ -141,7 +148,16 @@ export default function LecturePage() {
     return () => clearInterval(id);
   }, [sample, onSample]);
 
-  const seekAndPlay = useCallback((sec: number) => player.seek(sec, { play: true }), [player]);
+  // Study screens sit below the video; jumping to a moment brings it back into view.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const seekAndPlay = useCallback(
+    (sec: number) => {
+      player.seek(sec, { play: true });
+      const r = stageRef.current?.getBoundingClientRect();
+      if (r && (r.bottom < 120 || r.top > window.innerHeight)) stageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    [player],
+  );
 
   // ?t=123 (from Today's "watch the moment") starts the lecture there.
   const ready = player.ready;
@@ -170,13 +186,6 @@ export default function LecturePage() {
     [user, lang, lectureId],
   );
   const english = view?.subtitles.en ?? null;
-  const target = view?.subtitles.target ?? null;
-  const showingTarget = Boolean(target && lang !== "en");
-  const track = target ?? english;
-  const index = track ? segmentAt(track.segments, now) : -1;
-  const line = track && index >= 0 ? track.segments[index] : null;
-  const enIndex = english && showingTarget ? segmentAt(english.segments, now) : -1;
-  const enLine = english && enIndex >= 0 ? english.segments[enIndex] : null;
   const status = view ? describeStatus(view.status) : null;
   const clock = useMemo(
     () => ({ durationSec: english?.durationSec ?? Number.MAX_SAFE_INTEGER, seekTo: seekAndPlay }),
@@ -203,7 +212,8 @@ export default function LecturePage() {
         else player.play();
       } else if (k === "j") player.seek(now - 10);
       else if (k === "l") player.seek(now + 10);
-      else if (k === "t") setTab("transcript");
+      else if (k === "n") setTab("notes");
+      else if (k === "q") setTab("quiz");
       else if (k === "d") openDoubt();
       else if (k === "?") setShowKeys((v) => !v);
     };
@@ -216,15 +226,11 @@ export default function LecturePage() {
     player.play();
   }
 
-  function chooseLang(next: Lang) {
-    setLang(next);
-    remember(LANG_KEY, next);
-  }
-
   function toggleChecks() {
-    setChecksOn((on) => {
-      remember(CHECKS_KEY, on ? "off" : "on");
-      return !on;
+    if (!prefs) return;
+    savePrefs({ ...prefs, checks: !prefs.checks }).catch((err: Error) => {
+      console.error("saving the checks preference failed:", err);
+      setBlocker({ kind: "error", message: `Couldn't save that: ${err.message}` });
     });
   }
 
@@ -232,215 +238,207 @@ export default function LecturePage() {
   const active = flow.state.mode === "idle" ? null : flow.state.check.id;
   const checkIndex = active ? checks.findIndex((c) => c.id === active) + 1 : 0;
 
+  const rail =
+    flow.state.mode === "idle" && doubtAt !== null && lang ? (
+      <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
+    ) : flow.state.mode !== "idle" && lang ? (
+      <CheckpointPanel
+        state={flow.state}
+        lang={lang}
+        index={checkIndex}
+        total={checks.length}
+        onAnswer={flow.answer}
+        onResume={flow.resume}
+        onSkipReplay={flow.skipReplay}
+      />
+    ) : null;
+
   return (
     <LectureClockContext.Provider value={clock}>
       <StudyActionsContext.Provider value={studyActions}>
-      <main className="wrap grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-8">
-        <section className="min-w-0 space-y-3">
-          <div className="space-y-1">
-            {view ? (
-              <Link href={`/courses/${view.lecture.courseId}`} className="label hover:text-(--color-fg)">
-                ← {view.lecture.unitName}
-              </Link>
-            ) : (
-              <div className="h-4 w-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-            )}
-            {view ? (
-              <h1 className="text-2xl">{view.lecture.title}</h1>
-            ) : (
-              <div className="h-8 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-            )}
-          </div>
+      <main className="wrap space-y-6 py-6">
+        <div className="space-y-1">
+          {view ? (
+            <Link href={`/courses/${view.lecture.courseId}`} className="label hover:text-(--color-fg)">
+              ← {view.lecture.unitName}
+            </Link>
+          ) : (
+            <div className="h-4 w-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+          )}
+          {view ? (
+            <h1 className="text-3xl">{view.lecture.title}</h1>
+          ) : (
+            <div className="h-9 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+          )}
+        </div>
 
-          {/* On phones the video and its subtitle stay on screen while the tabs scroll. */}
-          <div className="space-y-3 bg-(--color-ink) max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:pb-2">
-            <div className="relative aspect-video overflow-hidden rounded-(--radius) bg-(--color-raised)">
+        {/* One container for the stage and the study modes, so on phones the
+            video stays pinned while you study; the grid dissolves into it there. */}
+        <div className="flex flex-col gap-4 lg:gap-10">
+        <div className="grid gap-4 max-lg:contents lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
+          {/* On phones the video stays on screen while everything under it scrolls. */}
+          <div ref={stageRef} className="scroll-mt-20 bg-(--color-ink) max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:pb-2">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-(--color-raised) shadow-(--shadow-card)">
               {player.blocked && view?.lecture.youtubeId ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
                   <p>This video can&apos;t play inside Learnify.</p>
-                  <a
-                    href={`https://www.youtube.com/watch?v=${view.lecture.youtubeId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="link"
-                  >
+                  <a href={`https://www.youtube.com/watch?v=${view.lecture.youtubeId}`} target="_blank" rel="noreferrer" className="link">
                     Open it on YouTube ↗
                   </a>
-                  <p className="text-sm text-(--color-mist)">Subtitles and study tabs still work here.</p>
+                  <p className="text-sm text-(--color-mist)">The study modes below still work here.</p>
                 </div>
               ) : (
                 <div ref={player.containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
               )}
               {player.error && <p className="absolute inset-x-0 bottom-0 bg-(--color-ink)/90 p-3 text-sm text-(--color-alert)">{player.error}</p>}
             </div>
+          </div>
 
-            {!noTranscript && (
-              <div className="min-h-[6.5rem] rounded-(--radius) bg-(--color-surface) px-4 py-3" aria-live="off">
-                {track ? (
-                  <>
-                    {line ? (
-                      <p lang={LANGUAGES[track.lang].sarvam} className="text-[1.3rem] leading-[1.7] max-sm:text-lg">
-                        {pageAt(line.text, line.startSec, line.endSec, now, SUBTITLE_PAGE_CHARS)}
-                      </p>
+          <aside className="min-w-0 space-y-4">
+            {rail ?? (
+              <div className="space-y-4 rounded-2xl border border-(--color-line) bg-(--color-surface) p-4">
+                <button
+                  type="button"
+                  onClick={editPrefs}
+                  disabled={!prefs}
+                  className="tile flex w-full items-center gap-3 rounded-xl border border-(--color-line) bg-(--color-node) p-3 text-left disabled:opacity-60"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="label block">How you learn</span>
+                    {prefs ? (
+                      <span className="block truncate">
+                        <span lang={LANGUAGES[prefs.lang].sarvam}>{LANGUAGES[prefs.lang].native}</span>
+                        <span className="text-(--color-mist)"> · {GOAL_LABEL[prefs.goal]} · {LEVEL_LABEL[prefs.level]}</span>
+                      </span>
+                    ) : prefsState.phase === "error" ? (
+                      <span className="block text-sm text-(--color-alert)">Couldn&apos;t load them: {prefsState.message}</span>
                     ) : (
-                      <p className="pt-1 text-(--color-faint)">
-                        {LANGUAGES[track.lang].native} subtitles appear here as the lecturer speaks.
-                      </p>
+                      <span className="block text-(--color-mist)">Not chosen yet</span>
                     )}
-                    {enLine && (
-                      <p className="text-[0.95rem] text-(--color-mist)">
-                        {pageAt(enLine.text, enLine.startSec, enLine.endSec, now, ENGLISH_PAGE_CHARS)}
-                      </p>
+                  </span>
+                  <SlidersHorizontal size={16} className="shrink-0 text-(--color-mist)" aria-hidden />
+                  <span className="sr-only">Change</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={openDoubt}
+                  disabled={!english || checkOpen}
+                  title={!english ? "Doubts open once the lecture's transcript is ready" : undefined}
+                  className="tile flex w-full items-center gap-3 rounded-xl bg-(--color-signal) p-3 text-left text-white disabled:bg-(--color-raised) disabled:text-(--color-faint)"
+                >
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
+                    <Mic size={18} aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block">Ask a doubt</span>
+                    <span className="block text-sm opacity-75">Pause and ask out loud</span>
+                  </span>
+                </button>
+
+                {prefs && (
+                  <button
+                    type="button"
+                    onClick={toggleChecks}
+                    aria-pressed={checksOn}
+                    className="flex min-h-11 w-full items-center justify-between gap-3 text-sm text-(--color-mist) hover:text-(--color-fg)"
+                  >
+                    <span>
+                      Pop-up checks {checksOn ? (checks.length ? <span className="font-mono">· {flow.doneCount}/{checks.length}</span> : "on") : "off"}
+                    </span>
+                    <span
+                      aria-hidden
+                      className={`inline-block h-5 w-9 rounded-full border transition-colors ${checksOn ? "border-(--color-signal) bg-(--color-signal)" : "border-(--color-line) bg-(--color-node)"}`}
+                    >
+                      <span className={`block h-4 w-4 translate-y-px rounded-full bg-white shadow transition-transform ${checksOn ? "translate-x-4" : "translate-x-px"}`} />
+                    </span>
+                  </button>
+                )}
+
+                {status && !blocker && (
+                  <p
+                    className={`flex items-center gap-2 text-sm ${status.tone === "failed" ? "text-(--color-alert)" : status.tone === "retrying" ? "text-(--color-warn)" : "text-(--color-mist)"}`}
+                    aria-live="polite"
+                  >
+                    {status.tone !== "failed" && <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
+                    {status.text}
+                  </p>
+                )}
+                {blocker && (
+                  <p className={`text-sm ${blocker.kind === "error" ? "text-(--color-alert)" : "text-(--color-warn)"}`} role="status">
+                    {blocker.message}{" "}
+                    {blocker.kind === "signin" && (
+                      <Link href={`/signin?next=/lecture/${lectureId}`} className="link">
+                        Sign in
+                      </Link>
                     )}
-                  </>
-                ) : (
-                  <div className="space-y-2 pt-1">
-                    <div className="h-5 w-4/5 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-                    <div className="h-4 w-3/5 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-                  </div>
+                  </p>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => setShowKeys((v) => !v)}
+                  aria-expanded={showKeys}
+                  className="inline-flex min-h-9 items-center gap-2 text-sm text-(--color-mist) hover:text-(--color-fg)"
+                >
+                  <Keyboard size={16} aria-hidden /> Shortcuts
+                </button>
+                {showKeys && (
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                    {[
+                      ["Space / K", "Play or pause"],
+                      ["J / L", "Back or forward 10 s"],
+                      ["N / Q", "Notes or quiz"],
+                      ["D", "Ask a doubt"],
+                      ["1–4, Enter", "Answer a check"],
+                      ["?", "These shortcuts"],
+                    ].map(([k, v]) => (
+                      <div key={k} className="contents">
+                        <dt>
+                          <kbd className="font-mono text-(--color-mist)">{k}</kbd>
+                        </dt>
+                        <dd className="text-(--color-mist)">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
                 )}
               </div>
             )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="flex items-center gap-2 text-sm text-(--color-mist)">
-              <Languages size={16} aria-hidden />
-              <span className="sr-only">Subtitle language</span>
-              <select
-                value={lang ?? "ta"}
-                onChange={(e) => chooseLang(e.target.value as Lang)}
-                className="min-h-11 rounded-(--radius) border border-(--color-line) bg-(--color-ink) px-2 text-(--color-fg)"
-              >
-                {Object.entries(LANGUAGES).map(([code, l]) => (
-                  <option key={code} value={code}>
-                    {l.native}
-                    {l.native !== l.name ? ` · ${l.name}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {showingTarget && target && (
-              <span className="label">{target.source === "nptel" ? "Human translation · NPTEL" : "Machine translated · Sarvam"}</span>
-            )}
-
-            <button
-              type="button"
-              onClick={openDoubt}
-              disabled={!english || flow.state.mode !== "idle"}
-              title={!english ? "Doubts open once the lecture's transcript is ready" : undefined}
-              className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-signal) px-3 text-sm text-(--color-signal) transition-colors hover:bg-(--color-signal) hover:text-white disabled:border-(--color-line) disabled:text-(--color-faint) disabled:hover:bg-transparent"
-            >
-              <Mic size={15} aria-hidden /> Ask a doubt
-            </button>
-
-            {checks.length > 0 && (
-              <button
-                type="button"
-                onClick={toggleChecks}
-                aria-pressed={checksOn}
-                className="inline-flex min-h-11 items-center gap-2 text-sm text-(--color-mist) hover:text-(--color-fg)"
-              >
-                <span
-                  aria-hidden
-                  className={`inline-block h-4 w-7 rounded-full border transition-colors ${checksOn ? "border-(--color-signal) bg-(--color-signal)" : "border-(--color-line)"}`}
-                >
-                  <span className={`block h-3 w-3 translate-y-px rounded-full bg-white transition-transform ${checksOn ? "translate-x-3.5" : "translate-x-px"}`} />
-                </span>
-                Checks {checksOn ? `· ${flow.doneCount} of ${checks.length} done` : "off"}
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setShowKeys((v) => !v)}
-              aria-expanded={showKeys}
-              aria-label="Keyboard shortcuts"
-              className="ml-auto flex h-11 w-11 items-center justify-center text-(--color-mist) hover:text-(--color-fg)"
-            >
-              <Keyboard size={18} aria-hidden />
-            </button>
-          </div>
-
-          {showKeys && (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-(--radius) border border-(--color-line) p-4 text-sm">
-              {[
-                ["Space / K", "Play or pause"],
-                ["J / L", "Back or forward 10 seconds"],
-                ["T", "Show the transcript"],
-                ["D", "Ask a doubt about this moment"],
-                ["1–4, Enter", "Answer a check"],
-                ["?", "Show or hide these shortcuts"],
-              ].map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt>
-                    <kbd className="font-mono text-(--color-mist)">{k}</kbd>
-                  </dt>
-                  <dd className="text-(--color-mist)">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-
-          {status && !blocker && (
-            <p
-              className={`flex items-center gap-2 text-sm ${status.tone === "failed" ? "text-(--color-alert)" : status.tone === "retrying" ? "text-(--color-warn)" : "text-(--color-mist)"}`}
-              aria-live="polite"
-            >
-              {status.tone !== "failed" && <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
-              {status.text}
-            </p>
-          )}
-          {blocker && (
-            <p className={`text-sm ${blocker.kind === "error" ? "text-(--color-alert)" : "text-(--color-warn)"}`} role="status">
-              {blocker.message}{" "}
-              {blocker.kind === "signin" && (
-                <Link href={`/signin?next=/lecture/${lectureId}`} className="link">
-                  Sign in
-                </Link>
-              )}
-            </p>
-          )}
-          {noTranscript && (
-            <p className="text-(--color-mist)">
-              There&apos;s no transcript for this lecture yet, so subtitles, checks and study screens aren&apos;t available. The video still plays.
-            </p>
-          )}
-        </section>
-
-        {!noTranscript && (
-          <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-            {flow.state.mode === "idle" && doubtAt !== null && lang ? (
-              <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
-            ) : flow.state.mode !== "idle" && lang ? (
-              <CheckpointPanel
-                state={flow.state}
-                lang={lang}
-                index={checkIndex}
-                total={checks.length}
-                onAnswer={flow.answer}
-                onResume={flow.resume}
-                onSkipReplay={flow.skipReplay}
-              />
-            ) : (
-              <StudyTabs
-                tab={tab}
-                onTab={setTab}
-                lang={track?.lang ?? lang ?? "en"}
-                segments={track?.segments ?? null}
-                currentIndex={index}
-                onSeek={seekAndPlay}
-                pack={view?.pack ?? null}
-                packNote={
-                  packFailed
-                    ? `Couldn't build the study material: ${packFailed.state === "failed" ? packFailed.error : ""}`
-                    : "Building the concept map, flashcards and recap. This takes about a minute the first time anyone opens a lecture."
-                }
-              />
-            )}
           </aside>
+        </div>
+
+        {noTranscript ? (
+          <p className="text-(--color-mist)">
+            There&apos;s no transcript for this lecture yet, so checks and study modes aren&apos;t available. The video still plays.
+          </p>
+        ) : (
+          <StudyTabs
+            tab={tab}
+            onTab={setTab}
+            lectureId={lectureId}
+            lang={lang ?? "en"}
+            level={prefs?.level ?? "standard"}
+            transcriptReady={Boolean(english)}
+            pack={view?.pack ?? null}
+            packRequested={scope === "full"}
+            onRequestPack={() => setPackWanted(true)}
+            packNote={
+              packFailed
+                ? `Couldn't build the study material: ${packFailed.state === "failed" ? packFailed.error : ""}`
+                : "Building the flashcards and concept map. This takes under a minute the first time anyone asks for them."
+            }
+          />
         )}
+        {(prefsState.phase === "unset" || prefsState.phase === "editing") && (
+          <LearningSetup
+            key={prefsState.phase}
+            initial={prefsState.phase === "editing" ? prefsState.prefs : null}
+            suggestedLang={suggestedLang}
+            onSave={savePrefs}
+            onCancel={prefsState.phase === "editing" ? cancelPrefs : undefined}
+          />
+        )}
+        </div>
       </main>
       </StudyActionsContext.Provider>
     </LectureClockContext.Provider>

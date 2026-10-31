@@ -1,4 +1,5 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import { CyclingLanguage } from "@/components/site/CyclingLanguage";
@@ -8,36 +9,39 @@ import { LANGUAGES } from "@/lib/languages";
 /**
  * Landing page: what Learnify does, in the student's own scripts.
  *
- * The sample subtitle is real: the opening of NPTEL's "Programming, Data
- * Structures and Algorithms using C" (IIT Madras), with NPTEL's own human
- * Tamil track, CC BY-NC-SA.
+ * The hero's quiz is real model output (see HeroDemo), answerable on the page:
+ * generated study screens are the product, so the landing page leads with one.
  */
+
+const HeroDemo = dynamic(() => import("@/components/site/HeroDemo"), {
+  loading: () => <div className="h-96 animate-pulse rounded-(--radius) bg-(--color-raised)" />,
+});
 
 // Each feature numbered in a different script: Devanagari, Bengali, Tamil, Telugu.
 const FEATURES = [
   {
     numeral: "१",
     numeralLang: "hi",
-    title: "Subtitles in your language",
-    body: "English captions translated into Tamil, Telugu, Kannada and more, shown under the video. Where NPTEL already has a human translation, that's what you see.",
+    title: "Notes you work through",
+    body: "Interactive notes written from the lecture in your language: key ideas, worked examples, and questions to answer in your head before you reveal them.",
   },
   {
     numeral: "২",
     numeralLang: "bn",
-    title: "Checks during the video",
-    body: "At the right moments the video pauses for a short question in your language. Get it wrong and it replays the part that explains it.",
+    title: "Quizzes that teach",
+    body: "Multiple choice, true or false, fill in the blank, match and order. Every answer explains why and jumps the video to where it's taught. Make it simpler or harder.",
   },
   {
     numeral: "௩",
     numeralLang: "ta",
-    title: "Ask a doubt by voice",
-    body: "Pause and ask in your language. The answer is grounded in what the lecturer just said, with links back to the exact moment.",
+    title: "Checks and doubts in the video",
+    body: "The video pauses for a quick question at the right moments. Stuck? Ask a doubt by voice in your language, answered from what the lecturer just said.",
   },
   {
     numeral: "౪",
     numeralLang: "te",
-    title: "Study screens per lecture",
-    body: "A concept map, flashcards and a recap. Every item links to its timestamp, and tapping it jumps the video there.",
+    title: "Flashcards and a concept map",
+    body: "Flashcards come back when you're about to forget them, and a concept map shows how the lecture's ideas build on each other.",
   },
 ];
 
@@ -58,8 +62,8 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-(--color-mist)">
-            The official lecture plays as it is. Learnify adds subtitles, checks, spoken doubts and study screens in the
-            language you think in.
+            The official lecture plays as it is. Beside it, AI writes notes, quizzes and flashcards from that lecture in
+            the language you think in, and grades every answer instantly.
           </p>
           <div className="flex flex-wrap items-center gap-4">
             <Link
@@ -72,20 +76,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* A real subtitle, the way it appears under the video. */}
-        <figure className="kolam rounded-(--radius) border border-(--color-line) p-6 sm:p-8" aria-label="Sample subtitle">
-          <div className="space-y-3 rounded-(--radius) border border-(--color-line) bg-(--color-surface) p-5 shadow-(--shadow-card)">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-              <span className="font-mono text-xs text-(--color-faint)">0:01</span>
-              <span className="label">Human translation · NPTEL</span>
-            </div>
-            <p lang="ta-IN" className="text-[1.35rem]">
-              ப்ரொக்ராமிங் குறித்த இந்த ஆன்லைன் படிப்புக்கு வரவேற்கிறோம்.
-            </p>
-            <p className="text-(--color-mist)">Welcome to this online course on programming.</p>
+        {/* A real generated quiz, answerable right here. */}
+        <figure className="kolam space-y-3 rounded-(--radius) border border-(--color-line) p-4 sm:p-6" aria-label="A generated quiz">
+          <div className="rounded-(--radius) border border-(--color-line) bg-(--color-surface) p-4 shadow-(--shadow-card)">
+            <HeroDemo />
           </div>
-          <figcaption className="mt-4 text-sm text-(--color-mist)">
-            Programming, Data Structures and Algorithms using C · IIT Madras
+          <figcaption className="flex items-center gap-2 text-sm text-(--color-mist)">
+            <Sparkles size={14} className="text-(--color-signal)" aria-hidden />
+            Written by AI in Tamil from an IIT Madras calculus lecture. Try it.
           </figcaption>
         </figure>
       </section>

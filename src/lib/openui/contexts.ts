@@ -26,3 +26,6 @@ export type Rating = "again" | "hard" | "good" | "easy";
 export const StudyActionsContext = createContext<{
   rate: (cardId: string, rating: Rating) => Promise<{ dueAt: string }>;
 } | null>(null);
+
+/** Moving between study modes from inside a screen: the notes end by offering the quiz. */
+export const StudyNavContext = createContext<((mode: "notes" | "quiz" | "cards" | "map") => void) | null>(null);

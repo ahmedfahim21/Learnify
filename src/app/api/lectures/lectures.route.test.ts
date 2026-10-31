@@ -25,8 +25,15 @@ vi.mock("@/lib/transcripts/store", () => ({
   dbDeps: { getLecture: mocks.getLecture, getStored: mocks.getStoredTranscript },
 }));
 vi.mock("@/lib/study/store", () => ({ dbPackDeps: { getStored: mocks.getStoredPack } }));
-vi.mock("@/lib/jobs/prepare", () => ({ lectureStatus: mocks.lectureStatus, runStages: mocks.runStages }));
-vi.mock("@/lib/jobs/claim", () => ({ stagesStartedToday: mocks.stagesStartedToday }));
+vi.mock("@/lib/jobs/prepare", async (importOriginal) => ({
+  stagesFor: (await importOriginal<typeof import("@/lib/jobs/prepare")>()).stagesFor,
+  lectureStatus: mocks.lectureStatus,
+  runStages: mocks.runStages,
+}));
+vi.mock("@/lib/jobs/claim", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/jobs/claim")>()),
+  stagesStartedToday: mocks.stagesStartedToday,
+}));
 vi.mock("@/lib/session", () => ({ getCurrentUserId: mocks.getCurrentUserId }));
 
 const { GET: viewGET } = await import("./[lectureId]/route");
@@ -83,7 +90,7 @@ beforeEach(() => {
 });
 
 describe("GET /api/lectures/[lectureId]", () => {
-  it("returns the lecture, both subtitle tracks and the pack without answer keys", async () => {
+  it("returns the lecture, the English transcript only, and the pack without answer keys", async () => {
     const res = await viewGET(req("ta"), ctx());
     expect(res.status).toBe(200);
     const body = await res.json();
@@ -92,7 +99,6 @@ describe("GET /api/lectures/[lectureId]", () => {
       status: statusOf(true),
       subtitles: {
         en: { lang: "en", source: "youtube", durationSec: 4, segments: [{ i: 0, startSec: 1, endSec: 4, text: "en:Hello." }] },
-        target: { lang: "ta", source: "sarvam", durationSec: 4, segments: [{ i: 0, startSec: 1, endSec: 4, text: "ta:Hello." }] },
       },
       pack: {
         ...pack,
@@ -114,7 +120,7 @@ describe("GET /api/lectures/[lectureId]", () => {
     mocks.getStoredPack.mockResolvedValue(null);
     mocks.lectureStatus.mockResolvedValue(statusOf(false));
     const body = await (await viewGET(req(), ctx())).json();
-    expect(body.subtitles).toEqual({ en: null, target: null });
+    expect(body.subtitles).toEqual({ en: null });
     expect(body.pack).toBeNull();
   });
 
@@ -149,7 +155,7 @@ describe("POST /api/lectures/[lectureId]/prepare", () => {
     expect(await res.json()).toEqual({ status: statusOf(false) });
     expect(mocks.after).toHaveBeenCalledTimes(1);
     await mocks.after.mock.calls[0][0]();
-    expect(mocks.runStages).toHaveBeenCalledWith(ID, "ta");
+    expect(mocks.runStages).toHaveBeenCalledWith(ID, "ta", undefined, "full");
   });
 
   it("refuses to start new work anonymously", async () => {
