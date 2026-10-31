@@ -50,6 +50,20 @@
       "when": 1793461842775,
       "tag": "0006_doubts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793465309800,
+      "tag": "0007_card_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793465816167,
+      "tag": "0008_featured_rank",
+      "breakpoints": true
     }
   ]
 }

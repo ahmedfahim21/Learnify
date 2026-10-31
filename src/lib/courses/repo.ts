@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, ilike, isNotNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { type Course, courses, type Lecture, lectures, type NewCourse, type NewLecture } from "@/db/schema";
@@ -139,6 +139,66 @@ export async function getCourseWithLectures(courseId: number): Promise<CourseWit
 }
 
 export const COURSE_PAGE_SIZE = 30;
+
+// --- Featured shelf ----------------------------------------------------------
+
+/** Disciplines a first visitor most likely wants: first-year basics, CS, maths, EE, physics. */
+export const STARTER_DISCIPLINES = [122, 106, 111, 108, 115];
+
+export interface FeatureScore {
+  eligible: boolean;
+  score: number;
+  /** Share of lectures with both a video and NPTEL English captions. */
+  coverage: number;
+  humanLangs: Lang[];
+}
+
+/**
+ * How good a first-visit course is. Eligible only if at least 90% of its
+ * lectures have a video and English captions (no dead ends on the shelf).
+ * Ranked by how many Indic languages have human subtitles, then by being in a
+ * starter discipline.
+ */
+export function scoreForShelf(disciplineId: number, lessons: NptelLesson[]): FeatureScore {
+  if (lessons.length === 0) return { eligible: false, score: 0, coverage: 0, humanLangs: [] };
+  const playable = lessons.filter((l) => l.youtubeId && l.vttIds[LANGUAGES.en.nptelName]).length;
+  const coverage = playable / lessons.length;
+  const humanLangs = humanLangsOf(lessons);
+  const starter = STARTER_DISCIPLINES.indexOf(disciplineId);
+  const score = humanLangs.length * 10 + (starter === -1 ? 0 : 5 - starter);
+  return { eligible: coverage >= 0.9, score, coverage, humanLangs };
+}
+
+export async function setFeatured(ranked: number[]): Promise<void> {
+  const db = getDb();
+  await db.transaction(async (tx) => {
+    await tx.update(courses).set({ featuredRank: null }).where(isNotNull(courses.featuredRank));
+    for (const [n, id] of ranked.entries()) {
+      await tx.update(courses).set({ featuredRank: n + 1 }).where(eq(courses.id, id));
+    }
+  });
+}
+
+export async function listFeatured(): Promise<Course[]> {
+  return getDb().select().from(courses).where(isNotNull(courses.featuredRank)).orderBy(asc(courses.featuredRank));
+}
+
+export interface Discipline {
+  id: number;
+  name: string;
+  courses: number;
+}
+
+/** Disciplines with how many video courses each has, largest first. */
+export async function listDisciplines(): Promise<Discipline[]> {
+  const rows = await getDb()
+    .select({ id: courses.disciplineId, name: courses.disciplineName, courses: count() })
+    .from(courses)
+    .where(eq(courses.contentType, "Video"))
+    .groupBy(courses.disciplineId, courses.disciplineName)
+    .orderBy(sql`count(*) desc`, asc(courses.disciplineName));
+  return rows;
+}
 
 export interface ListCoursesQuery {
   disciplineId?: number;

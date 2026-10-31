@@ -7,11 +7,11 @@ import type { Course, Lecture } from "@/db/schema";
  * response shapes (every field, and that caption references never leave the
  * server), input validation, and whose fault a failure is.
  */
-const mocks = vi.hoisted(() => ({ listCourses: vi.fn(), getCourseWithLectures: vi.fn() }));
+const mocks = vi.hoisted(() => ({ listCourses: vi.fn(), listDisciplines: vi.fn(), listFeatured: vi.fn(), getCourseWithLectures: vi.fn() }));
 
 vi.mock("@/lib/courses/repo", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/courses/repo")>();
-  return { ...real, listCourses: mocks.listCourses, getCourseWithLectures: mocks.getCourseWithLectures };
+  return { ...real, listCourses: mocks.listCourses, listDisciplines: mocks.listDisciplines, listFeatured: mocks.listFeatured, getCourseWithLectures: mocks.getCourseWithLectures };
 });
 
 const { GET: listGET } = await import("./route");
@@ -29,6 +29,7 @@ const course: Course = {
   contentType: "Video",
   humanLangs: ["hi", "ta"],
   outlineFetchedAt: new Date("2026-10-31T00:00:00Z"),
+  featuredRank: null,
   syncedAt: new Date("2026-10-31T00:00:00Z"),
 };
 
@@ -57,7 +58,10 @@ const expectedCourse = {
 
 const ctx = (courseId: string) => ({ params: Promise.resolve({ courseId }) });
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  mocks.listDisciplines.mockResolvedValue([{ id: 106, name: "Computer Science and Engineering", courses: 412 }]);
+});
 
 describe("GET /api/courses", () => {
   it("returns a page of courses with exactly the public fields", async () => {
@@ -66,6 +70,25 @@ describe("GET /api/courses", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ courses: [expectedCourse], nextCursor: 106106127 });
     expect(mocks.listCourses).toHaveBeenCalledWith({ disciplineId: 106, q: "data", cursor: 5, limit: PAGE_SIZE });
+    expect(mocks.listDisciplines).not.toHaveBeenCalled();
+  });
+
+  it("includes the disciplines with the first page only", async () => {
+    mocks.listCourses.mockResolvedValue({ courses: [], nextCursor: null });
+    const body = await (await listGET(new Request("http://x/api/courses"))).json();
+    expect(body).toEqual({
+      courses: [],
+      nextCursor: null,
+      disciplines: [{ id: 106, name: "Computer Science and Engineering", courses: 412 }],
+    });
+  });
+
+  it("serves the featured shelf, edge-cached, without paging", async () => {
+    mocks.listFeatured.mockResolvedValue([course]);
+    const res = await listGET(new Request("http://x/api/courses?featured=1"));
+    expect(await res.json()).toEqual({ courses: [expectedCourse] });
+    expect(res.headers.get("cache-control")).toMatch(/s-maxage=600/);
+    expect(mocks.listCourses).not.toHaveBeenCalled();
   });
 
   it("treats a blank search as no search", async () => {

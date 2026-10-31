@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { decodeCourseList, decodeCourseOutline, type NptelLesson } from "@/lib/nptel/decode";
 
-import { humanLangsOf, toCourseRows, toLectureRows } from "./repo";
+import { humanLangsOf, scoreForShelf, toCourseRows, toLectureRows } from "./repo";
 
 const fixture = (name: string) =>
   JSON.parse(readFileSync(join(__dirname, "../nptel/__fixtures__", name), "utf8")) as unknown;
@@ -105,5 +105,35 @@ describe("toLectureRows: repeated NPTEL lesson ids", () => {
       [0, 1],
       [1, 1],
     ]);
+  });
+});
+
+describe("scoreForShelf", () => {
+  const lesson = (id: number, langs: string[], youtubeId: string | null = "DYFhgnaZCRE"): NptelLesson => ({
+    id,
+    unitName: "U",
+    title: `L${id}`,
+    youtubeId,
+    conceptsCovered: null,
+    vttIds: Object.fromEntries(langs.map((l) => [l, `ref-${l}`])),
+  });
+
+  it("ranks human subtitle languages first, then starter disciplines", () => {
+    const withTamil = Array.from({ length: 10 }, (_, n) => lesson(n, ["English", "Tamil"]));
+    const englishOnly = Array.from({ length: 10 }, (_, n) => lesson(n, ["English"]));
+    expect(scoreForShelf(106, withTamil)).toEqual({ eligible: true, score: 14, coverage: 1, humanLangs: ["ta"] });
+    expect(scoreForShelf(122, englishOnly).score).toBe(5);
+    expect(scoreForShelf(101, englishOnly).score).toBe(0);
+  });
+
+  it("needs 90% of lectures playable with English captions", () => {
+    const lessons = [...Array.from({ length: 8 }, (_, n) => lesson(n, ["English"])), lesson(8, []), lesson(9, ["English"], null)];
+    expect(scoreForShelf(106, lessons)).toMatchObject({ eligible: false, coverage: 0.8 });
+    expect(scoreForShelf(106, []).eligible).toBe(false);
+  });
+
+  it("scores the real PDSA course as eligible with four human languages", () => {
+    const outline = decodeCourseOutline(fixture("outline-106106127.json"));
+    expect(scoreForShelf(106, outline.lessons)).toMatchObject({ eligible: true, humanLangs: ["hi", "ta", "te", "ml"], score: 44 });
   });
 });
