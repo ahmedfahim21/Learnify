@@ -3,7 +3,7 @@ import { requireUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
 
-/** Flashcards due now across every lecture, what's coming up, and the streak. */
+/** The profile's progress: flashcards due now across every lecture, what's coming up, and the streak. */
 export async function GET(): Promise<Response> {
   const { userId, response } = await requireUserId();
   if (response) return response;

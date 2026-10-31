@@ -159,7 +159,7 @@ export default function LecturePage() {
     [player],
   );
 
-  // ?t=123 (from Today's "watch the moment") starts the lecture there.
+  // ?t=123 (from a due flashcard on the profile) starts the lecture there.
   const ready = player.ready;
   const seek = player.seek;
   useEffect(() => {

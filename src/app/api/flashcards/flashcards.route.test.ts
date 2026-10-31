@@ -9,7 +9,7 @@ vi.mock("@/lib/flashcards/review", async (importOriginal) => {
 });
 
 const { POST } = await import("./review/route");
-const { GET } = await import("../today/route");
+const { GET } = await import("../me/progress/route");
 const { UnknownCardError } = await import("@/lib/flashcards/review");
 
 const LECTURE = "325080ef-3145-4eba-8ecd-ee35980d3c78";
@@ -52,7 +52,7 @@ describe("POST /api/flashcards/review", () => {
   });
 });
 
-describe("GET /api/today", () => {
+describe("GET /api/me/progress", () => {
   it("returns due cards, upcoming count, next due time and streak", async () => {
     const due = [{ cardId: "a1b2c3d4e5f60718", lectureId: LECTURE, lang: "hi", front: "f", back: "b", startSec: 55, reviews: 2 }];
     mocks.today.mockResolvedValue({

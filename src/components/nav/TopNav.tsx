@@ -1,19 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 import { Logo } from "@/components/site/Logo";
-import { signOut, useSession } from "@/lib/authClient";
+import { useSession } from "@/lib/authClient";
 
 const LINKS: { href: string; label: string }[] = [
   { href: "/courses", label: "Courses" },
-  { href: "/today", label: "Today" },
 ];
 
 export function TopNav() {
   const pathname = usePathname();
-  const router = useRouter();
   const { user, isPending } = useSession();
 
   return (
@@ -46,25 +44,22 @@ export function TopNav() {
           {isPending ? (
             <span className="ml-2 h-7 w-7 animate-pulse rounded-full bg-(--color-raised)" />
           ) : user ? (
-            <div className="ml-2 flex items-center gap-2">
-              <span title={user.email} className="flex items-center gap-2">
-                {user.image ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- provider avatars are arbitrary remote hosts; configuring next/image domains for them isn't worth it here
-                  <img src={user.image} alt="" className="h-7 w-7 rounded-full border border-(--color-line)" />
-                ) : (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full border border-(--color-line) text-xs text-(--color-mist)">
-                    {(user.name ?? user.email).slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-              </span>
-              <button
-                type="button"
-                onClick={() => signOut().then(() => router.refresh(), (err) => console.error("sign-out failed:", err))}
-                className="px-2 py-1.5 text-sm text-(--color-mist) transition-colors hover:text-(--color-fg)"
-              >
-                Sign out
-              </button>
-            </div>
+            <Link
+              href="/profile"
+              aria-label="Your profile"
+              title={user.email}
+              aria-current={pathname === "/profile" ? "page" : undefined}
+              className="ml-2 rounded-full ring-offset-2 ring-offset-(--color-ink) hover:ring-2 hover:ring-(--color-line) aria-[current=page]:ring-2 aria-[current=page]:ring-(--color-signal)"
+            >
+              {user.image ? (
+                // eslint-disable-next-line @next/next/no-img-element -- provider avatars are arbitrary remote hosts; configuring next/image domains for them isn't worth it here
+                <img src={user.image} alt="" className="h-8 w-8 rounded-full border border-(--color-line)" />
+              ) : (
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-(--color-signal) text-sm text-white">
+                  {(user.name ?? user.email).slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </Link>
           ) : (
             <Link
               href="/signin"
