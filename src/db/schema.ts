@@ -222,6 +222,31 @@ export const studyPacks = pgTable(
   (table) => [unique("study_packs_lecture_lang_version_unique").on(table.lectureId, table.lang, table.promptVersion)],
 );
 
+/**
+ * A student's doubt and its answer. `answer` is OpenUI Lang (rendered with
+ * the doubt library), stored only once validated; a doubt we couldn't answer
+ * is kept as `failed` with the reason, and its budget unit refunded.
+ */
+export const doubts = pgTable(
+  "doubts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    lang: text("lang").notNull(),
+    atSec: real("at_sec").notNull(),
+    question: text("question").notNull(),
+    status: text("status").$type<"answered" | "failed">().notNull(),
+    answer: text("answer"),
+    error: text("error"),
+    model: text("model").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("doubts_user_lecture_idx").on(table.userId, table.lectureId, table.createdAt)],
+);
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Lecture = typeof lectures.$inferSelect;
@@ -231,3 +256,5 @@ export type NewTranscript = typeof transcripts.$inferInsert;
 export type Job = typeof jobs.$inferSelect;
 export type StudyPackRow = typeof studyPacks.$inferSelect;
 export type NewStudyPackRow = typeof studyPacks.$inferInsert;
+export type Doubt = typeof doubts.$inferSelect;
+export type NewDoubt = typeof doubts.$inferInsert;

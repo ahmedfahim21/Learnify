@@ -56,12 +56,12 @@ describe("currentDay", () => {
 });
 
 /**
- * consumeGeneration's correctness lives in a single atomic upsert whose
+ * consumeDoubt's correctness lives in a single atomic upsert whose
  * conflict clause carries the limit, so two racing turns can't both spend the
  * last unit. These cover the two branches around that statement: the database
  * returning a row (spent) versus returning none (rejected at the limit).
  */
-describe("consumeGeneration", () => {
+describe("consumeDoubt", () => {
   const returning = vi.fn();
 
   beforeEach(() => {
@@ -80,9 +80,9 @@ describe("consumeGeneration", () => {
   it("reports the spend and what remains when the upsert succeeds", async () => {
     process.env.DOUBT_DAILY_LIMIT = "10";
     returning.mockResolvedValue([{ used: 3 }]);
-    const { consumeGeneration } = await import("./budget");
+    const { consumeDoubt } = await import("./budget");
 
-    const result = await consumeGeneration("user-1");
+    const result = await consumeDoubt("user-1");
 
     expect(result.allowed).toBe(true);
     expect(result.state).toEqual({ used: 3, limit: 10, remaining: 7, exceeded: false });
@@ -91,9 +91,9 @@ describe("consumeGeneration", () => {
   it("marks the budget exceeded on the turn that consumes the last unit", async () => {
     process.env.DOUBT_DAILY_LIMIT = "10";
     returning.mockResolvedValue([{ used: 10 }]);
-    const { consumeGeneration } = await import("./budget");
+    const { consumeDoubt } = await import("./budget");
 
-    const result = await consumeGeneration("user-1");
+    const result = await consumeDoubt("user-1");
 
     // Still allowed — this turn got the last unit; the next one won't.
     expect(result.allowed).toBe(true);
@@ -103,11 +103,36 @@ describe("consumeGeneration", () => {
   it("refuses when the conflict clause rejects the increment", async () => {
     process.env.DOUBT_DAILY_LIMIT = "10";
     returning.mockResolvedValue([]);
-    const { consumeGeneration } = await import("./budget");
+    const { consumeDoubt } = await import("./budget");
 
-    const result = await consumeGeneration("user-1");
+    const result = await consumeDoubt("user-1");
 
     expect(result.allowed).toBe(false);
     expect(result.state).toEqual({ used: 10, limit: 10, remaining: 0, exceeded: true });
+  });
+});
+
+describe("refundDoubt", () => {
+  it("decrements today's row for that user, floored at zero", async () => {
+    vi.resetModules();
+    const calls: { set?: Record<string, unknown>; where?: unknown } = {};
+    vi.doMock("@/db", () => ({
+      getDb: () => ({
+        update: () => ({
+          set: (set: Record<string, unknown>) => {
+            calls.set = set;
+            return {
+              where: async (where: unknown) => {
+                calls.where = where;
+              },
+            };
+          },
+        }),
+      }),
+    }));
+    const { refundDoubt } = await import("./budget");
+    await refundDoubt("user-1", new Date("2026-10-31T10:00:00Z"));
+    expect(Object.keys(calls.set ?? {}).sort()).toEqual(["updatedAt", "used"]);
+    expect(calls.where).toBeDefined();
   });
 });

@@ -44,14 +44,14 @@ export async function getBudget(userId: string, now: Date = new Date()): Promise
 }
 
 /**
- * Consume one generation, or report that the budget is spent.
+ * Consume one doubt, or report that the budget is spent.
  *
  * The increment is a single atomic upsert rather than read-then-write, so two
  * doubts racing can't both read the same count and each spend the last unit.
  * The limit is enforced inside the statement's WHERE, which is what makes the
  * check and the spend one operation.
  */
-export async function consumeGeneration(
+export async function consumeDoubt(
   userId: string,
   now: Date = new Date(),
 ): Promise<{ allowed: boolean; state: BudgetState }> {
@@ -78,4 +78,15 @@ export async function consumeGeneration(
     allowed: true,
     state: { used, limit, remaining: Math.max(0, limit - used), exceeded: used >= limit },
   };
+}
+
+/**
+ * Give a doubt back when we failed to answer it (Sarvam down, invalid answer),
+ * so a student isn't charged for our failure. Never goes below zero.
+ */
+export async function refundDoubt(userId: string, now: Date = new Date()): Promise<void> {
+  await getDb()
+    .update(generationUsage)
+    .set({ used: sql`greatest(${generationUsage.used} - 1, 0)`, updatedAt: new Date() })
+    .where(and(eq(generationUsage.userId, userId), eq(generationUsage.day, currentDay(now))));
 }

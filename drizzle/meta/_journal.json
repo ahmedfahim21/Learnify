@@ -43,6 +43,13 @@
       "when": 1793455359725,
       "tag": "0005_jobs_and_packs",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793461842775,
+      "tag": "0006_doubts",
+      "breakpoints": true
     }
   ]
 }
