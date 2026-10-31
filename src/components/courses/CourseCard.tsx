@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { instituteLogo } from "@/lib/courses/institutes";
 import type { CourseDto } from "@/lib/courses/repo";
 
 /**
@@ -28,6 +29,34 @@ export function instituteShort(institute: string): string {
   return initials.slice(0, 4) || name.slice(0, 3);
 }
 
+/** The institute's logo on white, or its monogram in the subject colour when there's no logo. */
+export function InstituteBadge({ institute, colour, size = 32 }: { institute: string; colour: string; size?: number }) {
+  const logo = instituteLogo(institute);
+  if (logo) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- small static PNGs; next/image adds nothing here
+      <img
+        src={logo}
+        alt=""
+        width={size}
+        height={size}
+        loading="lazy"
+        className="shrink-0 rounded-lg border border-(--color-line) bg-white object-contain p-0.5"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+  return (
+    <span
+      aria-hidden
+      className="flex shrink-0 items-center justify-center rounded-lg px-1.5 font-mono text-[0.7rem] text-white"
+      style={{ background: colour, height: size, minWidth: size }}
+    >
+      {instituteShort(institute)}
+    </span>
+  );
+}
+
 export const courseTitle = (title: string) => title.replace(/^NOC:\s*/, "");
 
 export function CourseCard({ course }: { course: CourseDto }) {
@@ -46,13 +75,7 @@ export function CourseCard({ course }: { course: CourseDto }) {
       </span>
       <span className="line-clamp-3 text-lg leading-snug group-hover:text-(--color-signal)">{courseTitle(course.title)}</span>
       <span className="mt-auto flex items-center gap-2.5 pt-1">
-        <span
-          aria-hidden
-          className="flex h-8 min-w-8 shrink-0 items-center justify-center rounded-lg px-1.5 font-mono text-[0.7rem] text-white"
-          style={{ background: colour }}
-        >
-          {instituteShort(course.institute)}
-        </span>
+        <InstituteBadge institute={course.institute} colour={colour} size={36} />
         <span className="min-w-0 text-sm leading-tight">
           <span className="block truncate">{course.professor}</span>
           <span className="block truncate text-(--color-mist)">{course.institute}</span>

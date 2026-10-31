@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { courseTitle, disciplineColour, instituteShort } from "@/components/courses/CourseCard";
+import { courseTitle, disciplineColour, InstituteBadge } from "@/components/courses/CourseCard";
 import type { CourseDto, LectureDto } from "@/lib/courses/repo";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 
@@ -65,13 +65,7 @@ export default function CoursePage() {
               </p>
               <h1 className="text-4xl tracking-tight sm:text-5xl">{courseTitle(course.title)}</h1>
               <div className="flex items-center gap-3">
-                <span
-                  aria-hidden
-                  className="flex h-10 min-w-10 items-center justify-center rounded-xl px-2 font-mono text-xs text-white"
-                  style={{ background: colour }}
-                >
-                  {instituteShort(course.institute)}
-                </span>
+                <InstituteBadge institute={course.institute} colour={colour} size={48} />
                 <span className="leading-tight">
                   <span className="block">{professors.join(", ")}</span>
                   <span className="block text-sm text-(--color-mist)">{course.institute} · NPTEL</span>

@@ -105,7 +105,7 @@ export default function CoursesPage() {
               </button>
             )}
           </label>
-          <div role="toolbar" aria-label="Filter by subject" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-6 sm:px-6">
+          <div role="toolbar" aria-label="Filter by subject" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] sm:-mx-6 sm:px-6">
             {disciplines === null
               ? Array.from({ length: 8 }, (_, i) => <span key={i} className="h-9 w-28 shrink-0 animate-pulse rounded-full bg-(--color-raised)" />)
               : [{ id: null, name: "All subjects", courses: total ?? 0 } as { id: number | null; name: string; courses: number }, ...disciplines].map((d) => {
