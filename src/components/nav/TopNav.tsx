@@ -5,8 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { signOut, useSession } from "@/lib/authClient";
 
-// Courses and Today return with their pages (PLAN.md steps 8 and 6).
-const LINKS: { href: string; label: string }[] = [];
+const LINKS: { href: string; label: string }[] = [{ href: "/courses", label: "Courses" }];
 
 export function TopNav() {
   const pathname = usePathname();
