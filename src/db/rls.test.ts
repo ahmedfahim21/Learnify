@@ -29,7 +29,7 @@ const userTables = configs.filter((c) => c.columns.some((col) => col.name === "u
 
 describe("row-level security", () => {
   it("finds the schema's tables", () => {
-    expect(tables.sort()).toEqual(["courses", "generation_usage", "lectures", "streaks", "transcripts"]);
+    expect(tables.sort()).toEqual(["courses", "generation_usage", "jobs", "lectures", "streaks", "study_packs", "transcripts"]);
     expect(userTables.sort()).toEqual(["generation_usage", "streaks"]);
   });
 

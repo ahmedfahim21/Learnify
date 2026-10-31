@@ -11,6 +11,8 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { StudyPack } from "@/lib/study/pack";
+
 /**
  * Schema for Learnify on Supabase Postgres.
  *
@@ -156,9 +158,76 @@ export const transcripts = pgTable(
   (table) => [unique("transcripts_lecture_lang_unique").on(table.lectureId, table.lang)],
 );
 
+/**
+ * One stage of preparing a lecture in a language: `transcript` (subtitles) or
+ * `pack` (study material). The row is the lock and the progress report:
+ *
+ * - claimed by inserting it, by rebuilding a `done` row whose output is gone,
+ *   or by taking over a `running` row whose
+ *   heartbeat went stale (its function was killed) or a `failed` row under the
+ *   attempt limit — each a single conditional statement (lib/jobs/claim.ts);
+ * - `claimToken` changes on every claim, and heartbeats and the final write
+ *   only land while it still matches, so a runner that wakes up late can't
+ *   overwrite whoever took over;
+ * - `partial` holds segments a translation has finished, so a takeover
+ *   resumes instead of starting over.
+ *
+ * The built output lives in `transcripts` / `study_packs`; this row only
+ * says how getting there went.
+ */
+export const jobs = pgTable(
+  "jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    lang: text("lang").notNull(),
+    stage: text("stage").$type<"transcript" | "pack">().notNull(),
+    status: text("status").$type<"running" | "done" | "failed">().notNull(),
+    claimToken: uuid("claim_token").notNull(),
+    attempts: integer("attempts").notNull().default(1),
+    progress: jsonb("progress").$type<{ done: number; total: number }>(),
+    partial: jsonb("partial").$type<Record<string, string>>(),
+    error: text("error"),
+    heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("jobs_lecture_lang_stage_unique").on(table.lectureId, table.lang, table.stage),
+    index("jobs_created_at_idx").on(table.createdAt),
+  ],
+);
+
+/**
+ * A lecture's study pack in one language (see lib/study/pack.ts). English is
+ * generated from the transcript; other languages are translations of the
+ * English with the same ids, timestamps and answer keys. Bumping
+ * STUDY_PROMPT_VERSION makes new packs without touching old rows.
+ */
+export const studyPacks = pgTable(
+  "study_packs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    lang: text("lang").notNull(),
+    promptVersion: integer("prompt_version").notNull(),
+    payload: jsonb("payload").$type<StudyPack>().notNull(),
+    model: text("model").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("study_packs_lecture_lang_version_unique").on(table.lectureId, table.lang, table.promptVersion)],
+);
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Lecture = typeof lectures.$inferSelect;
 export type NewLecture = typeof lectures.$inferInsert;
 export type Transcript = typeof transcripts.$inferSelect;
 export type NewTranscript = typeof transcripts.$inferInsert;
+export type Job = typeof jobs.$inferSelect;
+export type StudyPackRow = typeof studyPacks.$inferSelect;
+export type NewStudyPackRow = typeof studyPacks.$inferInsert;

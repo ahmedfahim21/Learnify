@@ -36,6 +36,13 @@
       "when": 1793452758555,
       "tag": "0004_lecture_position",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793455359725,
+      "tag": "0005_jobs_and_packs",
+      "breakpoints": true
     }
   ]
 }
