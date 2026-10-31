@@ -17,8 +17,15 @@ import { type Cue, parseVtt } from "./vtt";
 export interface TranscriptSources {
   nptelVtt: (ref: string) => Promise<string>;
   youtubeCues: (videoId: string) => Promise<Cue[]>;
-  /** `tag` labels the Sarvam calls in logs, e.g. "lecture 325080ef/hi". */
-  translate: (english: Segment[], lang: Lang, tag?: string) => Promise<{ segments: Segment[]; model: string }>;
+  translate: (english: Segment[], lang: Lang, opts?: TranslateRun) => Promise<{ segments: Segment[]; model: string }>;
+}
+
+/** How a translation run is labelled, resumed and checkpointed (see translateSegments). */
+export interface TranslateRun {
+  /** Labels the Sarvam calls in logs, e.g. "lecture 325080ef/hi". */
+  tag?: string;
+  already?: ReadonlyMap<number, string>;
+  onTranslated?: (items: { i: number; text: string }[]) => void | Promise<void>;
 }
 
 export interface LectureRefs {
@@ -92,7 +99,7 @@ export async function resolveLanguage(
   lang: Lang,
   english: Resolved,
   sources: TranscriptSources,
-  tag?: string,
+  run?: TranslateRun,
 ): Promise<Resolved> {
   if (lang === "en") return english;
   const attempts: string[] = [];
@@ -115,7 +122,7 @@ export async function resolveLanguage(
   }
 
   try {
-    const { segments, model } = await sources.translate(english.segments, lang, tag);
+    const { segments, model } = await sources.translate(english.segments, lang, run);
     return { source: "sarvam", segments, durationSec: english.durationSec, model, attempts };
   } catch (err) {
     attempts.push(`machine translation: ${reason(err)}`);

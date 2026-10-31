@@ -6,7 +6,7 @@ import type { Lang } from "@/lib/languages";
 import { translateSegments } from "@/lib/sarvam/translateSegments";
 
 import { fetchNptelVtt } from "./nptelVtt";
-import { type Resolved, resolveEnglish, resolveLanguage, type TranscriptSources } from "./resolve";
+import { type Resolved, resolveEnglish, resolveLanguage, type TranscriptSources, type TranslateRun } from "./resolve";
 import { fetchYouTubeCues } from "./youtube";
 
 /**
@@ -31,8 +31,8 @@ export const MACHINE_TRANSLATOR = "mayura:v1";
 export const liveSources: TranscriptSources = {
   nptelVtt: fetchNptelVtt,
   youtubeCues: fetchYouTubeCues,
-  translate: async (english, lang, tag) => ({
-    segments: await translateSegments(english, lang, { translator: "mayura", tag }),
+  translate: async (english, lang, run) => ({
+    segments: await translateSegments(english, lang, { translator: "mayura", ...run }),
     model: MACHINE_TRANSLATOR,
   }),
 };
@@ -85,6 +85,7 @@ export async function ensureTranscript(
   lectureId: string,
   lang: Lang,
   deps: TranscriptDeps = dbDeps,
+  run: Omit<TranslateRun, "tag"> = {},
 ): Promise<Transcript> {
   const stored = await deps.getStored(lectureId, lang);
   if (stored) return stored;
@@ -100,7 +101,10 @@ export async function ensureTranscript(
   }
   if (lang === "en") return english;
 
-  const resolved = await resolveLanguage(lecture, lang, toResolved(english), deps.sources, `lecture ${lectureId}/${lang}`);
+  const resolved = await resolveLanguage(lecture, lang, toResolved(english), deps.sources, {
+    ...run,
+    tag: `lecture ${lectureId}/${lang}`,
+  });
   logFallbacks(lectureId, lang, resolved);
   return deps.save(toRow(lectureId, lang, resolved));
 }
