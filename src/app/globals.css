@@ -549,3 +549,18 @@ a:hover .arr-d { transform: translateY(2px); }
 @media (prefers-reduced-motion: reduce) {
   .slide-in { animation: none; }
 }
+
+/* The landing page's institute strip: fades at both edges and loops. */
+.marquee {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+@keyframes marquee {
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 70s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track { animation: none; }
+  .marquee { overflow-x: auto; }
+}

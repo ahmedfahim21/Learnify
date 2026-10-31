@@ -4,11 +4,12 @@ import Link from "next/link";
 
 import { CyclingLanguage } from "@/components/site/CyclingLanguage";
 import { FeaturedShelf } from "@/components/site/FeaturedShelf";
+import { InstituteMarquee } from "@/components/site/InstituteMarquee";
 
 /**
  * Landing page, kept to what a student needs to decide: what this is (the
- * hero), proof (a real generated quiz they can answer), how it works in three
- * steps, and lectures to start on.
+ * hero), proof (a real generated quiz they can answer), whose lectures these
+ * are, how it works in three steps, and lectures to start on.
  */
 
 const HeroDemo = dynamic(() => import("@/components/site/HeroDemo"), {
@@ -84,6 +85,8 @@ export default function HomePage() {
         {/* Proof, not a picture: one real lecture and what was written from it. */}
         <HeroDemo />
       </section>
+
+      <InstituteMarquee />
 
       <section className="wrap space-y-8" aria-labelledby="how-heading">
         <h2 id="how-heading" className="text-3xl">
