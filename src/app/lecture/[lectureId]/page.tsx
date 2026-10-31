@@ -4,7 +4,7 @@ import { Keyboard, Languages, Mic } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { CheckpointPanel } from "@/components/lecture/CheckpointPanel";
 import { StudyTabs, type Tab } from "@/components/lecture/StudyTabs";
@@ -19,8 +19,9 @@ import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/ope
 /**
  * The lecture player: the official video in YouTube's embedded player (its
  * own captions are the student's to turn on), checks that pause at the right
- * moments, and beside it the study screens the model writes in the student's
- * language — notes, quiz, flashcards, concept map.
+ * moments, a short rail beside it for whatever belongs to this moment (a
+ * check, a doubt, the controls), and under it, full width, the study modes the
+ * model writes in the student's language: notes, quiz, flashcards, map.
  *
  * Reads GET /api/lectures/[id]; while anything is missing it asks POST
  * /prepare to build it and polls again, backing off from 2 s to 10 s.
@@ -137,7 +138,16 @@ export default function LecturePage() {
     return () => clearInterval(id);
   }, [sample, onSample]);
 
-  const seekAndPlay = useCallback((sec: number) => player.seek(sec, { play: true }), [player]);
+  // Study screens sit below the video; jumping to a moment brings it back into view.
+  const stageRef = useRef<HTMLDivElement>(null);
+  const seekAndPlay = useCallback(
+    (sec: number) => {
+      player.seek(sec, { play: true });
+      const r = stageRef.current?.getBoundingClientRect();
+      if (r && (r.bottom < 120 || r.top > window.innerHeight)) stageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    },
+    [player],
+  );
 
   // ?t=123 (from Today's "watch the moment") starts the lecture there.
   const ready = player.ready;
@@ -222,41 +232,54 @@ export default function LecturePage() {
   const active = flow.state.mode === "idle" ? null : flow.state.check.id;
   const checkIndex = active ? checks.findIndex((c) => c.id === active) + 1 : 0;
 
+  const rail =
+    flow.state.mode === "idle" && doubtAt !== null && lang ? (
+      <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
+    ) : flow.state.mode !== "idle" && lang ? (
+      <CheckpointPanel
+        state={flow.state}
+        lang={lang}
+        index={checkIndex}
+        total={checks.length}
+        onAnswer={flow.answer}
+        onResume={flow.resume}
+        onSkipReplay={flow.skipReplay}
+      />
+    ) : null;
+
   return (
     <LectureClockContext.Provider value={clock}>
       <StudyActionsContext.Provider value={studyActions}>
-      <main className="wrap grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-8">
-        <section className="min-w-0 space-y-3">
-          <div className="space-y-1">
-            {view ? (
-              <Link href={`/courses/${view.lecture.courseId}`} className="label hover:text-(--color-fg)">
-                ← {view.lecture.unitName}
-              </Link>
-            ) : (
-              <div className="h-4 w-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-            )}
-            {view ? (
-              <h1 className="text-2xl">{view.lecture.title}</h1>
-            ) : (
-              <div className="h-8 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-            )}
-          </div>
+      <main className="wrap space-y-6 py-6">
+        <div className="space-y-1">
+          {view ? (
+            <Link href={`/courses/${view.lecture.courseId}`} className="label hover:text-(--color-fg)">
+              ← {view.lecture.unitName}
+            </Link>
+          ) : (
+            <div className="h-4 w-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+          )}
+          {view ? (
+            <h1 className="text-3xl">{view.lecture.title}</h1>
+          ) : (
+            <div className="h-9 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+          )}
+        </div>
 
-          {/* On phones the video stays on screen while the study screens scroll. */}
-          <div className="space-y-3 bg-(--color-ink) max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:pb-2">
-            <div className="relative aspect-video overflow-hidden rounded-(--radius) bg-(--color-raised)">
+        {/* One container for the stage and the study modes, so on phones the
+            video stays pinned while you study; the grid dissolves into it there. */}
+        <div className="flex flex-col gap-4 lg:gap-10">
+        <div className="grid gap-4 max-lg:contents lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
+          {/* On phones the video stays on screen while everything under it scrolls. */}
+          <div ref={stageRef} className="scroll-mt-20 bg-(--color-ink) max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:pb-2">
+            <div className="relative aspect-video overflow-hidden rounded-2xl bg-(--color-raised) shadow-(--shadow-card)">
               {player.blocked && view?.lecture.youtubeId ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
                   <p>This video can&apos;t play inside Learnify.</p>
-                  <a
-                    href={`https://www.youtube.com/watch?v=${view.lecture.youtubeId}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="link"
-                  >
+                  <a href={`https://www.youtube.com/watch?v=${view.lecture.youtubeId}`} target="_blank" rel="noreferrer" className="link">
                     Open it on YouTube ↗
                   </a>
-                  <p className="text-sm text-(--color-mist)">The study screens still work here.</p>
+                  <p className="text-sm text-(--color-mist)">The study modes below still work here.</p>
                 </div>
               ) : (
                 <div ref={player.containerRef} className="absolute inset-0 [&_iframe]:h-full [&_iframe]:w-full" />
@@ -265,139 +288,134 @@ export default function LecturePage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <label className="flex items-center gap-2 text-sm text-(--color-mist)">
-              <Languages size={16} aria-hidden />
-              <span className="sr-only">Study in</span>
-              <select
-                value={lang ?? "ta"}
-                onChange={(e) => chooseLang(e.target.value as Lang)}
-                className="min-h-11 rounded-(--radius) border border-(--color-line) bg-(--color-ink) px-2 text-(--color-fg)"
-              >
-                {Object.entries(LANGUAGES).map(([code, l]) => (
-                  <option key={code} value={code}>
-                    {l.native}
-                    {l.native !== l.name ? ` · ${l.name}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <aside className="min-w-0 space-y-4">
+            {rail ?? (
+              <div className="space-y-4 rounded-2xl border border-(--color-line) bg-(--color-surface) p-4">
+                <label className="block space-y-1.5">
+                  <span className="label flex items-center gap-1.5">
+                    <Languages size={14} aria-hidden /> Study in
+                  </span>
+                  <select
+                    value={lang ?? "ta"}
+                    onChange={(e) => chooseLang(e.target.value as Lang)}
+                    className="min-h-11 w-full rounded-xl border border-(--color-line) bg-(--color-node) px-3 text-(--color-fg)"
+                  >
+                    {Object.entries(LANGUAGES).map(([code, l]) => (
+                      <option key={code} value={code}>
+                        {l.native}
+                        {l.native !== l.name ? ` · ${l.name}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-            <button
-              type="button"
-              onClick={openDoubt}
-              disabled={!english || flow.state.mode !== "idle"}
-              title={!english ? "Doubts open once the lecture's transcript is ready" : undefined}
-              className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-signal) px-3 text-sm text-(--color-signal) transition-colors hover:bg-(--color-signal) hover:text-white disabled:border-(--color-line) disabled:text-(--color-faint) disabled:hover:bg-transparent"
-            >
-              <Mic size={15} aria-hidden /> Ask a doubt
-            </button>
-
-            {checks.length > 0 && (
-              <button
-                type="button"
-                onClick={toggleChecks}
-                aria-pressed={checksOn}
-                className="inline-flex min-h-11 items-center gap-2 text-sm text-(--color-mist) hover:text-(--color-fg)"
-              >
-                <span
-                  aria-hidden
-                  className={`inline-block h-4 w-7 rounded-full border transition-colors ${checksOn ? "border-(--color-signal) bg-(--color-signal)" : "border-(--color-line)"}`}
+                <button
+                  type="button"
+                  onClick={openDoubt}
+                  disabled={!english || checkOpen}
+                  title={!english ? "Doubts open once the lecture's transcript is ready" : undefined}
+                  className="tile flex w-full items-center gap-3 rounded-xl bg-(--color-signal) p-3 text-left text-white disabled:bg-(--color-raised) disabled:text-(--color-faint)"
                 >
-                  <span className={`block h-3 w-3 translate-y-px rounded-full bg-white transition-transform ${checksOn ? "translate-x-3.5" : "translate-x-px"}`} />
-                </span>
-                Checks {checksOn ? `· ${flow.doneCount} of ${checks.length} done` : "off"}
-              </button>
-            )}
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15">
+                    <Mic size={18} aria-hidden />
+                  </span>
+                  <span>
+                    <span className="block">Ask a doubt</span>
+                    <span className="block text-sm opacity-75">Pause and ask out loud</span>
+                  </span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setShowKeys((v) => !v)}
-              aria-expanded={showKeys}
-              aria-label="Keyboard shortcuts"
-              className="ml-auto flex h-11 w-11 items-center justify-center text-(--color-mist) hover:text-(--color-fg)"
-            >
-              <Keyboard size={18} aria-hidden />
-            </button>
-          </div>
+                {checks.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleChecks}
+                    aria-pressed={checksOn}
+                    className="flex min-h-11 w-full items-center justify-between gap-3 text-sm text-(--color-mist) hover:text-(--color-fg)"
+                  >
+                    <span>
+                      Pop-up checks {checksOn ? <span className="font-mono">· {flow.doneCount}/{checks.length}</span> : "off"}
+                    </span>
+                    <span
+                      aria-hidden
+                      className={`inline-block h-5 w-9 rounded-full border transition-colors ${checksOn ? "border-(--color-signal) bg-(--color-signal)" : "border-(--color-line) bg-(--color-node)"}`}
+                    >
+                      <span className={`block h-4 w-4 translate-y-px rounded-full bg-white shadow transition-transform ${checksOn ? "translate-x-4" : "translate-x-px"}`} />
+                    </span>
+                  </button>
+                )}
 
-          {showKeys && (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 rounded-(--radius) border border-(--color-line) p-4 text-sm">
-              {[
-                ["Space / K", "Play or pause"],
-                ["J / L", "Back or forward 10 seconds"],
-                ["N / Q", "Show the notes or the quiz"],
-                ["D", "Ask a doubt about this moment"],
-                ["1–4, Enter", "Answer a check"],
-                ["?", "Show or hide these shortcuts"],
-              ].map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt>
-                    <kbd className="font-mono text-(--color-mist)">{k}</kbd>
-                  </dt>
-                  <dd className="text-(--color-mist)">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
+                {status && !blocker && (
+                  <p
+                    className={`flex items-center gap-2 text-sm ${status.tone === "failed" ? "text-(--color-alert)" : status.tone === "retrying" ? "text-(--color-warn)" : "text-(--color-mist)"}`}
+                    aria-live="polite"
+                  >
+                    {status.tone !== "failed" && <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
+                    {status.text}
+                  </p>
+                )}
+                {blocker && (
+                  <p className={`text-sm ${blocker.kind === "error" ? "text-(--color-alert)" : "text-(--color-warn)"}`} role="status">
+                    {blocker.message}{" "}
+                    {blocker.kind === "signin" && (
+                      <Link href={`/signin?next=/lecture/${lectureId}`} className="link">
+                        Sign in
+                      </Link>
+                    )}
+                  </p>
+                )}
 
-          {status && !blocker && (
-            <p
-              className={`flex items-center gap-2 text-sm ${status.tone === "failed" ? "text-(--color-alert)" : status.tone === "retrying" ? "text-(--color-warn)" : "text-(--color-mist)"}`}
-              aria-live="polite"
-            >
-              {status.tone !== "failed" && <span aria-hidden className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />}
-              {status.text}
-            </p>
-          )}
-          {blocker && (
-            <p className={`text-sm ${blocker.kind === "error" ? "text-(--color-alert)" : "text-(--color-warn)"}`} role="status">
-              {blocker.message}{" "}
-              {blocker.kind === "signin" && (
-                <Link href={`/signin?next=/lecture/${lectureId}`} className="link">
-                  Sign in
-                </Link>
-              )}
-            </p>
-          )}
-          {noTranscript && (
-            <p className="text-(--color-mist)">
-              There&apos;s no transcript for this lecture yet, so checks and study screens aren&apos;t available. The video still plays.
-            </p>
-          )}
-        </section>
-
-        {!noTranscript && (
-          <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-            {flow.state.mode === "idle" && doubtAt !== null && lang ? (
-              <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
-            ) : flow.state.mode !== "idle" && lang ? (
-              <CheckpointPanel
-                state={flow.state}
-                lang={lang}
-                index={checkIndex}
-                total={checks.length}
-                onAnswer={flow.answer}
-                onResume={flow.resume}
-                onSkipReplay={flow.skipReplay}
-              />
-            ) : (
-              <StudyTabs
-                tab={tab}
-                onTab={setTab}
-                lectureId={lectureId}
-                lang={lang ?? "en"}
-                transcriptReady={Boolean(english)}
-                pack={view?.pack ?? null}
-                packNote={
-                  packFailed
-                    ? `Couldn't build the study material: ${packFailed.state === "failed" ? packFailed.error : ""}`
-                    : "Building the flashcards and concept map. This takes under a minute the first time anyone opens a lecture."
-                }
-              />
+                <button
+                  type="button"
+                  onClick={() => setShowKeys((v) => !v)}
+                  aria-expanded={showKeys}
+                  className="inline-flex min-h-9 items-center gap-2 text-sm text-(--color-mist) hover:text-(--color-fg)"
+                >
+                  <Keyboard size={16} aria-hidden /> Shortcuts
+                </button>
+                {showKeys && (
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                    {[
+                      ["Space / K", "Play or pause"],
+                      ["J / L", "Back or forward 10 s"],
+                      ["N / Q", "Notes or quiz"],
+                      ["D", "Ask a doubt"],
+                      ["1–4, Enter", "Answer a check"],
+                      ["?", "These shortcuts"],
+                    ].map(([k, v]) => (
+                      <div key={k} className="contents">
+                        <dt>
+                          <kbd className="font-mono text-(--color-mist)">{k}</kbd>
+                        </dt>
+                        <dd className="text-(--color-mist)">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+              </div>
             )}
           </aside>
+        </div>
+
+        {noTranscript ? (
+          <p className="text-(--color-mist)">
+            There&apos;s no transcript for this lecture yet, so checks and study modes aren&apos;t available. The video still plays.
+          </p>
+        ) : (
+          <StudyTabs
+            tab={tab}
+            onTab={setTab}
+            lectureId={lectureId}
+            lang={lang ?? "en"}
+            transcriptReady={Boolean(english)}
+            pack={view?.pack ?? null}
+            packNote={
+              packFailed
+                ? `Couldn't build the study material: ${packFailed.state === "failed" ? packFailed.error : ""}`
+                : "Building the flashcards and concept map. This takes under a minute the first time anyone opens a lecture."
+            }
+          />
         )}
+        </div>
       </main>
       </StudyActionsContext.Provider>
     </LectureClockContext.Provider>

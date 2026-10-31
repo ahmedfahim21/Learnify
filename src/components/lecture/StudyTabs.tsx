@@ -1,13 +1,15 @@
 "use client";
 
+import { BookOpen, Layers, type LucideIcon, Network, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRef } from "react";
 
-import type { Lang } from "@/lib/languages";
+import { LANGUAGES, type Lang } from "@/lib/languages";
 import type { ViewPack } from "@/lib/lectures/view";
+import { StudyNavContext } from "@/lib/openui/contexts";
 
 /**
- * The study side of a lecture. Notes and Quiz are generated UI: the model
+ * The study area under a lecture: four modes as tiles, then the open one. Notes and Quiz are generated UI: the model
  * writes them from the lecture in the student's language. Flashcards and the
  * concept map render the lecture's study pack. Everything loads with its tab.
  */
@@ -23,7 +25,12 @@ const GeneratedScreen = dynamic(() => import("./GeneratedScreen"), {
 
 export const TABS = ["notes", "quiz", "cards", "map"] as const;
 export type Tab = (typeof TABS)[number];
-const LABELS: Record<Tab, string> = { notes: "Notes", quiz: "Quiz", cards: "Flashcards", map: "Concept map" };
+const MODES: Record<Tab, { label: string; hint: string; icon: LucideIcon; colour: string }> = {
+  notes: { label: "Notes", hint: "Read it, flip the cards", icon: BookOpen, colour: "var(--color-signal)" },
+  quiz: { label: "Quiz", hint: "Play for points", icon: Trophy, colour: "var(--color-accent)" },
+  cards: { label: "Flashcards", hint: "Remember it for good", icon: Layers, colour: "var(--color-flow)" },
+  map: { label: "Concept map", hint: "See how it connects", icon: Network, colour: "var(--color-deep)" },
+};
 
 interface Props {
   tab: Tab;
@@ -47,52 +54,81 @@ export function StudyTabs({ tab, onTab, lectureId, lang, transcriptReady, pack, 
   };
 
   return (
-    <div className="flex min-h-0 flex-col gap-4">
-      <div
-        role="tablist"
-        aria-label="Study"
-        className="flex gap-1 overflow-x-auto border-b border-(--color-line)"
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight") move(1);
-          else if (e.key === "ArrowLeft") move(-1);
-        }}
-      >
-        {TABS.map((t) => (
-          <button
-            key={t}
-            ref={(el) => {
-              tabRefs.current[t] = el;
-            }}
-            id={`tab-${t}`}
-            role="tab"
-            type="button"
-            aria-selected={tab === t}
-            aria-controls={`panel-${t}`}
-            tabIndex={tab === t ? 0 : -1}
-            onClick={() => onTab(t)}
-            className={`-mb-px min-h-11 shrink-0 border-b px-3 text-sm transition-colors ${
-              tab === t ? "border-(--color-signal) text-(--color-fg)" : "border-transparent text-(--color-mist) hover:text-(--color-fg)"
-            }`}
-          >
-            {LABELS[t]}
-          </button>
-        ))}
-      </div>
+    <StudyNavContext.Provider value={onTab}>
+      <section className="space-y-6" aria-label="Study this lecture">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-3xl">Study this lecture</h2>
+          <p className="text-(--color-mist)" lang={LANGUAGES[lang].sarvam}>
+            in {LANGUAGES[lang].native}
+          </p>
+        </div>
+        <div
+          role="tablist"
+          aria-label="Study mode"
+          className="grid grid-cols-2 gap-3 md:grid-cols-4"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight") move(1);
+            else if (e.key === "ArrowLeft") move(-1);
+          }}
+        >
+          {TABS.map((t) => {
+            const m = MODES[t];
+            const on = tab === t;
+            return (
+              <button
+                key={t}
+                ref={(el) => {
+                  tabRefs.current[t] = el;
+                }}
+                id={`tab-${t}`}
+                role="tab"
+                type="button"
+                aria-selected={on}
+                aria-controls={`panel-${t}`}
+                tabIndex={on ? 0 : -1}
+                onClick={() => onTab(t)}
+                className="tile flex items-center gap-3 rounded-2xl border-2 p-3 text-left sm:p-4"
+                style={{
+                  borderColor: on ? m.colour : "var(--color-line)",
+                  background: on ? `color-mix(in srgb, ${m.colour} 9%, var(--color-node))` : "var(--color-node)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white transition-transform"
+                  style={{ background: m.colour, transform: on ? "rotate(-6deg) scale(1.05)" : undefined }}
+                >
+                  <m.icon size={20} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-lg leading-tight">{m.label}</span>
+                  <span className="block truncate text-sm text-(--color-mist) max-sm:hidden">{m.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="min-h-0">
-        {tab === "notes" || tab === "quiz" ? (
-          transcriptReady ? (
-            <GeneratedScreen key={`${tab}-${lang}`} lectureId={lectureId} lang={lang} kind={tab} />
+        <div
+          id={`panel-${tab}`}
+          role="tabpanel"
+          aria-labelledby={`tab-${tab}`}
+          className={`rounded-2xl border border-(--color-line) bg-(--color-ink) p-4 sm:p-8 ${tab === "map" ? "" : "[&>*]:mx-auto [&>*]:max-w-3xl"}`}
+        >
+          {tab === "notes" || tab === "quiz" ? (
+            transcriptReady ? (
+              <GeneratedScreen key={`${tab}-${lang}`} lectureId={lectureId} lang={lang} kind={tab} />
+            ) : (
+              <StudyPlaceholder note="Fetching the lecture's captions; notes and quizzes are written from them." />
+            )
+          ) : pack ? (
+            <StudyProgram pack={pack} tab={tab} />
           ) : (
-            <StudyPlaceholder note="Fetching the lecture's captions; notes and quizzes are written from them." />
-          )
-        ) : pack ? (
-          <StudyProgram pack={pack} tab={tab} />
-        ) : (
-          <StudyPlaceholder note={packNote} />
-        )}
-      </div>
-    </div>
+            <StudyPlaceholder note={packNote} />
+          )}
+        </div>
+      </section>
+    </StudyNavContext.Provider>
   );
 }
 
