@@ -5,7 +5,10 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { signOut, useSession } from "@/lib/authClient";
 
-const LINKS: { href: string; label: string }[] = [{ href: "/courses", label: "Courses" }];
+const LINKS: { href: string; label: string }[] = [
+  { href: "/courses", label: "Courses" },
+  { href: "/today", label: "Today" },
+];
 
 export function TopNav() {
   const pathname = usePathname();
