@@ -14,8 +14,8 @@ import { MAX_RECORDING_SEC, useRecorder } from "./useRecorder";
 /**
  * Ask a doubt at the moment the video was paused: speak or type it, check the
  * transcription, and read the answer as it streams in, grounded in what the
- * lecturer just said. Answers can be read aloud. Sits beside the player like
- * a check does, never over the video.
+ * lecturer just said. Answers can be read aloud. Lives in the lecture page's
+ * side panel, which scrolls on its own, never over the video.
  */
 
 function formatTime(sec: number): string {
@@ -154,7 +154,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
   const outOfDoubts = remaining === 0;
 
   return (
-    <section aria-labelledby="doubt-heading" className="space-y-4 rounded-(--radius) border border-(--color-line) bg-(--color-surface) p-5">
+    <section aria-labelledby="doubt-heading" className="space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="label">Ask a doubt · at {formatTime(atSec)}</p>

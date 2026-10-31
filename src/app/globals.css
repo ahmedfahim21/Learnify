@@ -538,3 +538,14 @@ a:hover .arr-d { transform: translateY(2px); }
   .flip-inner { transition: none; }
   .tile:not(:disabled):hover { transform: none; }
 }
+
+/* The doubt side panel: slides in from the right, or up from the bottom on phones. */
+@keyframes slide-in-right { from { transform: translateX(100%); } }
+@keyframes slide-in-up { from { transform: translateY(100%); } }
+.slide-in { animation: slide-in-up 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
+@media (min-width: 64rem) {
+  .slide-in { animation-name: slide-in-right; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-in { animation: none; }
+}

@@ -186,7 +186,12 @@ export default function LecturePage() {
     [user, lang, lectureId],
   );
   const english = view?.subtitles.en ?? null;
-  const status = view ? describeStatus(view.status) : null;
+  // Describe only what was asked for: a study pack nobody requested isn't "being translated".
+  const status = useMemo(() => {
+    if (!view) return null;
+    const stages = view.status.stages.filter((st) => scope === "full" || (st.lang === "en" && st.stage === "transcript"));
+    return describeStatus({ ...view.status, stages, ready: stages.every((st) => st.state === "ready") });
+  }, [view, scope]);
   const clock = useMemo(
     () => ({ durationSec: english?.durationSec ?? Number.MAX_SAFE_INTEGER, seekTo: seekAndPlay }),
     [english?.durationSec, seekAndPlay],
@@ -198,6 +203,8 @@ export default function LecturePage() {
     if (!english || checkOpen) return;
     player.pause();
     setDoubtAt(now);
+    // On phones the panel opens under the pinned video; bring the video to its pinned spot first.
+    if (window.matchMedia("(max-width: 63.99rem)").matches) stageRef.current?.scrollIntoView({ block: "start" });
   }, [english, checkOpen, player, now]);
 
   // Keyboard: on the page, not inside form controls or the open check.
@@ -221,10 +228,19 @@ export default function LecturePage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [now, player, openDoubt]);
 
-  function closeDoubt() {
+  const closeDoubt = useCallback(() => {
     setDoubtAt(null);
     player.play();
-  }
+  }, [player]);
+
+  // Escape closes the doubt panel, wherever focus is.
+  const doubtOpen = doubtAt !== null;
+  useEffect(() => {
+    if (!doubtOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeDoubt();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [doubtOpen, closeDoubt]);
 
   function toggleChecks() {
     if (!prefs) return;
@@ -239,9 +255,7 @@ export default function LecturePage() {
   const checkIndex = active ? checks.findIndex((c) => c.id === active) + 1 : 0;
 
   const rail =
-    flow.state.mode === "idle" && doubtAt !== null && lang ? (
-      <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
-    ) : flow.state.mode !== "idle" && lang ? (
+    flow.state.mode !== "idle" && lang ? (
       <CheckpointPanel
         state={flow.state}
         lang={lang}
@@ -256,7 +270,8 @@ export default function LecturePage() {
   return (
     <LectureClockContext.Provider value={clock}>
       <StudyActionsContext.Provider value={studyActions}>
-      <main className="wrap space-y-6 py-6">
+      <main className={`space-y-6 py-6 transition-[padding] duration-300 ${doubtOpen ? "lg:pr-[30rem]" : ""}`}>
+      <div className="wrap space-y-6">
         <div className="space-y-1">
           {view ? (
             <Link href={`/courses/${view.lecture.courseId}`} className="label hover:text-(--color-fg)">
@@ -275,7 +290,7 @@ export default function LecturePage() {
         {/* One container for the stage and the study modes, so on phones the
             video stays pinned while you study; the grid dissolves into it there. */}
         <div className="flex flex-col gap-4 lg:gap-10">
-        <div className="grid gap-4 max-lg:contents lg:grid-cols-[minmax(0,1fr)_22rem] lg:gap-6">
+        <div className={`grid gap-4 max-lg:contents lg:gap-6 ${doubtOpen ? "" : "lg:grid-cols-[minmax(0,1fr)_22rem]"}`}>
           {/* On phones the video stays on screen while everything under it scrolls. */}
           <div ref={stageRef} className="scroll-mt-20 bg-(--color-ink) max-lg:sticky max-lg:top-14 max-lg:z-10 max-lg:pb-2">
             <div className="relative aspect-video overflow-hidden rounded-2xl bg-(--color-raised) shadow-(--shadow-card)">
@@ -294,7 +309,8 @@ export default function LecturePage() {
             </div>
           </div>
 
-          <aside className="min-w-0 space-y-4">
+          {/* While a doubt is open, its panel takes this rail's place. */}
+          <aside className={`min-w-0 space-y-4 ${doubtOpen ? "lg:hidden" : ""}`}>
             {rail ?? (
               <div className="space-y-4 rounded-2xl border border-(--color-line) bg-(--color-surface) p-4">
                 <button
@@ -428,6 +444,19 @@ export default function LecturePage() {
                 : "Building the flashcards and concept map. This takes under a minute the first time anyone asks for them."
             }
           />
+        )}
+      </div>
+        {/* Doubts get a side panel of their own: answers can run long, and the
+            paused video stays in view beside it (above it, on phones). */}
+        {doubtAt !== null && lang && (
+          <aside
+            aria-label="Ask a doubt"
+            className="slide-in fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-(--color-line) bg-(--color-ink) shadow-(--shadow-card) max-lg:top-[calc(3.5rem+50.625vw+0.5rem)] max-lg:rounded-t-3xl lg:top-14 lg:left-auto lg:w-[30rem] lg:border-t-0 lg:border-l"
+          >
+            <div className="flex-1 overflow-y-auto overscroll-contain p-5 sm:p-6">
+              <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
+            </div>
+          </aside>
         )}
         {(prefsState.phase === "unset" || prefsState.phase === "editing") && (
           <LearningSetup

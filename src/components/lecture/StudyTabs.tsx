@@ -61,7 +61,7 @@ export function StudyTabs({ tab, onTab, lectureId, lang, level, transcriptReady,
 
   return (
     <StudyNavContext.Provider value={onTab}>
-      <section className="space-y-6" aria-label="Study this lecture">
+      <section className="@container space-y-6" aria-label="Study this lecture">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h2 className="text-3xl">Study this lecture</h2>
           <p className="text-(--color-mist)" lang={LANGUAGES[lang].sarvam}>
@@ -71,7 +71,7 @@ export function StudyTabs({ tab, onTab, lectureId, lang, level, transcriptReady,
         <div
           role="tablist"
           aria-label="Study mode"
-          className="grid grid-cols-2 gap-3 md:grid-cols-4"
+          className="grid grid-cols-2 gap-3 @3xl:grid-cols-4"
           onKeyDown={(e) => {
             if (e.key === "ArrowRight") move(1);
             else if (e.key === "ArrowLeft") move(-1);
@@ -108,7 +108,7 @@ export function StudyTabs({ tab, onTab, lectureId, lang, level, transcriptReady,
                 </span>
                 <span className="min-w-0">
                   <span className="block text-lg leading-tight">{m.label}</span>
-                  <span className="block truncate text-sm text-(--color-mist) max-sm:hidden">{m.hint}</span>
+                  <span className="hidden truncate text-sm text-(--color-mist) @lg:block">{m.hint}</span>
                 </span>
               </button>
             );
