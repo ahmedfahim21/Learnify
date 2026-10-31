@@ -56,7 +56,7 @@ const oriya = Noto_Sans_Oriya({ weight: "400", subsets: ["oriya"], variable: "--
 const indic = [devanagari, bengali, tamil, telugu, kannada, malayalam, gujarati, gurmukhi, oriya];
 
 const SITE_NAME = "Learnify";
-const TAGLINE = "Watch an NPTEL lecture in English, learn it in your language";
+const TAGLINE = "Watch an NPTEL lecture, learn it in your language";
 const DESCRIPTION =
   "Pick a free NPTEL lecture from over 100 Indian institutes, the IITs and IISc among them, watch it as it is, then learn it in Tamil, Hindi, Telugu, Kannada and more: notes, quizzes and flashcards written from that lecture, and doubts answered by voice.";
 

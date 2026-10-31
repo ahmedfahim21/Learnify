@@ -50,9 +50,9 @@ export default function HomePage() {
       <section className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-8">
           <h1 className="text-[2.6rem] leading-[1.08] tracking-tight sm:text-6xl">
-            <span className="sr-only">Watch an NPTEL lecture in English. Learn it in your language.</span>
+            <span className="sr-only">Watch an NPTEL lecture. Learn it in your language.</span>
             <span aria-hidden>
-              Watch an NPTEL lecture in English.
+              Watch an NPTEL lecture.
               <br />
               Learn it in <CyclingLanguage />
             </span>

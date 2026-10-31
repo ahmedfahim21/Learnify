@@ -12,7 +12,7 @@ import { courses, lectures } from "@/db/schema";
 
 const courseTitle = (title: string) => title.replace(/^NOC:\s*/, "");
 /** Setting openGraph replaces the site's whole object, image included, so the card is named again here. */
-const IMAGE = [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Learnify: watch an NPTEL lecture in English, learn it in your language" }];
+const IMAGE = [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Learnify: watch an NPTEL lecture, learn it in your language" }];
 
 const LEARN = "Notes, quizzes and flashcards written from it in Hindi, Tamil, Telugu, Bengali and more.";
 

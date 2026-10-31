@@ -9,7 +9,7 @@ import { LANGUAGES } from "@/lib/languages";
 import { screenLibrary } from "@/lib/openui/screenLibrary";
 
 /**
- * The hero's proof: one English lecture, and what Learnify wrote from it in
+ * The hero's proof: one NPTEL lecture, and what Learnify wrote from it in
  * three languages. Every statement below is model output stored for NPTEL's
  * "Coulomb's Law" (IIT Kanpur), copied verbatim, so switching language shows
  * the real thing, rendered by the same OpenUI library as the lecture page.
@@ -71,7 +71,7 @@ export default function HeroDemo() {
           </span>
         </span>
         <span className="min-w-0 space-y-0.5">
-          <span className="label block">English lecture</span>
+          <span className="label block">NPTEL lecture</span>
           <span className="block text-lg leading-tight">{LECTURE.title}</span>
           <span className="block truncate text-sm text-(--color-mist)">{LECTURE.by}</span>
         </span>
