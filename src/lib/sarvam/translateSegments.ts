@@ -17,7 +17,15 @@ import { chatJson, translate } from "./client";
  *   call per segment.
  */
 
-export type TranslatorName = "sarvam105b" | "mayura";
+/**
+ * - `hybrid` (default): batches through sarvam-105b-conversations, then Mayura
+ *   for just the segments a batch got wrong. ~40× fewer requests than Mayura
+ *   alone, which matters: one request per segment hit Sarvam's rate limit on
+ *   real lectures.
+ * - `mayura`: one /translate call per segment.
+ * - `sarvam105b`: batches only, failing loudly on a bad batch.
+ */
+export type TranslatorName = "hybrid" | "sarvam105b" | "mayura";
 
 export class AlignmentError extends Error {
   constructor(message: string) {
@@ -89,7 +97,7 @@ function systemPrompt(lang: Lang, glossary: string[]): string {
     .join("\n");
 }
 
-async function translateBatch105b(batch: Segment[], lang: Lang, glossary: string[], tag?: string) {
+async function requestBatch(batch: Segment[], lang: Lang, glossary: string[], tag?: string) {
   const { value } = await chatJson<{ items: TranslatedItem[] }>({
     messages: [
       { role: "system", content: systemPrompt(lang, glossary) },
@@ -99,7 +107,34 @@ async function translateBatch105b(batch: Segment[], lang: Lang, glossary: string
     jsonSchema: { name: "subtitle_batch", schema: batchSchema },
     maxTokens: 8192,
   }, { tag });
-  return alignBatch(batch, value.items, lang);
+  return value.items;
+}
+
+async function translateBatch105b(batch: Segment[], lang: Lang, glossary: string[], tag?: string) {
+  return alignBatch(batch, await requestBatch(batch, lang, glossary, tag), lang);
+}
+
+/**
+ * Keep every item of a batch reply that passes the same checks alignBatch
+ * applies, and return the segments that didn't (missing, duplicated, empty or
+ * left in English) so they can go to Mayura one by one.
+ */
+export function partialAlign(sent: Segment[], got: TranslatedItem[], lang: Lang): { good: Map<number, string>; redo: Segment[] } {
+  const good = new Map<number, string>();
+  const seen = new Set<number>();
+  const dupes = new Set<number>();
+  for (const item of got) (seen.has(item.i) ? dupes : seen).add(item.i);
+  for (const s of sent) {
+    const items = got.filter((g) => g.i === s.i);
+    if (items.length !== 1 || dupes.has(s.i)) continue;
+    try {
+      const [[, text]] = alignBatch([s], items, lang);
+      good.set(s.i, text);
+    } catch (err) {
+      if (!(err instanceof AlignmentError)) throw err;
+    }
+  }
+  return { good, redo: sent.filter((s) => !good.has(s.i)) };
 }
 
 /** On misalignment, retry by halves down to single segments; a single segment that still fails throws. */
@@ -143,7 +178,7 @@ export function splitForLimit(text: string, max: number): string[] {
 }
 
 export interface TranslateOptions {
-  /** Defaults to Mayura, which the spike chose (PLAN.md section 6). */
+  /** Defaults to hybrid (batched, Mayura for misses); see TranslatorName. */
   translator?: TranslatorName;
   glossary?: string[];
   batchSize?: number;
@@ -162,7 +197,7 @@ export interface TranslateOptions {
 export async function translateSegments(
   segments: Segment[],
   lang: Lang,
-  { translator = "mayura", glossary = [], batchSize = 40, already, onTranslated, tag }: TranslateOptions = {},
+  { translator = "hybrid", glossary = [], batchSize = 40, already, onTranslated, tag }: TranslateOptions = {},
 ): Promise<Segment[]> {
   const translated = new Map<number, string>();
   for (const s of segments) {
@@ -171,12 +206,12 @@ export async function translateSegments(
   }
   const todo = segments.filter((s) => !translated.has(s.i));
 
-  if (translator === "mayura") {
-    const target = LANGUAGES[lang].sarvam;
+  const target = LANGUAGES[lang].sarvam;
+  const viaMayura = async (list: Segment[]) => {
     let next = 0;
     const worker = async () => {
-      while (next < todo.length) {
-        const s = todo[next++];
+      while (next < list.length) {
+        const s = list[next++];
         const parts: string[] = [];
         for (const piece of splitForLimit(s.text, MAYURA_MAX_CHARS)) {
           parts.push(await translate({ input: piece, source: "en-IN", target }, { tag }));
@@ -186,7 +221,28 @@ export async function translateSegments(
         await onTranslated?.([{ i: s.i, text }]);
       }
     };
-    await Promise.all(Array.from({ length: MAYURA_CONCURRENCY }, worker));
+    await Promise.all(Array.from({ length: Math.min(MAYURA_CONCURRENCY, list.length) }, worker));
+  };
+
+  if (translator === "mayura") {
+    await viaMayura(todo);
+  } else if (translator === "hybrid") {
+    for (let start = 0; start < todo.length; start += batchSize) {
+      const batch = todo.slice(start, start + batchSize);
+      let good = new Map<number, string>();
+      let redo = batch;
+      try {
+        ({ good, redo } = partialAlign(batch, await requestBatch(batch, lang, glossary, tag), lang));
+      } catch (err) {
+        // A batch that fails outright (truncated, malformed, Sarvam error) goes to Mayura whole.
+        console.warn(`batch translation failed for ${tag ?? lang}; using Mayura for ${batch.length} segments:`, err instanceof Error ? err.message : err);
+      }
+      if (good.size) {
+        for (const [i, text] of good) translated.set(i, text);
+        await onTranslated?.([...good].map(([i, text]) => ({ i, text })));
+      }
+      if (redo.length) await viaMayura(redo);
+    }
   } else {
     for (let start = 0; start < todo.length; start += batchSize) {
       const batch = todo.slice(start, start + batchSize);

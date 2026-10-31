@@ -10,17 +10,17 @@ import type { StudyPack } from "./pack";
  * Only prose moves: titles, summaries, questions, options, explanations,
  * flashcards and recap points. Ids, timestamps, prerequisite links and the
  * answer index are copied from the English, so a translated pack can't grade
- * differently or point at different moments. Each string goes through the
- * same Mayura path as subtitles (limiter, retries, logging, length splits).
+ * differently or point at different moments. Strings go through the same
+ * hybrid path as subtitles: batched, with Mayura only for what a batch missed.
  */
 
 export interface PackTranslator {
   (texts: string[], lang: Lang, tag?: string): Promise<string[]>;
 }
 
-export const mayuraTexts: PackTranslator = async (texts, lang, tag) => {
+export const hybridTexts: PackTranslator = async (texts, lang, tag) => {
   const pseudo: Segment[] = texts.map((text, i) => ({ i, startSec: 0, endSec: 0, text }));
-  const out = await translateSegments(pseudo, lang, { translator: "mayura", tag });
+  const out = await translateSegments(pseudo, lang, { translator: "hybrid", tag });
   return out.map((s) => s.text);
 };
 
@@ -48,7 +48,7 @@ function slots(pack: StudyPack): { text: string; set: (p: StudyPack, t: string) 
 export async function translatePack(
   english: StudyPack,
   lang: Lang,
-  translateTexts: PackTranslator = mayuraTexts,
+  translateTexts: PackTranslator = hybridTexts,
   tag?: string,
 ): Promise<StudyPack> {
   const all = slots(english);

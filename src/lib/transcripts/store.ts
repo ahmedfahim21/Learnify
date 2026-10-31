@@ -26,13 +26,13 @@ export interface TranscriptDeps {
   sources: TranscriptSources;
 }
 
-export const MACHINE_TRANSLATOR = "mayura:v1";
+export const MACHINE_TRANSLATOR = "sarvam-105b-conversations+mayura:v1";
 
 export const liveSources: TranscriptSources = {
   nptelVtt: fetchNptelVtt,
   youtubeCues: fetchYouTubeCues,
   translate: async (english, lang, run) => ({
-    segments: await translateSegments(english, lang, { translator: "mayura", ...run }),
+    segments: await translateSegments(english, lang, { translator: "hybrid", ...run }),
     model: MACHINE_TRANSLATOR,
   }),
 };

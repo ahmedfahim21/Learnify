@@ -26,7 +26,7 @@ export interface PackDeps {
 }
 
 /** Recorded on translated packs: the English pack's model, then the translator. */
-const translatedBy = (english: string) => `${english}+mayura:v1`;
+const translatedBy = (english: string) => `${english}+translated:sarvam-105b-conversations,mayura:v1`;
 
 export const dbPackDeps: PackDeps = {
   getLecture: transcriptDeps.getLecture,

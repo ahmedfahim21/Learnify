@@ -145,7 +145,7 @@ async function main() {
 
     // 1. Translation A/B on a sample.
     const sample = english.slice(0, TRANSLATE_SAMPLE);
-    const translations: Record<TranslatorName, Segment[]> = { sarvam105b: [], mayura: [] };
+    const translations: Record<TranslatorName, Segment[]> = { hybrid: [], sarvam105b: [], mayura: [] };
     for (const translator of ["sarvam105b", "mayura"] as const) {
       try {
         const [out, t] = await ms(() => translateSegments(sample, lang, { translator }));

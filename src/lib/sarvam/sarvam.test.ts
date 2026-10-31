@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
 import { chat, chatJson, retryAfterMs, SarvamError, sarvamFetch, sseData, translate } from "./client";
-import { AlignmentError, alignBatch, splitForLimit, translateSegments } from "./translateSegments";
+import { AlignmentError, alignBatch, partialAlign, splitForLimit, translateSegments } from "./translateSegments";
 
 const noSleep = { sleep: async () => {} };
 
@@ -291,6 +291,7 @@ describe("translateSegments: resuming", () => {
     const reported: { i: number; text: string }[] = [];
 
     const out = await translateSegments(segs, "ta", {
+      translator: "mayura",
       already: new Map([[1, "இரண்டு"]]),
       onTranslated: (items) => void reported.push(...items),
     });
@@ -311,6 +312,7 @@ describe("translateSegments: resuming", () => {
     vi.stubGlobal("fetch", vi.fn(async () => json({ translated_text: "x" })));
     await expect(
       translateSegments(segs, "ta", {
+        translator: "mayura",
         onTranslated: async () => Promise.reject(new Error("db write failed")),
       }),
     ).rejects.toThrow("db write failed");
@@ -322,5 +324,83 @@ describe("translateSegments: resuming", () => {
     const out = await translateSegments(segs, "ta", { already: new Map(segs.map((s) => [s.i, `t${s.i}`])) });
     expect(out.map((s) => s.text)).toEqual(["t0", "t1", "t2"]);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("hybrid translation", () => {
+  const segs = [
+    { i: 0, startSec: 0, endSec: 2, text: "We start with the set of natural numbers today." },
+    { i: 1, startSec: 2, endSec: 4, text: "Then we look at the integers and rationals." },
+    { i: 2, startSec: 4, endSec: 6, text: "Finally the real numbers complete the picture." },
+  ];
+
+  it("keeps a batch's good items and sends only the misses to Mayura", async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        if (url.endsWith("/v1/chat/completions")) {
+          calls.push("batch");
+          // Item 1 comes back in English (the conversations model's known miss); item 2 is missing.
+          const items = [
+            { i: 0, text: "இன்று natural numbers set-இலிருந்து தொடங்குவோம்." },
+            { i: 1, text: "Then we look at the integers and rationals." },
+          ];
+          return json({ choices: [{ message: { content: JSON.stringify({ items }) }, finish_reason: "stop" }] });
+        }
+        calls.push(`mayura:${JSON.parse(init.body as string).input.slice(0, 10)}`);
+        return json({ translated_text: `ta:${JSON.parse(init.body as string).input}` });
+      }),
+    );
+    const reported: number[] = [];
+    const out = await translateSegments(segs, "ta", { onTranslated: (items) => void reported.push(...items.map((x) => x.i)) });
+
+    expect(out.map((s) => s.text)).toEqual([
+      "இன்று natural numbers set-இலிருந்து தொடங்குவோம்.",
+      "ta:Then we look at the integers and rationals.",
+      "ta:Finally the real numbers complete the picture.",
+    ]);
+    expect(calls).toEqual(["batch", "mayura:Then we lo", "mayura:Finally th"]);
+    expect(reported.sort()).toEqual([0, 1, 2]);
+    expect(out.map(({ i, startSec, endSec }) => [i, startSec, endSec])).toEqual(segs.map(({ i, startSec, endSec }) => [i, startSec, endSec]));
+  });
+
+  it("sends a whole batch to Mayura when the batch call fails", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) =>
+        url.endsWith("/v1/chat/completions")
+          ? json({ error: { message: "bad request" } }, 400)
+          : json({ translated_text: `ta:${JSON.parse(init.body as string).input}` }),
+      ),
+    );
+    const out = await translateSegments(segs, "ta", { tag: "lecture x/ta" });
+    expect(out.every((s) => s.text.startsWith("ta:"))).toBe(true);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});
+
+describe("partialAlign", () => {
+  const sent = [
+    { i: 0, startSec: 0, endSec: 1, text: "This sentence has more than five words." },
+    { i: 1, startSec: 1, endSec: 2, text: "Another sentence that also has many words." },
+    { i: 2, startSec: 2, endSec: 3, text: "OK." },
+  ];
+  it("splits good items from duplicates, echoes, empties and unknowns", () => {
+    const { good, redo } = partialAlign(
+      sent,
+      [
+        { i: 0, text: "ஐந்து வார்த்தைகளுக்கு மேல் உள்ள வாக்கியம்." },
+        { i: 1, text: "Another sentence that also has many words." },
+        { i: 2, text: "சரி." },
+        { i: 2, text: "சரி." },
+        { i: 9, text: "x" },
+      ],
+      "ta",
+    );
+    expect([...good.keys()]).toEqual([0]);
+    expect(redo.map((s) => s.i)).toEqual([1, 2]);
   });
 });

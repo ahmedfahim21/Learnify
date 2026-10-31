@@ -143,7 +143,7 @@ describe("ensurePack", () => {
     const ta = await ensurePack("lec-1", "ta", deps);
     expect(rows.map((r) => [r.lang, r.model, r.promptVersion])).toEqual([
       ["en", "sarvam-105b", STUDY_PROMPT_VERSION],
-      ["ta", "sarvam-105b+mayura:v1", STUDY_PROMPT_VERSION],
+      ["ta", "sarvam-105b+translated:sarvam-105b-conversations,mayura:v1", STUDY_PROMPT_VERSION],
     ]);
     expect(ta.payload.recap.summary).toBe("ta");
     expect(deps.generate).toHaveBeenCalledWith("Intro", [{ i: 0, startSec: 0, endSec: 200, text: "x" }]);
