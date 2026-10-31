@@ -313,7 +313,12 @@ The launch set is English plus the 10 Indic languages supported by both `sarvam-
    - Indic design: warm paper canvas, indigo / turmeric / peacock / kumkum accents (all text pairs ≥4.5:1 except tertiary metadata), kolam dot motif, shirorekha label rule, hero cycling through each language in its own script, Noto faces per script with `preload: false` (fonts on a page without Indic text: 11 → 4).
    - Fixed along the way: unlayered base CSS was overriding Tailwind utilities (white text on the indigo button); element defaults now live in `@layer base`.
    - Not done: flashcard review persistence (SM-2) and Today come with step 8; the lecture page's first load is 230 kB, mostly React Flow and OpenUI, worth lazy-loading the map.
-7. Doubts: STT (signed in, metered), the answer stream, TTS (by doubt id), the doubt sheet.
+7. Doubts: STT (signed in, metered), the answer stream, TTS (by doubt id), the doubt sheet. **Done.** As built:
+   - `doubts` table (RLS, `auth.users` FK). `POST /api/doubts` streams NDJSON events (`delta` / `done` / `error`); the answer is validated with OpenUI's parser before it's stored, and a failed doubt is stored as `failed` with its budget unit refunded. Nothing is charged until the lecture's English transcript exists to ground it.
+   - `POST /api/voice/transcribe`: Saaras v3 `codemix`, signed in, ≤1 MB, audio type allowlist, refused once the day's doubts are spent. `POST /api/voice/speak`: Bulbul v3, takes a doubt id (never raw text) and only reads the caller's own answers; text is extracted from the OpenUI answer, skipping chips and raw formulas.
+   - Live round trip on Basic Calculus L1 in Tamil: Bulbul spoke a code-mixed question (1.0 s), Saaras transcribed it word for word (0.34 s), the answer streamed first token at 1.5 s and finished at 2.0 s as valid OpenUI citing the lecture at 216 s, and Bulbul read it back (3.6 s).
+   - Doubt panel: tap to record (25 s cap, countdown ring, input level meter), editable transcription, streamed answer through the OpenUI Renderer, read aloud, earlier doubts on the lecture, budget shown, mic-denied and signed-out states. "Beyond this lecture" asides are labelled in words. D opens it; checks stay quiet while it's open.
+   - Not verified in a browser while signed in (that needs your Google account); the signed-in path is covered by route tests and the live run above.
 8. Browse, landing, today, and warming the featured shelf.
 
 ## 6. Spike results (2026-10-31, `scripts/spike.ts`)
