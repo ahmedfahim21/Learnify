@@ -4,21 +4,18 @@ import { getDb } from "@/db";
 import { generationUsage } from "@/db/schema";
 
 /**
- * Daily cap on generative-UI turns per user.
+ * Daily cap on doubts per user.
  *
- * The adaptive tutor is the only thing here that costs model tokens, and it's
- * unbounded by nature — a learner can keep answering forever. This caps it per
- * user per UTC day so one account can't run up an arbitrary bill.
- *
- * Every course also ships a fully pre-generated quiz (src/content/systemDesign
- * quizzes), which costs nothing and stays available when the budget is spent —
- * so hitting the cap degrades the experience rather than ending it.
+ * Doubts are the one per-student cost: everything else about a lecture is
+ * generated once and cached for every student. This caps doubts per user per
+ * UTC day so one account can't run up an arbitrary bill. Subtitles, checks
+ * and study screens stay available when the cap is reached.
  */
 
-export const DEFAULT_DAILY_LIMIT = 30;
+export const DEFAULT_DAILY_LIMIT = 20;
 
 export function dailyLimit(): number {
-  const raw = Number(process.env.GENERATION_DAILY_LIMIT);
+  const raw = Number(process.env.DOUBT_DAILY_LIMIT);
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : DEFAULT_DAILY_LIMIT;
 }
 
@@ -50,7 +47,7 @@ export async function getBudget(userId: string, now: Date = new Date()): Promise
  * Consume one generation, or report that the budget is spent.
  *
  * The increment is a single atomic upsert rather than read-then-write, so two
- * turns racing can't both read the same count and each spend the last unit.
+ * doubts racing can't both read the same count and each spend the last unit.
  * The limit is enforced inside the statement's WHERE, which is what makes the
  * check and the spend one operation.
  */

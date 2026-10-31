@@ -2,16 +2,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { currentDay, DEFAULT_DAILY_LIMIT, dailyLimit } from "./budget";
 
-const original = process.env.GENERATION_DAILY_LIMIT;
+const original = process.env.DOUBT_DAILY_LIMIT;
 
 afterEach(() => {
-  if (original === undefined) delete process.env.GENERATION_DAILY_LIMIT;
-  else process.env.GENERATION_DAILY_LIMIT = original;
+  if (original === undefined) delete process.env.DOUBT_DAILY_LIMIT;
+  else process.env.DOUBT_DAILY_LIMIT = original;
 });
 
 describe("dailyLimit", () => {
   beforeEach(() => {
-    delete process.env.GENERATION_DAILY_LIMIT;
+    delete process.env.DOUBT_DAILY_LIMIT;
   });
 
   it("falls back to the default when unset", () => {
@@ -19,19 +19,19 @@ describe("dailyLimit", () => {
   });
 
   it("reads a configured limit", () => {
-    process.env.GENERATION_DAILY_LIMIT = "5";
+    process.env.DOUBT_DAILY_LIMIT = "5";
     expect(dailyLimit()).toBe(5);
   });
 
   it("floors a fractional limit rather than allowing a partial generation", () => {
-    process.env.GENERATION_DAILY_LIMIT = "7.9";
+    process.env.DOUBT_DAILY_LIMIT = "7.9";
     expect(dailyLimit()).toBe(7);
   });
 
   it.each(["0", "-3", "not-a-number", ""])(
     "ignores a nonsensical limit (%s) instead of locking everyone out",
     (value) => {
-      process.env.GENERATION_DAILY_LIMIT = value;
+      process.env.DOUBT_DAILY_LIMIT = value;
       expect(dailyLimit()).toBe(DEFAULT_DAILY_LIMIT);
     },
   );
@@ -66,7 +66,7 @@ describe("consumeGeneration", () => {
 
   beforeEach(() => {
     vi.resetModules();
-    delete process.env.GENERATION_DAILY_LIMIT;
+    delete process.env.DOUBT_DAILY_LIMIT;
     returning.mockReset();
     vi.doMock("@/db", () => ({
       getDb: () => ({
@@ -78,7 +78,7 @@ describe("consumeGeneration", () => {
   });
 
   it("reports the spend and what remains when the upsert succeeds", async () => {
-    process.env.GENERATION_DAILY_LIMIT = "10";
+    process.env.DOUBT_DAILY_LIMIT = "10";
     returning.mockResolvedValue([{ used: 3 }]);
     const { consumeGeneration } = await import("./budget");
 
@@ -89,7 +89,7 @@ describe("consumeGeneration", () => {
   });
 
   it("marks the budget exceeded on the turn that consumes the last unit", async () => {
-    process.env.GENERATION_DAILY_LIMIT = "10";
+    process.env.DOUBT_DAILY_LIMIT = "10";
     returning.mockResolvedValue([{ used: 10 }]);
     const { consumeGeneration } = await import("./budget");
 
@@ -101,7 +101,7 @@ describe("consumeGeneration", () => {
   });
 
   it("refuses when the conflict clause rejects the increment", async () => {
-    process.env.GENERATION_DAILY_LIMIT = "10";
+    process.env.DOUBT_DAILY_LIMIT = "10";
     returning.mockResolvedValue([]);
     const { consumeGeneration } = await import("./budget");
 

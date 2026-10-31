@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * The budget endpoint is what the classroom reads to warn someone before they
+ * The budget endpoint is what the doubt button reads to warn someone before they
  * run out, so it has to be caller-scoped: a signed-out request must not get a
  * number, and a signed-in one must only ever get its own.
  */
@@ -19,7 +19,7 @@ beforeEach(() => {
 
 describe("GET /api/budget", () => {
   it("returns the caller's own budget", async () => {
-    const state = { used: 4, limit: 30, remaining: 26, exceeded: false };
+    const state = { used: 4, limit: 20, remaining: 16, exceeded: false };
     mocks.getBudget.mockResolvedValue(state);
 
     const res = await GET();
@@ -30,7 +30,7 @@ describe("GET /api/budget", () => {
   });
 
   it("reports an exhausted budget without erroring", async () => {
-    mocks.getBudget.mockResolvedValue({ used: 30, limit: 30, remaining: 0, exceeded: true });
+    mocks.getBudget.mockResolvedValue({ used: 20, limit: 20, remaining: 0, exceeded: true });
 
     const res = await GET();
 
