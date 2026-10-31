@@ -108,9 +108,9 @@ export default function RootLayout({
       lang="en"
       className={[plexSans.variable, plexMono.variable, ...indic.map((f) => f.variable)].join(" ")}
     >
-      <body>
+      <body className="flex min-h-dvh flex-col">
         <TopNav />
-        {children}
+        <div className="flex-1">{children}</div>
         <Footer />
       </body>
     </html>
