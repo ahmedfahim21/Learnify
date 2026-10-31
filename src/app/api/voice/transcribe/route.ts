@@ -1,6 +1,6 @@
 import { getBudget } from "@/lib/budget";
 import { isLang, LANGUAGES } from "@/lib/languages";
-import { transcribe } from "@/lib/sarvam/client";
+import { SarvamError, transcribe } from "@/lib/sarvam/client";
 import { requireUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
@@ -53,7 +53,21 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: `You've used all ${budget.limit} doubts for today.`, budget }, { status: 429 });
   }
 
-  const { transcript } = await transcribe(audio, LANGUAGES[lang].sarvam, { filename: `doubt.${ext}`, tag: `stt ${userId}` });
+  // Browsers label recordings "audio/webm;codecs=opus"; Sarvam accepts the
+  // bare type and rejects the codec suffix, so send it under the bare type.
+  const clean = new Blob([audio], { type });
+  let transcript: string;
+  try {
+    ({ transcript } = await transcribe(clean, LANGUAGES[lang].sarvam, { filename: `doubt.${ext}`, tag: `stt ${userId}` }));
+  } catch (err) {
+    if (!(err instanceof SarvamError)) throw err;
+    console.error(`transcribe for ${userId} failed:`, err.message);
+    const busy = err.status === 429;
+    return Response.json(
+      { error: busy ? "Speech recognition is busy right now. Try again in a moment, or type your doubt." : "Couldn't transcribe that recording. Try again, or type your doubt." },
+      { status: busy ? 503 : 502 },
+    );
+  }
   const text = transcript.trim();
   if (!text) return Response.json({ error: "Didn't catch that. Try again a little closer to the mic." }, { status: 422 });
   return Response.json({ text });

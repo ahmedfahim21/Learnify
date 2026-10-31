@@ -30,7 +30,10 @@ vi.mock("@/lib/doubts/answer", async (importOriginal) => {
     getOwnDoubt: mocks.getOwnDoubt,
   };
 });
-vi.mock("@/lib/sarvam/client", () => ({ transcribe: mocks.transcribe, speak: mocks.speak }));
+vi.mock("@/lib/sarvam/client", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/lib/sarvam/client")>();
+  return { SarvamError: real.SarvamError, transcribe: mocks.transcribe, speak: mocks.speak };
+});
 
 const { POST: askPOST, GET: listGET } = await import("./route");
 const { POST: transcribePOST } = await import("../voice/transcribe/route");
@@ -141,6 +144,8 @@ describe("POST /api/voice/transcribe", () => {
     expect(await res.json()).toEqual({ text: "n-ஆல் ஏன் divide பண்றோம்?" });
     const [blob, code, opts] = mocks.transcribe.mock.calls[0];
     expect(blob.size).toBe(2000);
+    // Sarvam rejects "audio/webm;codecs=opus"; the codec suffix must be gone.
+    expect(blob.type).toBe("audio/webm");
     expect(code).toBe("ta-IN");
     expect(opts).toMatchObject({ filename: "doubt.webm" });
   });
@@ -161,6 +166,18 @@ describe("POST /api/voice/transcribe", () => {
     setup();
     expect((await transcribePOST(req)).status).toBe(code);
     expect(mocks.transcribe).not.toHaveBeenCalled();
+  });
+
+  it("turns a Sarvam rejection into a readable 502, and a rate limit into 503", async () => {
+    const { SarvamError } = await import("@/lib/sarvam/client");
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mocks.transcribe.mockRejectedValueOnce(new SarvamError("/speech-to-text", 400, "Invalid file type"));
+    const bad = await transcribePOST(audioUpload("audio/webm"));
+    expect(bad.status).toBe(502);
+    expect((await bad.json()).error).toBe("Couldn't transcribe that recording. Try again, or type your doubt.");
+    mocks.transcribe.mockRejectedValueOnce(new SarvamError("/speech-to-text", 429, "Rate limit exceeded"));
+    expect((await transcribePOST(audioUpload("audio/webm"))).status).toBe(503);
+    spy.mockRestore();
   });
 
   it("says so when nothing was heard", async () => {
