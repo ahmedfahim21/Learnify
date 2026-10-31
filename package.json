@@ -23,6 +23,7 @@
     "@supabase/supabase-js": "^2.118.0",
     "@xyflow/react": "^12.11.6",
     "drizzle-orm": "^0.38.3",
+    "katex": "^0.16.22",
     "lucide-react": "^1.40.0",
     "next": "^15.1.6",
     "postgres": "^3.4.9",
