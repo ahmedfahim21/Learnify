@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { type Doubt, doubts, type NewDoubt } from "@/db/schema";
 import { refundDoubt } from "@/lib/budget";
 import type { Lang } from "@/lib/languages";
-import { doubtLibrary } from "@/lib/openui/doubtLibrary";
+import { doubtCore } from "@/lib/openui/doubtSpec";
 import { checkOpenUi } from "@/lib/openui/validate";
 import { chatStream } from "@/lib/sarvam/client";
 import { dbPackDeps } from "@/lib/study/store";
@@ -90,7 +90,7 @@ export async function prepareDoubt(input: AskInput, deps: AnswerDeps = liveAnswe
   if (!english) throw new NotReadyError("This lecture's transcript isn't ready yet, so doubts can't be grounded in it.");
   return doubtMessages(
     { lectureTitle: title, lang: input.lang, atSec: input.atSec, question: input.question, english, concepts },
-    doubtLibrary,
+    doubtCore,
   );
 }
 
@@ -117,7 +117,7 @@ export async function* answerDoubt(
       text += delta;
       yield { type: "delta", text: delta };
     }
-    const check = checkOpenUi(stripFences(text), doubtLibrary);
+    const check = checkOpenUi(stripFences(text), doubtCore);
     if (!check.ok) failure = `The answer came back malformed (${check.problems.slice(0, 3).join("; ")}).`;
   } catch (err) {
     failure = err instanceof Error ? err.message : String(err);

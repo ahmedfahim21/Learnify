@@ -1,6 +1,6 @@
 import { createParser, type ElementNode } from "@openuidev/lang-core";
 
-import { doubtLibrary } from "@/lib/openui/doubtLibrary";
+import { doubtCore } from "@/lib/openui/doubtSpec";
 
 /**
  * Turn a stored answer (OpenUI Lang) into the plain text Bulbul reads aloud:
@@ -16,7 +16,7 @@ function isElement(v: unknown): v is ElementNode {
 }
 
 export function speakableText(answer: string): string {
-  const root = createParser(doubtLibrary.toJSONSchema()).parse(answer).root;
+  const root = createParser(doubtCore.toJSONSchema()).parse(answer).root;
   const parts: string[] = [];
 
   const visit = (node: unknown) => {

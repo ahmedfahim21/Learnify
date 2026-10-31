@@ -1,6 +1,6 @@
 import { createParser } from "@openuidev/lang-core";
 
-import type { doubtLibrary } from "./doubtLibrary";
+import type { DoubtCore } from "./doubtSpec";
 
 /**
  * Server-side check of model-written OpenUI Lang before it is stored: it must
@@ -12,7 +12,7 @@ export interface OpenUiCheck {
   problems: string[];
 }
 
-export function checkOpenUi(text: string, library: typeof doubtLibrary): OpenUiCheck {
+export function checkOpenUi(text: string, library: DoubtCore): OpenUiCheck {
   const result = createParser(library.toJSONSchema()).parse(text);
   const problems: string[] = [];
   if (!result.root) problems.push("no root component");
