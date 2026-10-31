@@ -281,6 +281,29 @@ export const cardReviews = pgTable(
   ],
 );
 
+/**
+ * A study screen the model generated for a lecture: interactive notes or a
+ * practice quiz, in one language and one style (`variant`), as OpenUI Lang.
+ * Shared by every student; "new quiz" / "simpler" / "harder" replace or add
+ * a row. Stored only once it parses against the screen library.
+ */
+export const generatedScreens = pgTable(
+  "generated_screens",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    lang: text("lang").notNull(),
+    kind: text("kind").$type<"notes" | "quiz">().notNull(),
+    variant: text("variant").$type<"standard" | "simpler" | "harder">().notNull(),
+    program: text("program").notNull(),
+    model: text("model").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("generated_screens_key_unique").on(table.lectureId, table.lang, table.kind, table.variant)],
+);
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Lecture = typeof lectures.$inferSelect;
@@ -293,3 +316,4 @@ export type NewStudyPackRow = typeof studyPacks.$inferInsert;
 export type Doubt = typeof doubts.$inferSelect;
 export type NewDoubt = typeof doubts.$inferInsert;
 export type CardReview = typeof cardReviews.$inferSelect;
+export type GeneratedScreen = typeof generatedScreens.$inferSelect;
