@@ -15,6 +15,13 @@
       "when": 1793451101683,
       "tag": "0001_supabase_auth_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793452309291,
+      "tag": "0002_course_bank",
+      "breakpoints": true
     }
   ]
 }
