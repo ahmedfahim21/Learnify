@@ -23,3 +23,12 @@ describe("doubt library contract", () => {
     expect(checkOpenUi(answer, doubtCore)).toEqual({ ok: true, problems: [] });
   });
 });
+
+describe("screen library contract", () => {
+  it("gives the model the same prompt and schema from the server and browser libraries", async () => {
+    const { screenLibrary } = await import("./screenLibrary");
+    const { screenCore } = await import("./screenSpec");
+    expect(screenLibrary.prompt({ preamble: "p" })).toBe(screenCore.prompt({ preamble: "p" }));
+    expect(screenLibrary.toJSONSchema()).toEqual(screenCore.toJSONSchema());
+  });
+});
