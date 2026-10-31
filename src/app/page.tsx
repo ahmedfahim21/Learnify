@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { CyclingLanguage } from "@/components/site/CyclingLanguage";
+import { FeaturedShelf } from "@/components/site/FeaturedShelf";
 import { LANGUAGES } from "@/lib/languages";
 
 /**
@@ -88,6 +89,8 @@ export default function HomePage() {
           </figcaption>
         </figure>
       </section>
+
+      <FeaturedShelf />
 
       <section className="wrap">
         <ul className="flex flex-wrap gap-2" aria-label="Supported languages">
