@@ -21,9 +21,10 @@ export function SignInButtons({
     setPending(provider);
     setError(null);
     try {
-      await signIn.social({ provider, callbackURL: next });
-    } catch {
+      await signIn(provider, next);
+    } catch (err) {
       // Surface it rather than leaving a button stuck on "Redirecting…".
+      console.error("sign-in failed:", err);
       setError("Could not reach the provider. Try again.");
       setPending(null);
     }

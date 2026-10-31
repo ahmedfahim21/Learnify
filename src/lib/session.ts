@@ -1,13 +1,11 @@
-import { getAuth } from "./auth";
+import { isAuthConfigured, getSupabase } from "./auth";
 
 /**
  * The signed-in user, or null.
  *
- * This replaces the old `getDemoUserId()`. Reading a course stays public —
- * it's static content and touches no database — so only the things that
- * genuinely belong to someone (progress, tutoring sessions, the mastery
- * queue) require a user, and they say so with a 401 rather than silently
- * falling back to a shared account.
+ * Watching a lecture is public; only things that belong to someone (doubts,
+ * flashcard reviews, check history) require a user, and they say so with a
+ * 401 rather than falling back to a shared account.
  */
 export interface CurrentUser {
   id: string;
@@ -17,21 +15,19 @@ export interface CurrentUser {
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
-  // Neon's server SDK reads the session cookie from the request context
-  // itself, and throws rather than returning null when there is none.
-  try {
-    const result = await getAuth().getSession();
-    const user = result?.data?.user;
-    if (!user) return null;
-    return {
-      id: user.id,
-      name: user.name ?? null,
-      email: user.email,
-      image: user.image ?? null,
-    };
-  } catch {
-    return null;
-  }
+  if (!isAuthConfigured()) return null;
+  const { data, error } = await (await getSupabase()).auth.getUser();
+  // No session cookie is the ordinary signed-out case; anything else is real.
+  if (error && error.name !== "AuthSessionMissingError") throw error;
+  const user = data.user;
+  if (!user) return null;
+  const meta = user.user_metadata as { full_name?: string; name?: string; avatar_url?: string };
+  return {
+    id: user.id,
+    name: meta.full_name ?? meta.name ?? null,
+    email: user.email ?? "",
+    image: meta.avatar_url ?? null,
+  };
 }
 
 export async function getCurrentUserId(): Promise<string | null> {

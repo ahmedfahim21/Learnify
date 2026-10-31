@@ -5,14 +5,15 @@ export default {
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    // Only read when running drizzle-kit commands that hit the database
-    // (migrate/push/studio). `generate` works offline from the schema alone.
-    url: process.env.DATABASE_URL ?? "",
+    // Supabase's direct connection (port 5432). Migrations need a session
+    // connection; the transaction pooler in DATABASE_URL is for the app.
+    // Only read by commands that hit the database (migrate/push/studio);
+    // `generate` works offline from the schema alone.
+    url: process.env.DIRECT_URL ?? "",
   },
-  // Neon Auth owns the `neon_auth` schema — its tables are declared in
-  // schema.ts only so our foreign keys and queries are typed. Restricting
-  // drizzle-kit to `public` stops it generating CREATE/ALTER/DROP for a
-  // schema the database provider manages.
+  // Supabase owns the `auth` schema (auth.users). Restricting drizzle-kit to
+  // `public` stops it generating CREATE/ALTER/DROP for a schema the provider
+  // manages; the foreign keys onto auth.users are written in SQL instead.
   schemaFilter: ["public"],
   strict: true,
   verbose: true,

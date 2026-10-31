@@ -1,8 +1,8 @@
 {
   "name": "learnify",
-  "version": "2.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Learnify 2.0 — an agentic tutor that teaches through generative UI (A2UI + Claude on AWS Bedrock).",
+  "description": "Watch an IIT lecture in English, learn it in your language: NPTEL lectures with Indic subtitles, in-video checks, voice doubts and study screens.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -17,20 +17,18 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@anthropic-ai/bedrock-sdk": "^0.30.2",
-    "@neondatabase/auth": "^0.5.0-beta",
-    "@neondatabase/serverless": "^0.10.4",
     "@openuidev/lang-core": "^1.0.2",
     "@openuidev/react-lang": "^1.0.2",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "@xyflow/react": "^12.11.6",
     "drizzle-orm": "^0.38.3",
     "lucide-react": "^1.40.0",
     "next": "^15.1.6",
+    "postgres": "^3.4.9",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "supermemory": "^4.24.12",
-    "zod": "^4.4.3",
-    "zod-to-json-schema": "^3.25.2"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

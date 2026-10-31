@@ -5,78 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1781231733792,
-      "tag": "0000_illegal_iron_man",
+      "when": 1793451101263,
+      "tag": "0000_baseline",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1781750463255,
-      "tag": "0001_lame_demogoblin",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1781836850247,
-      "tag": "0002_clear_fantastic_four",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1781923408551,
-      "tag": "0003_dashing_wolverine",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1782009480096,
-      "tag": "0004_living_blue_marvel",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1782096045193,
-      "tag": "0005_orange_namorita",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1788457396678,
-      "tag": "0006_special_cyclops",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1788722554739,
-      "tag": "0007_cute_jetstream",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1788760302990,
-      "tag": "0008_neon_auth",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1788760819504,
-      "tag": "0009_generation_budget",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1788760838169,
-      "tag": "0010_generation_usage_fk",
+      "when": 1793451101683,
+      "tag": "0001_supabase_auth_rls",
       "breakpoints": true
     }
   ]
