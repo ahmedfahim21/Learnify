@@ -288,7 +288,7 @@ The launch set is English plus the 10 Indic languages supported by both `sarvam-
      - `mastery` and `review_events` keyed on `flashcard_id` + `lecture_id`
    - Rename the budget env to `DOUBT_DAILY_LIMIT`.
    - README stub. Typecheck, lint and tests green.
-2. `lib/nptel` decoder, client, Zod shape guard and saved fixtures. `courses` and `lectures` tables, the sync script, a licence field.
+2. `lib/nptel` decoder, client, Zod shape guard and saved fixtures. `courses` and `lectures` tables, the sync script, and `GET /api/courses` and `GET /api/courses/[courseId]`. **Done.** NPTEL states its licence once, site-wide, in its footer ("Creative Commons Attribution-ShareAlike, CC BY - NC - SA"), so there is no per-course licence to store; the site footer carries the attribution.
 3. Transcripts: VTT parser, cue merger, Drive fetch with id regex, size cap and the `WEBVTT` check; the YouTube fallback; the resolve chain.
 4. Sarvam client (retry, timeout, SSE). Translator interface and id-aligned batches, checkpointed per batch.
 5. Staged jobs: a `jobs` row per `(lectureId, lang, stage)` with `heartbeatAt`. `prepare` claims a job and runs it in `after()`, with `maxDuration = 300`. Conditional-`UPDATE` takeover. Then the study pack generation, the validator, and the `/api/lectures/*` routes.
