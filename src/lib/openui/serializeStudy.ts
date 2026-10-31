@@ -1,4 +1,4 @@
-import type { PublicPack } from "@/lib/study/grading";
+import type { ViewPack } from "@/lib/lectures/view";
 
 /**
  * Turn a validated study pack into OpenUI Lang programs for the study tabs:
@@ -20,7 +20,7 @@ export interface StudyPrograms {
   recap: string;
 }
 
-export function serializeStudy(pack: PublicPack): StudyPrograms {
+export function serializeStudy(pack: ViewPack): StudyPrograms {
   const conceptLines = pack.concepts.map(
     (c, n) =>
       `n${n} = ConceptNode(${str(c.id)}, ${str(c.title)}, ${str(c.summary)}, ${num(c.startSec)}, ${num(c.endSec)}, ${strs(c.prereqIds)})`,
@@ -31,7 +31,9 @@ export function serializeStudy(pack: PublicPack): StudyPrograms {
     ...conceptLines,
   ].join("\n");
 
-  const cardLines = pack.flashcards.map((f, n) => `f${n} = Flashcard(${str(f.front)}, ${str(f.back)}, ${num(f.startSec)})`);
+  const cardLines = pack.flashcards.map(
+    (f, n) => `f${n} = Flashcard(${str(f.id)}, ${str(f.front)}, ${str(f.back)}, ${num(f.startSec)})`,
+  );
   const cards = [
     "root = Study([deck])",
     `deck = FlashcardDeck([${pack.flashcards.map((_, n) => `f${n}`).join(", ")}])`,

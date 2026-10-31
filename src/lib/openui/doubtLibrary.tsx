@@ -1,8 +1,12 @@
 "use client";
 
 import { createLibrary, defineComponent } from "@openuidev/react-lang";
-import { createContext, useContext } from "react";
+import { useContext } from "react";
 import { z } from "zod";
+
+import { LectureClockContext } from "./contexts";
+
+export { type LectureClock, LectureClockContext } from "./contexts";
 
 /**
  * The OpenUI component group a doubt answer may use. sarvam-105b writes OpenUI
@@ -14,13 +18,6 @@ import { z } from "zod";
  * renders raw HTML, and seeking goes through `LectureClock` (clamped to the
  * lecture), not through a model-authored action.
  */
-
-export interface LectureClock {
-  durationSec: number;
-  seekTo: (sec: number) => void;
-}
-
-export const LectureClockContext = createContext<LectureClock | null>(null);
 
 function formatTime(sec: number): string {
   const s = Math.max(0, Math.floor(sec));

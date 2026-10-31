@@ -1,12 +1,10 @@
 "use client";
 
-import { Renderer } from "@openuidev/react-lang";
-import { useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useRef } from "react";
 
 import { LANGUAGES, type Lang } from "@/lib/languages";
-import { serializeStudy } from "@/lib/openui/serializeStudy";
-import { studyLibrary } from "@/lib/openui/studyLibrary";
-import type { PublicPack } from "@/lib/study/grading";
+import type { ViewPack } from "@/lib/lectures/view";
 import type { Segment } from "@/lib/transcripts/merge";
 
 /**
@@ -14,6 +12,12 @@ import type { Segment } from "@/lib/transcripts/merge";
  * The study tabs render OpenUI programs built from the pack by the typed
  * serializer; until the pack exists they say what's being built.
  */
+
+// OpenUI and React Flow load only when a study tab is first opened.
+const StudyProgram = dynamic(() => import("./StudyProgram"), {
+  ssr: false,
+  loading: () => <StudyPlaceholder note={null} />,
+});
 
 export const TABS = ["transcript", "map", "cards", "recap"] as const;
 export type Tab = (typeof TABS)[number];
@@ -31,13 +35,12 @@ interface Props {
   segments: Segment[] | null;
   currentIndex: number;
   onSeek: (sec: number) => void;
-  pack: PublicPack | null;
+  pack: ViewPack | null;
   /** Why the study tabs are empty, when they are: still building, or failed. */
   packNote: string | null;
 }
 
 export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pack, packNote }: Props) {
-  const programs = useMemo(() => (pack ? serializeStudy(pack) : null), [pack]);
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   const move = (delta: number) => {
@@ -82,15 +85,8 @@ export function StudyTabs({ tab, onTab, lang, segments, currentIndex, onSeek, pa
       <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="min-h-0">
         {tab === "transcript" ? (
           <Transcript lang={lang} segments={segments} currentIndex={currentIndex} onSeek={onSeek} />
-        ) : programs ? (
-          <Renderer
-            response={programs[tab]}
-            library={studyLibrary}
-            isStreaming={false}
-            onError={(errors) => {
-              if (errors.length) console.error(`study ${tab} render errors:`, errors);
-            }}
-          />
+        ) : pack ? (
+          <StudyProgram pack={pack} tab={tab} />
         ) : (
           <StudyPlaceholder note={packNote} />
         )}

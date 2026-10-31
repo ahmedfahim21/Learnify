@@ -1,5 +1,6 @@
 import { type Lang, isLang } from "@/lib/languages";
 import { lectureStatus, type LectureStatus } from "@/lib/jobs/prepare";
+import { identifyCards, type IdentifiedCard } from "@/lib/flashcards/review";
 import { type PublicPack, publicPack } from "@/lib/study/grading";
 import { dbPackDeps } from "@/lib/study/store";
 import type { Segment } from "@/lib/transcripts/merge";
@@ -39,18 +40,22 @@ export interface LectureView {
   };
   status: LectureStatus;
   subtitles: { en: TrackDto | null; target: TrackDto | null };
-  pack: PublicPack | null;
+  /** The pack without answer keys; flashcards carry ids stable across languages. */
+  pack: ViewPack | null;
 }
+
+export type ViewPack = Omit<PublicPack, "flashcards"> & { flashcards: IdentifiedCard[] };
 
 export async function getLectureView(lectureId: string, lang: Lang): Promise<LectureView | null> {
   const lecture = await transcriptDeps.getLecture(lectureId);
   if (!lecture) return null;
 
-  const [status, en, target, packRow] = await Promise.all([
+  const [status, en, target, packRow, englishPack] = await Promise.all([
     lectureStatus(lectureId, lang),
     transcriptDeps.getStored(lectureId, "en"),
     lang === "en" ? null : transcriptDeps.getStored(lectureId, lang),
     dbPackDeps.getStored(lectureId, lang),
+    lang === "en" ? null : dbPackDeps.getStored(lectureId, "en"),
   ]);
   const track = (t: typeof en): TrackDto | null =>
     t ? { lang: t.lang as Lang, source: t.source, durationSec: t.durationSec, segments: t.segments } : null;
@@ -66,6 +71,11 @@ export async function getLectureView(lectureId: string, lang: Lang): Promise<Lec
     },
     status,
     subtitles: { en: track(en), target: lang === "en" ? track(en) : track(target) },
-    pack: packRow ? publicPack(packRow.payload) : null,
+    pack: packRow
+      ? {
+          ...publicPack(packRow.payload),
+          flashcards: identifyCards(lectureId, packRow.payload.flashcards, (englishPack ?? packRow).payload.flashcards),
+        }
+      : null,
   };
 }

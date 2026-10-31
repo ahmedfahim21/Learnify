@@ -10,7 +10,8 @@ import { z } from "zod";
 
 import { layoutConcepts, NODE_WIDTH } from "@/lib/study/layout";
 
-import { LectureClockContext, TimeChip } from "./doubtLibrary";
+import { LectureClockContext, type Rating, StudyActionsContext } from "./contexts";
+import { TimeChip } from "./doubtLibrary";
 
 /**
  * The OpenUI component library for a lecture's study screens: concept map,
@@ -21,6 +22,20 @@ import { LectureClockContext, TimeChip } from "./doubtLibrary";
  * Text arrives in the student's language; the chrome (counters, buttons) is
  * English for now.
  */
+
+const RATING_LABELS: { rating: Rating; label: string; hint: string }[] = [
+  { rating: "again", label: "Again", hint: "Didn't know it" },
+  { rating: "hard", label: "Hard", hint: "Got it, barely" },
+  { rating: "good", label: "Good", hint: "Got it" },
+  { rating: "easy", label: "Easy", hint: "Knew it cold" },
+];
+
+function untilLabel(dueAt: string): string {
+  const hours = (new Date(dueAt).getTime() - Date.now()) / 3_600_000;
+  if (hours < 20) return "later today";
+  const days = Math.round(hours / 24);
+  return days <= 1 ? "tomorrow" : `in ${days} days`;
+}
 
 function formatTime(sec: number): string {
   const s = Math.max(0, Math.floor(sec));
@@ -137,7 +152,7 @@ export const ConceptMap = defineComponent({
 export const Flashcard = defineComponent({
   name: "Flashcard",
   description: "A question on the front, its answer on the back, and where the lecture covers it.",
-  props: z.object({ front: z.string(), back: z.string(), startSec: z.number() }),
+  props: z.object({ id: z.string(), front: z.string(), back: z.string(), startSec: z.number() }),
   component: () => null,
 });
 
@@ -145,9 +160,29 @@ type CardProps = z.infer<typeof Flashcard.props>;
 
 function DeckView({ cards }: { cards: CardProps[] }) {
   const clock = useContext(LectureClockContext);
+  const actions = useContext(StudyActionsContext);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  const [rated, setRated] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const card = cards[index];
+
+  const rate = async (rating: Rating) => {
+    if (!actions) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const { dueAt } = await actions.rate(card.id, rating);
+      setRated((r) => ({ ...r, [card.id]: untilLabel(dueAt) }));
+      if (index < cards.length - 1) go(1);
+    } catch (err) {
+      console.error("rating the flashcard failed:", err);
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const go = (delta: number) => {
     setIndex((i) => Math.min(cards.length - 1, Math.max(0, i + delta)));
@@ -176,6 +211,40 @@ function DeckView({ cards }: { cards: CardProps[] }) {
           <RotateCcw size={12} aria-hidden /> {flipped ? "Tap for the question" : "Tap to reveal"}
         </span>
       </button>
+
+      {actions && flipped && (
+        <div className="space-y-1.5">
+          <p className="label">How well did you know it?</p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {RATING_LABELS.map(({ rating, label, hint }) => (
+              <button
+                key={rating}
+                type="button"
+                disabled={saving}
+                onClick={() => rate(rating)}
+                title={hint}
+                className={`min-h-11 rounded-(--radius) border px-2 text-sm transition-colors disabled:opacity-50 ${
+                  rating === "again"
+                    ? "border-(--color-line) text-(--color-warn) hover:border-(--color-warn)"
+                    : "border-(--color-line) hover:border-(--color-signal) hover:text-(--color-signal)"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-(--color-alert)">
+              Couldn&apos;t save that: {error}
+            </p>
+          )}
+        </div>
+      )}
+      {rated[card.id] && !flipped && (
+        <p className="text-sm text-(--color-deep)" aria-live="polite">
+          Reviewed · back {rated[card.id]}
+        </p>
+      )}
 
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1">

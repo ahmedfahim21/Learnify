@@ -1,21 +1,21 @@
 import { createParser } from "@openuidev/lang-core";
 import { describe, expect, it } from "vitest";
 
-import type { PublicPack } from "@/lib/study/grading";
+import type { ViewPack } from "@/lib/lectures/view";
 import { layoutConcepts } from "@/lib/study/layout";
 
 import { serializeStudy } from "./serializeStudy";
 import { studyLibrary } from "./studyLibrary";
 
-const pack: PublicPack = {
+const pack: ViewPack = {
   concepts: [
     { id: "stored-program", title: "Stored program", summary: 'Programs live in memory, "like data".', startSec: 10, endSec: 90, prereqIds: [] },
     { id: "cpu", title: "CPU = CU + ALU", summary: "நினைவகம் மற்றும் \\ backslash", startSec: 300.456, endSec: 340, prereqIds: ["stored-program"] },
   ],
   checkpoints: [],
   flashcards: [
-    { front: "What is ENIAC?", back: "The first digital computer", startSec: 55 },
-    { front: "Line\nbreak?", back: "Yes", startSec: 60 },
+    { id: "a1b2c3d4e5f60718", front: "What is ENIAC?", back: "The first digital computer", startSec: 55 },
+    { id: "0f1e2d3c4b5a6978", front: "Line\nbreak?", back: "Yes", startSec: 60 },
   ],
   recap: { summary: "Computers run stored programs.", keyPoints: [{ text: "Memory holds code", startSec: 60 }] },
 };
@@ -49,8 +49,8 @@ describe("serializeStudy", () => {
   it("round-trips flashcards, newlines included", () => {
     const deck = children(parse(programs.cards).root as unknown as El, "parts")[0];
     expect(children(deck, "cards").map((n) => n.props)).toEqual([
-      { front: "What is ENIAC?", back: "The first digital computer", startSec: 55 },
-      { front: "Line\nbreak?", back: "Yes", startSec: 60 },
+      { id: "a1b2c3d4e5f60718", front: "What is ENIAC?", back: "The first digital computer", startSec: 55 },
+      { id: "0f1e2d3c4b5a6978", front: "Line\nbreak?", back: "Yes", startSec: 60 },
     ]);
   });
 

@@ -1,19 +1,20 @@
 "use client";
 
 import { Keyboard, Languages, Mic } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CheckpointPanel } from "@/components/lecture/CheckpointPanel";
-import { DoubtPanel } from "@/components/lecture/DoubtPanel";
 import { StudyTabs, type Tab } from "@/components/lecture/StudyTabs";
 import { useCheckpoints } from "@/components/lecture/useCheckpoints";
 import { useYouTubePlayer } from "@/components/player/useYouTubePlayer";
 import { isLang, LANGUAGES, type Lang } from "@/lib/languages";
 import { describeStatus } from "@/lib/lectures/describeStatus";
 import type { LectureView } from "@/lib/lectures/view";
-import { LectureClockContext } from "@/lib/openui/doubtLibrary";
+import { useSession } from "@/lib/authClient";
+import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/openui/contexts";
 import { pageAt } from "@/lib/player/subtitlePage";
 import { segmentAt } from "@/lib/transcripts/merge";
 
@@ -25,6 +26,12 @@ import { segmentAt } from "@/lib/transcripts/merge";
  * Reads GET /api/lectures/[id]; while anything is missing it asks POST
  * /prepare to build it and polls again, backing off from 2 s to 10 s.
  */
+
+// The doubt panel (recorder, OpenUI renderer) loads when a doubt is first opened.
+const DoubtPanel = dynamic(() => import("@/components/lecture/DoubtPanel").then((m) => m.DoubtPanel), {
+  ssr: false,
+  loading: () => <div className="h-64 animate-pulse rounded-(--radius) bg-(--color-raised)" />,
+});
 
 const LANG_KEY = "learnify.lang";
 /** About two lines of the subtitle bar; longer sentences advance in timed pages. */
@@ -59,6 +66,8 @@ type Blocker = { kind: "signin" | "limit" | "error"; message: string } | null;
 
 export default function LecturePage() {
   const { lectureId } = useParams<{ lectureId: string }>();
+  const startAt = Number(useSearchParams().get("t"));
+  const { user } = useSession();
   const [lang, setLang] = useState<Lang | null>(null);
   const [checksOn, setChecksOn] = useState(true);
   const [view, setView] = useState<LectureView | null>(null);
@@ -133,6 +142,33 @@ export default function LecturePage() {
   }, [sample, onSample]);
 
   const seekAndPlay = useCallback((sec: number) => player.seek(sec, { play: true }), [player]);
+
+  // ?t=123 (from Today's "watch the moment") starts the lecture there.
+  const ready = player.ready;
+  const seek = player.seek;
+  useEffect(() => {
+    if (ready && Number.isFinite(startAt) && startAt > 0) seek(startAt);
+  }, [ready, seek, startAt]);
+
+  // Flashcard ratings, only when they can be saved.
+  const studyActions = useMemo(
+    () =>
+      user && lang
+        ? {
+            rate: async (cardId: string, rating: Rating) => {
+              const res = await fetch("/api/flashcards/review", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ lectureId, lang, cardId, rating }),
+              });
+              const body = await res.json();
+              if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+              return { dueAt: body.dueAt as string };
+            },
+          }
+        : null,
+    [user, lang, lectureId],
+  );
   const english = view?.subtitles.en ?? null;
   const target = view?.subtitles.target ?? null;
   const showingTarget = Boolean(target && lang !== "en");
@@ -198,6 +234,7 @@ export default function LecturePage() {
 
   return (
     <LectureClockContext.Provider value={clock}>
+      <StudyActionsContext.Provider value={studyActions}>
       <main className="wrap grid gap-6 py-6 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-8">
         <section className="min-w-0 space-y-3">
           <div className="space-y-1">
@@ -405,6 +442,7 @@ export default function LecturePage() {
           </aside>
         )}
       </main>
+      </StudyActionsContext.Provider>
     </LectureClockContext.Provider>
   );
 }
