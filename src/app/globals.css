@@ -3,16 +3,13 @@
 /* ======================================================================
    Learnify's design system.
    
-   Inspired by the FilDOS system (via personal-portfolio) and keeping its best
-   ideas — a neutral foundation, accent used only as accent, and hierarchy
-   carried by size and colour rather than font weight — but its own thing:
-   IBM Plex rather than Helvetica/Space Mono, accents named for what they mean
-   in a systems diagram rather than for desserts, a primary that is signal
-   azure rather than mint, and a small radius rather than hard-square corners.
+   A neutral foundation, accent used only as accent, and hierarchy carried by
+   size and colour rather than font weight. IBM Plex, a signal-azure primary,
+   and a small radius rather than hard-square corners.
 
-   Light only, deliberately: one canvas to design against means the accents,
-   the diagram strokes and the code surfaces each have exactly one job, and
-   nothing has to hold contrast in two directions at once.
+   Light only, deliberately: one canvas to design against means the accents
+   and the code surfaces each have exactly one job, and nothing has to hold
+   contrast in two directions at once.
    ====================================================================== */
 
 @theme {
@@ -323,7 +320,7 @@ a:hover .arr-d { transform: translateY(2px); }
   }
 }
 
-/* ---- Long-form prose (course chapters) ---------------------------------- */
+/* ---- Long-form prose (recaps, doubt answers) ---------------------------------- */
 .prose {
   font-size: 1.05rem;
   line-height: 1.75;
@@ -356,41 +353,8 @@ a:hover .arr-d { transform: translateY(2px); }
   }
 }
 
-/* SystemDiagram step-walkthrough motion (src/components/classroom/diagram). */
-.a2ui-packet {
-  offset-distance: 0%;
-  animation: a2ui-packet-travel 1400ms linear infinite;
-}
-@keyframes a2ui-packet-travel {
-  from {
-    offset-distance: 0%;
-  }
-  to {
-    offset-distance: 100%;
-  }
-}
-/* Fallback for browsers without CSS motion-path support (Safari < 16). */
-.a2ui-marching-ants {
-  stroke-dasharray: 6 5;
-  animation: a2ui-marching-ants 700ms linear infinite;
-}
-@keyframes a2ui-marching-ants {
-  to {
-    stroke-dashoffset: -22;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .a2ui-packet {
-    animation: none;
-    offset-distance: 50%;
-  }
-  .a2ui-marching-ants {
-    animation: none;
-  }
-}
-
-/* React Flow: the diagram canvas is a dark surface, and the attribution stays
-   (removing it is a Pro-subscription feature) but sits quietly. */
+/* React Flow (the lecture concept map): the attribution stays (removing it is
+   a Pro-subscription feature) but sits quietly. */
 .react-flow__attribution {
   background: transparent !important;
   font-size: 9px;

@@ -6,10 +6,9 @@ import "./globals.css";
 import { TopNav } from "@/components/nav/TopNav";
 import { Footer } from "@/components/nav/Footer";
 
-// IBM Plex: an engineering typeface for an engineering subject, and the
-// clearest break from the design system this one was inspired by. Loaded at
-// 400 only, so there is no bold to reach for — hierarchy comes from size,
-// tracking and colour.
+// IBM Plex: an engineering typeface for engineering lectures. Loaded at 400
+// only, so there is no bold to reach for — hierarchy comes from size, tracking
+// and colour. Indic scripts get their own faces with the subtitle work.
 const plexSans = IBM_Plex_Sans({
   weight: ["400"],
   subsets: ["latin"],
@@ -25,10 +24,10 @@ const plexMono = IBM_Plex_Mono({
   display: "swap",
 });
 
-const SITE_NAME = "Learnify.sd";
-const TAGLINE = "A tutor that builds its own interface";
+const SITE_NAME = "Learnify";
+const TAGLINE = "Watch an IIT lecture in English, learn it in your language";
 const DESCRIPTION =
-  "A system design tutor with no chat box. The model composes each screen by emitting declarative UI, validated against a fixed component catalog before the browser renders it — and graded on the server, not by the model.";
+  "NPTEL lectures with subtitles in Tamil, Telugu, Kannada, Hindi and more, checks that pause the video at the right moment, spoken doubts answered from what the lecturer just said, and study screens that jump back to the timestamp.";
 
 /** Absolute URLs for OG tags need an origin. Set NEXT_PUBLIC_SITE_URL in the
  *  deployed environment; locally the dev origin is the honest answer. */
@@ -37,7 +36,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
+    default: `${SITE_NAME}: ${TAGLINE}`,
     template: `%s · ${SITE_NAME}`,
   },
   description: DESCRIPTION,
@@ -45,26 +44,25 @@ export const metadata: Metadata = {
   authors: [{ name: "Ahmed Fahim", url: "https://github.com/ahmedfahim21" }],
   creator: "Ahmed Fahim",
   keywords: [
-    "system design",
-    "generative UI",
-    "A2UI",
-    "agentic tutor",
-    "distributed systems",
-    "system design interview",
+    "NPTEL",
+    "IIT lectures",
+    "Tamil subtitles",
+    "Indian languages",
+    "engineering lectures",
     "spaced repetition",
   ],
   category: "education",
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
+    title: `${SITE_NAME}: ${TAGLINE}`,
     description: DESCRIPTION,
     url: SITE_URL,
     locale: "en",
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — ${TAGLINE.toLowerCase()}`,
+    title: `${SITE_NAME}: ${TAGLINE}`,
     description: DESCRIPTION,
   },
   robots: { index: true, follow: true },
