@@ -4,6 +4,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  real,
   text,
   timestamp,
   unique,
@@ -20,8 +21,8 @@ import {
  * `auth.users(id)` are declared in SQL (drizzle/0001_supabase_auth_rls.sql),
  * which also enables row-level security on every table.
  *
- * Transcript, study-pack, doubt and flashcard tables arrive with the pipeline
- * (PLAN.md steps 3–7).
+ * Study-pack, doubt and flashcard tables arrive with the pipeline (PLAN.md
+ * steps 5–7).
  */
 
 /**
@@ -64,7 +65,12 @@ export const lectures = pgTable(
     courseId: integer("course_id")
       .notNull()
       .references(() => courses.id, { onDelete: "cascade" }),
-    /** NPTEL's lesson id: a course-wide ordinal, so it also orders lectures. */
+    /** 0-based place in NPTEL's outline: the key and the order. */
+    position: integer("position").notNull(),
+    /**
+     * NPTEL's lesson id. Usually a course-wide ordinal, but not unique: Basic
+     * Calculus (111106146) restarts at 1 for an appended "Live Session" unit.
+     */
     nptelLessonId: integer("nptel_lesson_id").notNull(),
     unitName: text("unit_name").notNull(),
     title: text("title").notNull(),
@@ -73,7 +79,7 @@ export const lectures = pgTable(
     vttRefs: jsonb("vtt_refs").$type<Record<string, string>>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [unique("lectures_course_lesson_unique").on(table.courseId, table.nptelLessonId)],
+  (table) => [unique("lectures_course_position_unique").on(table.courseId, table.position)],
 );
 
 /**
@@ -122,7 +128,37 @@ export const generationUsage = pgTable(
 export type Streak = typeof streaks.$inferSelect;
 export type NewStreak = typeof streaks.$inferInsert;
 export type GenerationUsage = typeof generationUsage.$inferSelect;
+/**
+ * A lecture's subtitles in one language, as sentence segments with seconds.
+ * A row exists only once the track is complete; in-progress and failed work
+ * is tracked by the job that builds it, not here.
+ *
+ * `source` says where the words came from: `nptel` (NPTEL's own caption file,
+ * human-made for Indic languages), `youtube` (the video's caption track, when
+ * NPTEL's file is missing), or `sarvam` (machine-translated from English;
+ * `model` names the translator). Translated segments keep the English
+ * segments' `i` and timestamps.
+ */
+export const transcripts = pgTable(
+  "transcripts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    lang: text("lang").notNull(),
+    source: text("source").$type<"nptel" | "youtube" | "sarvam">().notNull(),
+    segments: jsonb("segments").$type<{ i: number; startSec: number; endSec: number; text: string }[]>().notNull(),
+    durationSec: real("duration_sec").notNull(),
+    model: text("model"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("transcripts_lecture_lang_unique").on(table.lectureId, table.lang)],
+);
+
 export type Course = typeof courses.$inferSelect;
 export type NewCourse = typeof courses.$inferInsert;
 export type Lecture = typeof lectures.$inferSelect;
 export type NewLecture = typeof lectures.$inferInsert;
+export type Transcript = typeof transcripts.$inferSelect;
+export type NewTranscript = typeof transcripts.$inferInsert;
