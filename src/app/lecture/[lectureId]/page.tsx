@@ -1,11 +1,12 @@
 "use client";
 
-import { Keyboard, Languages } from "lucide-react";
+import { Keyboard, Languages, Mic } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CheckpointPanel } from "@/components/lecture/CheckpointPanel";
+import { DoubtPanel } from "@/components/lecture/DoubtPanel";
 import { StudyTabs, type Tab } from "@/components/lecture/StudyTabs";
 import { useCheckpoints } from "@/components/lecture/useCheckpoints";
 import { useYouTubePlayer } from "@/components/player/useYouTubePlayer";
@@ -65,6 +66,8 @@ export default function LecturePage() {
   const [now, setNow] = useState(0);
   const [tab, setTab] = useState<Tab>("transcript");
   const [showKeys, setShowKeys] = useState(false);
+  /** Where the video was paused to ask a doubt; null while no doubt is open. */
+  const [doubtAt, setDoubtAt] = useState<number | null>(null);
 
   useEffect(() => {
     setLang(initialLang());
@@ -113,7 +116,8 @@ export default function LecturePage() {
   const player = useYouTubePlayer(view?.lecture.youtubeId ?? null);
   const controls = useMemo(() => ({ play: player.play, pause: player.pause, seek: player.seek }), [player.play, player.pause, player.seek]);
   const checks = view?.pack?.checkpoints ?? [];
-  const flow = useCheckpoints(lectureId, lang ?? "en", checks, controls, checksOn);
+  // Checks stay quiet while a doubt is open.
+  const flow = useCheckpoints(lectureId, lang ?? "en", checks, controls, checksOn && doubtAt === null);
 
   // Sample the playhead. setInterval keeps ticking in background tabs; rAF doesn't.
   const onSample = flow.onSample;
@@ -144,6 +148,13 @@ export default function LecturePage() {
   );
   const packFailed = view?.status.stages.find((s) => s.stage === "pack" && s.state === "failed" && !s.willRetry);
 
+  const checkOpen = flow.state.mode !== "idle";
+  const openDoubt = useCallback(() => {
+    if (!english || checkOpen) return;
+    player.pause();
+    setDoubtAt(now);
+  }, [english, checkOpen, player, now]);
+
   // Keyboard: on the page, not inside form controls or the open check.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -157,11 +168,17 @@ export default function LecturePage() {
       } else if (k === "j") player.seek(now - 10);
       else if (k === "l") player.seek(now + 10);
       else if (k === "t") setTab("transcript");
+      else if (k === "d") openDoubt();
       else if (k === "?") setShowKeys((v) => !v);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [now, player]);
+  }, [now, player, openDoubt]);
+
+  function closeDoubt() {
+    setDoubtAt(null);
+    player.play();
+  }
 
   function chooseLang(next: Lang) {
     setLang(next);
@@ -271,6 +288,16 @@ export default function LecturePage() {
               <span className="label">{target.source === "nptel" ? "Human translation · NPTEL" : "Machine translated · Sarvam"}</span>
             )}
 
+            <button
+              type="button"
+              onClick={openDoubt}
+              disabled={!english || flow.state.mode !== "idle"}
+              title={!english ? "Doubts open once the lecture's transcript is ready" : undefined}
+              className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-signal) px-3 text-sm text-(--color-signal) transition-colors hover:bg-(--color-signal) hover:text-white disabled:border-(--color-line) disabled:text-(--color-faint) disabled:hover:bg-transparent"
+            >
+              <Mic size={15} aria-hidden /> Ask a doubt
+            </button>
+
             {checks.length > 0 && (
               <button
                 type="button"
@@ -305,6 +332,7 @@ export default function LecturePage() {
                 ["Space / K", "Play or pause"],
                 ["J / L", "Back or forward 10 seconds"],
                 ["T", "Show the transcript"],
+                ["D", "Ask a doubt about this moment"],
                 ["1–4, Enter", "Answer a check"],
                 ["?", "Show or hide these shortcuts"],
               ].map(([k, v]) => (
@@ -346,7 +374,9 @@ export default function LecturePage() {
 
         {!noTranscript && (
           <aside className="min-w-0 lg:sticky lg:top-20 lg:self-start">
-            {flow.state.mode !== "idle" && lang ? (
+            {flow.state.mode === "idle" && doubtAt !== null && lang ? (
+              <DoubtPanel lectureId={lectureId} lang={lang} atSec={doubtAt} onClose={closeDoubt} />
+            ) : flow.state.mode !== "idle" && lang ? (
               <CheckpointPanel
                 state={flow.state}
                 lang={lang}

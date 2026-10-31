@@ -39,7 +39,7 @@ export function CheckpointPanel({ state, lang, index, total, onAnswer, onResume,
   const key = `${state.check.id}:${state.mode}:${"attempt" in state ? state.attempt : 0}`;
   useEffect(() => {
     if (state.mode === "asking") setChoice(null);
-    heading.current?.focus();
+    heading.current?.focus({ preventScroll: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset per question, not per render
   }, [key]);
 
