@@ -126,6 +126,13 @@ describe("scoreForShelf", () => {
     expect(scoreForShelf(101, englishOnly).score).toBe(0);
   });
 
+  it("prefers introductory titles and pushes clearly advanced ones down", () => {
+    const englishOnly = Array.from({ length: 10 }, (_, n) => lesson(n, ["English"]));
+    expect(scoreForShelf(111, englishOnly, "NOC:Basic Linear Algebra").score).toBe(9);
+    expect(scoreForShelf(111, englishOnly, "NOC:Linear Algebra").score).toBe(3);
+    expect(scoreForShelf(115, englishOnly, "NOC:Path Integral and functional methods in quantum field theory").score).toBe(-14);
+  });
+
   it("needs 90% of lectures playable with English captions", () => {
     const lessons = [...Array.from({ length: 8 }, (_, n) => lesson(n, ["English"])), lesson(8, []), lesson(9, ["English"], null)];
     expect(scoreForShelf(106, lessons)).toMatchObject({ eligible: false, coverage: 0.8 });
@@ -134,6 +141,6 @@ describe("scoreForShelf", () => {
 
   it("scores the real PDSA course as eligible with four human languages", () => {
     const outline = decodeCourseOutline(fixture("outline-106106127.json"));
-    expect(scoreForShelf(106, outline.lessons)).toMatchObject({ eligible: true, humanLangs: ["hi", "ta", "te", "ml"], score: 44 });
+    expect(scoreForShelf(106, outline.lessons, outline.title)).toMatchObject({ eligible: true, humanLangs: ["hi", "ta", "te", "ml"], score: 50 });
   });
 });

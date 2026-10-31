@@ -4,8 +4,8 @@
  *
  *   npx tsx --env-file=.env --tsconfig tsconfig.json scripts/warmFeatured.ts
  *
- * Candidates are the first CANDIDATES_PER_DISCIPLINE video courses in each
- * starter discipline. Each candidate's outline is fetched (and stored, as a
+ * Candidates are CANDIDATES_PER_DISCIPLINE video courses spread evenly across
+ * each starter discipline. Each candidate's outline is fetched (and stored, as a
  * first visit would), scored with scoreForShelf, and the best SHELF_SIZE
  * eligible courses get a featured_rank. Their first WARM_LECTURES lectures
  * are prepared in English plus up to WARM_EXTRA_LANGS languages NPTEL has
@@ -22,7 +22,7 @@ import { runStages } from "@/lib/jobs/prepare";
 import type { Lang } from "@/lib/languages";
 import { fetchCourseOutline } from "@/lib/nptel/client";
 
-const CANDIDATES_PER_DISCIPLINE = 12;
+const CANDIDATES_PER_DISCIPLINE = 40;
 const SHELF_SIZE = 12;
 const WARM_LECTURES = 3;
 /** Human-subtitle languages warmed per course besides English; the rest build on first open. */
@@ -33,16 +33,19 @@ async function main() {
   const scored: { id: number; title: string; score: number; langs: Lang[] }[] = [];
 
   for (const disciplineId of STARTER_DISCIPLINES) {
-    const candidates = await db
+    // Evenly spaced across the discipline, so the pool covers all of it rather
+    // than one end of the id range; fetching every outline would be rude to NPTEL.
+    const all = await db
       .select({ id: courses.id, title: courses.title })
       .from(courses)
       .where(and(eq(courses.disciplineId, disciplineId), eq(courses.contentType, "Video")))
-      .orderBy(asc(courses.id))
-      .limit(CANDIDATES_PER_DISCIPLINE);
+      .orderBy(asc(courses.id));
+    const step = Math.max(1, all.length / CANDIDATES_PER_DISCIPLINE);
+    const candidates = Array.from({ length: Math.min(CANDIDATES_PER_DISCIPLINE, all.length) }, (_, n) => all[Math.floor(n * step)]);
     for (const c of candidates) {
       try {
         const outline = await fetchCourseOutline(c.id);
-        const s = scoreForShelf(disciplineId, outline.lessons);
+        const s = scoreForShelf(disciplineId, outline.lessons, c.title);
         if (s.eligible) scored.push({ id: c.id, title: c.title, score: s.score, langs: s.humanLangs });
       } catch (err) {
         console.warn(`skipping ${c.id}: ${err instanceof Error ? err.message : err}`);

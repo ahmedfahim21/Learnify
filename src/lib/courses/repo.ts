@@ -156,16 +156,23 @@ export interface FeatureScore {
 /**
  * How good a first-visit course is. Eligible only if at least 90% of its
  * lectures have a video and English captions (no dead ends on the shelf).
- * Ranked by how many Indic languages have human subtitles, then by being in a
- * starter discipline.
+ * Ranked by how many Indic languages have human subtitles, then by an
+ * introductory title (and against a clearly advanced one), then by being in
+ * a starter discipline.
  */
-export function scoreForShelf(disciplineId: number, lessons: NptelLesson[]): FeatureScore {
+/** Titles a first visitor can start cold on, and titles that assume a degree's worth already. */
+const INTRODUCTORY = /\b(introduct\w*|basic|basics|fundamentals?|elementary|programming|data structures|calculus|engineering mathematics|first course)\b/i;
+const ADVANCED = /\b(advanced|quantum field|path integral|commutative algebra|algebraic geometry|topology|research|seminar)\b/i;
+
+export function scoreForShelf(disciplineId: number, lessons: NptelLesson[], title = ""): FeatureScore {
   if (lessons.length === 0) return { eligible: false, score: 0, coverage: 0, humanLangs: [] };
   const playable = lessons.filter((l) => l.youtubeId && l.vttIds[LANGUAGES.en.nptelName]).length;
   const coverage = playable / lessons.length;
   const humanLangs = humanLangsOf(lessons);
   const starter = STARTER_DISCIPLINES.indexOf(disciplineId);
-  const score = humanLangs.length * 10 + (starter === -1 ? 0 : 5 - starter);
+  const level = INTRODUCTORY.test(title) ? 6 : 0;
+  const penalty = ADVANCED.test(title) ? 15 : 0;
+  const score = humanLangs.length * 10 + (starter === -1 ? 0 : 5 - starter) + level - penalty;
   return { eligible: coverage >= 0.9, score, coverage, humanLangs };
 }
 
