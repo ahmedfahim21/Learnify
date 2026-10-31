@@ -11,6 +11,9 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   resolve: { tsconfigPaths: true },
+  // tsconfig keeps `jsx: preserve` for Next; tests that import OpenUI component
+  // libraries (.tsx) need the JSX compiled here instead.
+  oxc: { jsx: { runtime: "automatic" } },
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
