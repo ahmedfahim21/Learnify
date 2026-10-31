@@ -29,11 +29,16 @@ export interface StageKey {
   stage: Stage;
 }
 
+/**
+ * Only the English transcript is fetched (free: NPTEL or YouTube captions). It
+ * is the source every generated screen is grounded in; nothing translates it.
+ * The study pack (checks, flashcards, concept map) is generated in English and
+ * then translated, which is a handful of calls rather than one per sentence.
+ */
 export function stagesFor(lang: Lang): StageKey[] {
   if (lang === "en") return [{ lang: "en", stage: "transcript" }, { lang: "en", stage: "pack" }];
   return [
     { lang: "en", stage: "transcript" },
-    { lang, stage: "transcript" },
     { lang: "en", stage: "pack" },
     { lang, stage: "pack" },
   ];
