@@ -268,7 +268,7 @@ function Result({ correct, explanation, sec, answer }: { correct: boolean; expla
 
 function QuestionCard({ kind, children }: { kind: string; children: ReactNode }) {
   return (
-    <div className="space-y-5">
+    <div className="@container space-y-5">
       <p className="inline-flex rounded-full bg-(--color-raised) px-3 py-1 font-mono text-xs tracking-widest text-(--color-mist) uppercase">{kind}</p>
       {children}
     </div>
@@ -294,7 +294,7 @@ function Choices({
 }) {
   const done = picked !== null;
   return (
-    <div role="radiogroup" className={`grid gap-3 ${columns === 2 ? "grid-cols-2" : "sm:grid-cols-2"}`}>
+    <div role="radiogroup" className={`grid gap-3 ${columns === 2 ? "grid-cols-2" : "@xl:grid-cols-2"}`}>
       {options.map((o, i) => {
         const right = done && i === correctIndex;
         const wrong = done && i === picked && i !== correctIndex;
