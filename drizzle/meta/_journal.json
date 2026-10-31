@@ -22,6 +22,20 @@
       "when": 1793452309291,
       "tag": "0002_course_bank",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793452604180,
+      "tag": "0003_transcripts",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793452758555,
+      "tag": "0004_lecture_position",
+      "breakpoints": true
     }
   ]
 }

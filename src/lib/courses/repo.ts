@@ -45,8 +45,9 @@ export function humanLangsOf(lessons: NptelLesson[]): Lang[] {
 }
 
 export function toLectureRows(courseId: number, lessons: NptelLesson[]): NewLecture[] {
-  return lessons.map((l) => ({
+  return lessons.map((l, position) => ({
     courseId,
+    position,
     nptelLessonId: l.id,
     unitName: l.unitName,
     title: l.title,
@@ -109,8 +110,9 @@ export async function getCourseWithLectures(courseId: number): Promise<CourseWit
           .insert(lectures)
           .values(rows)
           .onConflictDoUpdate({
-            target: [lectures.courseId, lectures.nptelLessonId],
+            target: [lectures.courseId, lectures.position],
             set: {
+              nptelLessonId: sql`excluded.nptel_lesson_id`,
               unitName: sql`excluded.unit_name`,
               title: sql`excluded.title`,
               youtubeId: sql`excluded.youtube_id`,
@@ -132,7 +134,7 @@ export async function getCourseWithLectures(courseId: number): Promise<CourseWit
     .select()
     .from(lectures)
     .where(eq(lectures.courseId, courseId))
-    .orderBy(asc(lectures.nptelLessonId));
+    .orderBy(asc(lectures.position));
   return { course, lectures: rows };
 }
 
@@ -195,6 +197,7 @@ export interface CourseDto {
 
 export interface LectureDto {
   id: string;
+  position: number;
   nptelLessonId: number;
   unitName: string;
   title: string;
@@ -218,6 +221,7 @@ export function toCourseDto(c: Course): CourseDto {
 export function toLectureDto(l: Lecture): LectureDto {
   return {
     id: l.id,
+    position: l.position,
     nptelLessonId: l.nptelLessonId,
     unitName: l.unitName,
     title: l.title,

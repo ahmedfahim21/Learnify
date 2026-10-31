@@ -35,6 +35,7 @@ const course: Course = {
 const lecture: Lecture = {
   id: "0b0e0c7e-5f1a-4f4b-9d55-6d2a4cbb4b11",
   courseId: 106106127,
+  position: 0,
   nptelLessonId: 1,
   unitName: "Basic Programming Constructs",
   title: "Introduction to Computers and Programming",
@@ -91,6 +92,7 @@ describe("GET /api/courses/[courseId]", () => {
       lectures: [
         {
           id: "0b0e0c7e-5f1a-4f4b-9d55-6d2a4cbb4b11",
+          position: 0,
           nptelLessonId: 1,
           unitName: "Basic Programming Constructs",
           title: "Introduction to Computers and Programming",

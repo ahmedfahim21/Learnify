@@ -80,8 +80,10 @@ describe("toLectureRows", () => {
     const outline = decodeCourseOutline(fixture("outline-106106127.json"));
     const rows = toLectureRows(106106127, outline.lessons);
     expect(rows).toHaveLength(61);
+    expect(rows.map((r) => r.position)).toEqual([...Array(61).keys()]);
     expect(rows[0]).toEqual({
       courseId: 106106127,
+      position: 0,
       nptelLessonId: 1,
       unitName: "Basic Programming Constructs",
       title: "Introduction to Computers and Programming",
@@ -89,5 +91,19 @@ describe("toLectureRows", () => {
       conceptsCovered: null,
       vttRefs: outline.lessons[0].vttIds,
     });
+  });
+});
+
+describe("toLectureRows: repeated NPTEL lesson ids", () => {
+  it("keys by position, so a restarted id (Basic Calculus' Live Session unit) can't collide", () => {
+    const lessons: NptelLesson[] = [
+      { id: 1, unitName: "Week 1", title: "The Real line - Part 1", youtubeId: "suv-iQnlETc", conceptsCovered: null, vttIds: {} },
+      { id: 1, unitName: "Live Session", title: "Live Session 03-03-2021", youtubeId: null, conceptsCovered: null, vttIds: {} },
+    ];
+    const rows = toLectureRows(111106146, lessons);
+    expect(rows.map((r) => [r.position, r.nptelLessonId])).toEqual([
+      [0, 1],
+      [1, 1],
+    ]);
   });
 });
