@@ -1,7 +1,7 @@
 import { createParser, type ElementNode } from "@openuidev/lang-core";
 
 import { screenCore } from "@/lib/openui/screenSpec";
-import { type ChatMessage, chatJson } from "@/lib/sarvam/client";
+import { type ChatMessage, chatJson, SarvamError } from "@/lib/sarvam/client";
 
 /**
  * A second look at a generated quiz's answer keys before it's stored. The
@@ -108,7 +108,34 @@ export const verdictsJsonSchema = {
   },
 } as const;
 
+/** Seconds of lecture either side of a question's moment the checker sees. */
+export const EXCERPT_PAD_SEC = 120;
+
+/**
+ * Only the parts of the transcript the questions point at: every "[Ns] …"
+ * line within EXCERPT_PAD_SEC of some question's `sec`, with "…" where lines
+ * were skipped. Reading the whole lecture made the check slow enough to time
+ * out; the questions' own timestamps say where the answers are. A transcript
+ * with no timestamped lines is passed through whole.
+ */
+export function excerpt(transcript: string, secs: number[], pad = EXCERPT_PAD_SEC): string {
+  const lines = transcript.split("\n").filter((l) => /^\[\d+s\]/.test(l));
+  if (lines.length === 0 || secs.length === 0) return transcript;
+  const near = (t: number) => secs.some((s) => Math.abs(t - s) <= pad);
+  const out: string[] = [];
+  let skipped = false;
+  for (const line of lines) {
+    if (near(Number(/^\[(\d+)s\]/.exec(line)![1]))) {
+      if (skipped && out.length) out.push("…");
+      out.push(line);
+      skipped = false;
+    } else skipped = true;
+  }
+  return out.join("\n");
+}
+
 export function verifyMessages(questions: Question[], transcript: string): ChatMessage[] {
+  const secs = questions.map((q) => Number(q.props.sec)).filter(Number.isFinite);
   return [
     {
       role: "system",
@@ -122,24 +149,41 @@ export function verifyMessages(questions: Question[], transcript: string): ChatM
         "Return one verdict per question, using its id.",
       ].join("\n"),
     },
-    { role: "user", content: `${transcript}\n\nQuestions:\n\n${questions.map(describe).join("\n\n")}` },
+    {
+      role: "user",
+      content: `Lecture transcript, the parts these questions are about:\n${excerpt(transcript, secs)}\n\nQuestions:\n\n${questions.map(describe).join("\n\n")}`,
+    },
   ];
 }
 
 export type VerifyCall = (messages: ChatMessage[], tag: string) => Promise<Verdict[]>;
 
+const VERIFY_TIMEOUT_MS = 60_000;
+
+const askChecker = async (messages: ChatMessage[], tag: string) =>
+  (
+    await chatJson<{ verdicts: Verdict[] }>(
+      {
+        messages,
+        model: VERIFY_MODEL,
+        jsonSchema: { name: "quiz_key_check", schema: verdictsJsonSchema },
+        maxTokens: 16_000,
+        reasoningEffort: "low",
+      },
+      // `retries` counts attempts: two gives a server error one retry.
+      { tag, timeoutMs: VERIFY_TIMEOUT_MS, retries: 2 },
+    )
+  ).value.verdicts;
+
+/** The live checker. The client doesn't retry timeouts, so one slow attempt gets one more try here. */
 export const liveVerify: VerifyCall = async (messages, tag) => {
-  const { value } = await chatJson<{ verdicts: Verdict[] }>(
-    {
-      messages,
-      model: VERIFY_MODEL,
-      jsonSchema: { name: "quiz_key_check", schema: verdictsJsonSchema },
-      maxTokens: 16_000,
-      reasoningEffort: "low",
-    },
-    { tag, timeoutMs: 80_000 },
-  );
-  return value.verdicts;
+  try {
+    return await askChecker(messages, tag);
+  } catch (err) {
+    if (!(err instanceof SarvamError && err.status === 0 && /timed out/.test(err.message))) throw err;
+    console.warn(`${tag}: the key check timed out after ${VERIFY_TIMEOUT_MS / 1000}s; trying once more`);
+    return askChecker(messages, tag);
+  }
 };
 
 const isPermutation = (xs: number[], n: number) => xs.length === n && new Set(xs).size === n && xs.every((x) => Number.isInteger(x) && x >= 0 && x < n);
