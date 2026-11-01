@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { type CSSProperties, createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
-import { LectureClockContext, StudyNavContext } from "./contexts";
+import { LectureClockContext, StudyActionsContext, StudyNavContext } from "./contexts";
 import { plainMath, Tex } from "./math";
 import { Callout, Formula, Paragraph, Steps, TimeChip } from "./doubtLibrary";
 import {
@@ -682,6 +682,9 @@ export const Quiz = defineComponent({
     const [points, setPoints] = useState(0);
     const [gain, setGain] = useState<{ n: number; key: number } | null>(null);
     const [finished, setFinished] = useState(false);
+    // Saving a finished quiz to the profile: once per round, only when signed in.
+    const actions = useContext(StudyActionsContext);
+    const [save, setSave] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
     const report = useCallback(
       (index: number, correct: boolean) => {
@@ -709,6 +712,18 @@ export const Quiz = defineComponent({
     const isLast = current === total - 1;
     const firstMiss = Object.keys(results).find((k) => results[Number(k)] === false);
 
+    useEffect(() => {
+      if (!finished || !actions || save !== "idle") return;
+      setSave("saving");
+      actions.quizFinished({ score: right, total, points, bestStreak: best }).then(
+        () => setSave("saved"),
+        (err: Error) => {
+          console.error("saving the quiz result failed:", err);
+          setSave("error");
+        },
+      );
+    }, [finished, actions, save, right, total, points, best]);
+
     const restart = () => {
       setResults({});
       setCurrent(0);
@@ -718,6 +733,7 @@ export const Quiz = defineComponent({
       setGain(null);
       setFinished(false);
       setRound((r) => r + 1);
+      setSave("idle");
     };
     const next = useCallback(() => {
       if (isLast) setFinished(true);
@@ -853,6 +869,19 @@ export const Quiz = defineComponent({
                 </span>
                 {answered < total && <span className="rounded-full bg-white/15 px-3 py-1.5">{total - answered} skipped</span>}
               </div>
+              <p className="text-sm text-white/75" aria-live="polite" role={save === "error" ? "alert" : undefined}>
+                {!actions ? (
+                  <a href="/signin" className="underline underline-offset-2 hover:text-white">
+                    Sign in to keep your scores
+                  </a>
+                ) : save === "saving" ? (
+                  "Saving to your profile…"
+                ) : save === "saved" ? (
+                  "Saved to your profile"
+                ) : save === "error" ? (
+                  "Couldn't save this result to your profile"
+                ) : null}
+              </p>
               <div className="flex flex-wrap justify-center gap-3 pt-2">
                 <button type="button" onClick={restart} className="tile inline-flex min-h-12 items-center gap-2 rounded-full bg-white px-6 text-(--color-signal)">
                   <RotateCcw size={15} aria-hidden /> Play again
@@ -895,9 +924,18 @@ function Chapters({
   renderNode: (v: unknown) => ReactNode;
 }) {
   const goTo = useContext(StudyNavContext);
+  const actions = useContext(StudyActionsContext);
   const [current, setCurrent] = useState(0);
   const [seen, setSeen] = useState<Set<number>>(() => new Set([0]));
   const total = parts.length;
+
+  // Every chapter opened counts as reading the notes, once, toward the streak.
+  const [reported, setReported] = useState(false);
+  useEffect(() => {
+    if (reported || !actions || total < 2 || seen.size < total) return;
+    setReported(true);
+    actions.notesFinished().catch((err: Error) => console.error("recording finished notes failed:", err));
+  }, [reported, actions, total, seen]);
   const open = (i: number) => {
     setCurrent(i);
     setSeen((s) => new Set(s).add(i));

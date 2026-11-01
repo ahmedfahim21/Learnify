@@ -16,7 +16,7 @@ import { isLang, LANGUAGES, type Lang } from "@/lib/languages";
 import { describeStatus } from "@/lib/lectures/describeStatus";
 import type { LectureView } from "@/lib/lectures/view";
 import { useSession } from "@/lib/authClient";
-import { LectureClockContext, type Rating, StudyActionsContext } from "@/lib/openui/contexts";
+import { LectureClockContext, type Rating, type StudyActions, StudyActionsContext } from "@/lib/openui/contexts";
 import { FIRST_MODE } from "@/lib/preferences";
 
 /**
@@ -166,11 +166,30 @@ export default function LecturePage() {
     if (ready && Number.isFinite(startAt) && startAt > 0) seek(startAt);
   }, [ready, seek, startAt]);
 
-  // Flashcard ratings, only when they can be saved.
-  const studyActions = useMemo(
+  // What study saves (flashcard ratings, finished quizzes and notes), only when it can be.
+  const studyActions = useMemo<StudyActions | null>(
     () =>
       user && lang
         ? {
+            quizFinished: async (result) => {
+              // The screen wrapper adds the style (variant); the API refuses a result without it.
+              const res = await fetch("/api/me/quiz-attempts", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ lectureId, lang, ...result }),
+              });
+              const body = await res.json();
+              if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+              return { streak: body.streak as number };
+            },
+            notesFinished: async () => {
+              const res = await fetch("/api/me/activity", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ kind: "notes", lectureId }),
+              });
+              if (!res.ok) throw new Error((await res.json()).error ?? `HTTP ${res.status}`);
+            },
             rate: async (cardId: string, rating: Rating) => {
               const res = await fetch("/api/flashcards/review", {
                 method: "POST",
