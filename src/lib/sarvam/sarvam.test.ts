@@ -126,6 +126,16 @@ describe("sarvam client", () => {
     expect(form.get("language_code")).toBe("hi-IN");
     expect((form.get("file") as File).name).toBe("doubt.webm");
   });
+
+  it("sends key terms as a JSON array, and leaves the field out when there are none", async () => {
+    const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () => json({ transcript: "x", language_code: "hi-IN" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const audio = new Blob(["x"], { type: "audio/webm" });
+    await transcribe(audio, "hi-IN", { keyterms: ["Coulomb's law", "permittivity"] });
+    await transcribe(audio, "hi-IN", { keyterms: [] });
+    expect((fetchMock.mock.calls[0][1].body as FormData).get("keyterms")).toBe('["Coulomb\'s law","permittivity"]');
+    expect((fetchMock.mock.calls[1][1].body as FormData).has("keyterms")).toBe(false);
+  });
 });
 
 describe("sseData", () => {
