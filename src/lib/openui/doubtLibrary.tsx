@@ -1,12 +1,10 @@
 "use client";
 
 import { createLibrary, defineComponent } from "@openuidev/react-lang";
-import { Play } from "lucide-react";
-import { useContext } from "react";
 
-import { LectureClockContext } from "./contexts";
-import { Tex, TexExpression } from "./math";
-import { AnswerSpec, CalloutSpec, FormulaSpec, ParagraphSpec, StepsSpec, TimeChipSpec } from "./doubtSpec";
+import { AnswerSpec } from "./doubtSpec";
+import { Callout, Compare, Formula, Paragraph, Steps, TimeChip } from "./parts";
+import { Example, KeyIdea, Mcq, Reveal, TrueFalse } from "./screenLibrary";
 
 export { type LectureClock, LectureClockContext } from "./contexts";
 
@@ -14,96 +12,10 @@ export { type LectureClock, LectureClockContext } from "./contexts";
  * The browser's doubt library: React components for the specs in
  * ./doubtSpec, which is also what the server prompts and validates against,
  * so the two can't drift apart. Rendered with `<Renderer library={doubtLibrary} />`.
- *
- * Model output only ever selects components and fills props — no component
- * renders raw HTML, and seeking goes through `LectureClock` (clamped to the
- * lecture), not through a model-authored action.
+ * Beyond prose it can lead with a key idea, work an example, compare things
+ * side by side, and end with a flip card or a one-question check, reusing the
+ * study screens' components.
  */
-
-function formatTime(sec: number): string {
-  const s = Math.max(0, Math.floor(sec));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const ss = String(s % 60).padStart(2, "0");
-  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
-}
-
-export const Paragraph = defineComponent({
-  name: ParagraphSpec.name,
-  description: ParagraphSpec.description,
-  props: ParagraphSpec.props,
-  component: ({ props }) => (
-    <>
-      <p className="leading-relaxed"><Tex text={props.text} /></p>
-      {props.continuation ? <p className="leading-relaxed"><Tex text={props.continuation} /></p> : null}
-    </>
-  ),
-});
-
-export const Steps = defineComponent({
-  name: StepsSpec.name,
-  description: StepsSpec.description,
-  props: StepsSpec.props,
-  component: ({ props }) => (
-    <ol className="list-decimal space-y-1 pl-5">
-      {props.items.map((item, n) => (
-        <li key={n}><Tex text={item} /></li>
-      ))}
-    </ol>
-  ),
-});
-
-export const Formula = defineComponent({
-  name: FormulaSpec.name,
-  description: FormulaSpec.description,
-  props: FormulaSpec.props,
-  component: ({ props }) => (
-    <figure className="overflow-x-auto rounded-xl bg-(--color-surface) px-4 py-3">
-      <span className="text-lg"><TexExpression text={props.expression} /></span>
-      {props.caption ? <figcaption className="text-sm text-(--color-mist)"><Tex text={props.caption} /></figcaption> : null}
-    </figure>
-  ),
-});
-
-export const TimeChip = defineComponent({
-  name: TimeChipSpec.name,
-  description: TimeChipSpec.description,
-  props: TimeChipSpec.props,
-  component: function TimeChipView({ props }) {
-    const clock = useContext(LectureClockContext);
-    const sec = Math.min(Math.max(0, props.sec), clock?.durationSec ?? props.sec);
-    return (
-      <button
-        type="button"
-        disabled={!clock}
-        onClick={() => clock?.seekTo(sec)}
-        aria-label={`Jump to ${formatTime(sec)}: ${props.label}`}
-        className="inline-flex min-h-10 max-w-full items-center gap-2 rounded-2xl border border-(--color-line) bg-(--color-node) py-1.5 pr-3.5 pl-2.5 text-left text-sm text-(--color-signal) transition-colors hover:border-(--color-signal) disabled:opacity-50"
-      >
-        <Play size={13} className="shrink-0" aria-hidden />
-        {/* The time never wraps; a long label wraps beside it. */}
-        <span className="shrink-0 font-mono whitespace-nowrap">{formatTime(sec)}</span>
-        <span className="min-w-0"><Tex text={props.label} /></span>
-      </button>
-    );
-  },
-});
-
-export const Callout = defineComponent({
-  name: CalloutSpec.name,
-  description: CalloutSpec.description,
-  props: CalloutSpec.props,
-  // "Beyond this lecture" is labelled in words, not just colour: a student
-  // should always know which parts the lecturer actually said.
-  component: ({ props }) => (
-    <aside
-      className={`space-y-1 rounded-xl border-l-4 px-4 py-3 ${props.kind === "outside" ? "border-(--color-warn) bg-(--color-warn)/[0.05]" : "border-(--color-signal) bg-(--color-signal)/[0.05]"}`}
-    >
-      <p className="label">{props.kind === "outside" ? "Beyond this lecture" : "Note"}</p>
-      <p><Tex text={props.text} /></p>
-    </aside>
-  ),
-});
 
 export const Answer = defineComponent({
   name: AnswerSpec.name,
@@ -119,5 +31,6 @@ export const Answer = defineComponent({
 
 export const doubtLibrary = createLibrary({
   root: "Answer",
-  components: [Answer, Paragraph, Steps, Formula, TimeChip, Callout],
+  // Same order as DOUBT_SPECS, so the model's prompt matches the server's.
+  components: [Answer, Paragraph, KeyIdea, Steps, Formula, Example, Compare, Reveal, Mcq, TrueFalse, TimeChip, Callout],
 });

@@ -11,7 +11,7 @@ import { z } from "zod";
 import { layoutConcepts, NODE_WIDTH } from "@/lib/study/layout";
 
 import { LectureClockContext, type Rating, StudyActionsContext } from "./contexts";
-import { TimeChip } from "./doubtLibrary";
+import { TimeChip } from "./parts";
 
 /**
  * The OpenUI component library for a lecture's study screens: concept map,

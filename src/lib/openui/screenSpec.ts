@@ -1,7 +1,21 @@
 import { createLibrary, defineComponent } from "@openuidev/lang-core";
 import { z } from "zod";
 
-import { CalloutSpec, FormulaSpec, ParagraphSpec, StepsSpec, TimeChipSpec } from "./doubtSpec";
+import {
+  CalloutSpec,
+  ExampleSpec,
+  FormulaSpec,
+  KeyIdeaSpec,
+  McqSpec,
+  ParagraphSpec,
+  RevealSpec,
+  StepsSpec,
+  TimeChipSpec,
+  TrueFalseSpec,
+} from "./doubtSpec";
+
+// Shared with doubt answers; defined in ./doubtSpec, the base catalog.
+export { ExampleSpec, KeyIdeaSpec, McqSpec, RevealSpec, TrueFalseSpec };
 
 /**
  * The catalog the model builds a lecture's study screens from: interactive
@@ -14,28 +28,6 @@ import { CalloutSpec, FormulaSpec, ParagraphSpec, StepsSpec, TimeChipSpec } from
  */
 
 // --- Notes -------------------------------------------------------------------
-
-export const KeyIdeaSpec = defineComponent({
-  name: "KeyIdea",
-  description: "The one idea of a section to remember, in a sentence or two. Shown prominently.",
-  props: z.object({ text: z.string() }),
-  component: null,
-});
-
-export const ExampleSpec = defineComponent({
-  name: "Example",
-  description: "A worked example from the lecture (or one closely following it): a title, the problem, then the solution.",
-  props: z.object({ title: z.string(), problem: z.string(), solution: z.string() }),
-  component: null,
-});
-
-export const RevealSpec = defineComponent({
-  name: "Reveal",
-  description:
-    "Active recall: a question the student should try to answer before tapping to see the answer. Use one or two per section.",
-  props: z.object({ prompt: z.string(), answer: z.string() }),
-  component: null,
-});
 
 const NoteChild = z.union([
   KeyIdeaSpec.ref,
@@ -56,27 +48,6 @@ export const SectionSpec = defineComponent({
 });
 
 // --- Quiz --------------------------------------------------------------------
-
-export const McqSpec = defineComponent({
-  name: "Mcq",
-  description:
-    "Multiple choice with exactly one right option. answerIndex is 0-based. explanation says why, from the lecture. sec is where the lecture covers it.",
-  props: z.object({
-    question: z.string(),
-    options: z.array(z.string()),
-    answerIndex: z.number(),
-    explanation: z.string(),
-    sec: z.number(),
-  }),
-  component: null,
-});
-
-export const TrueFalseSpec = defineComponent({
-  name: "TrueFalse",
-  description: "A statement that is true or false according to the lecture.",
-  props: z.object({ statement: z.string(), answer: z.boolean(), explanation: z.string(), sec: z.number() }),
-  component: null,
-});
 
 export const FillBlankSpec = defineComponent({
   name: "FillBlank",
