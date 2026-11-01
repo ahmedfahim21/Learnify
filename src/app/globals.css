@@ -613,3 +613,8 @@ a:hover .arr-d { transform: translateY(2px); }
 @media (prefers-reduced-motion: reduce) {
   .btn:hover, .btn:active { transform: none; }
 }
+
+/* The landing demo's streamed text: formulas stay hidden until the stream reaches them (HeroDemo). */
+.streaming .katex {
+  visibility: hidden;
+}

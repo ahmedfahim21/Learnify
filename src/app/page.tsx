@@ -1,17 +1,19 @@
-import { ArrowRight, BookOpen, Feather, Languages, Layers, Mic, Target, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, Keyboard, Layers, Mic, Rewind, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import { BrandLogo, BRANDS } from "@/components/site/Brands";
 import { CyclingLanguage } from "@/components/site/CyclingLanguage";
-import { INDIAN_LANGUAGE_COUNT } from "@/lib/languages";
 import { FeaturedShelf } from "@/components/site/FeaturedShelf";
 import { InstituteMarquee } from "@/components/site/InstituteMarquee";
 
 /**
  * Landing page, kept to what a student needs to decide: what this is (the
- * hero), proof (a real generated quiz they can answer), whose lectures these
- * are, how it works in three steps, and lectures to start on.
+ * hero: ask a lecture your doubt), proof (a real doubt and answer, then real
+ * practice), whose lectures these are, how it works in three steps, and
+ * lectures to start on. NPTEL translates some courses itself; Learnify adds
+ * what it doesn't have, so the copy leads with asking and practising, not
+ * with translation.
  */
 
 const HeroDemo = dynamic(() => import("@/components/site/HeroDemo"), {
@@ -19,33 +21,33 @@ const HeroDemo = dynamic(() => import("@/components/site/HeroDemo"), {
 });
 
 // Steps numbered in three scripts: Devanagari, Bengali, Tamil. Each shows
-// what does the work: NPTEL and YouTube, your choices, Sarvam and OpenUI.
+// what does the work: NPTEL and YouTube, how you ask, Sarvam and OpenUI.
 const STEPS = [
   {
     numeral: "१",
     numeralLang: "hi",
     title: "Pick a lecture",
-    body: "Any of 3,050 NPTEL courses from over 100 institutes, the IITs and IISc among them, played in YouTube's player as the professor recorded it.",
+    body: "Any of 3,050 NPTEL courses from over 100 institutes, the IITs and IISc among them, played in YouTube's player as the professor recorded it. Learnify adds to NPTEL; it doesn't replace it.",
   },
   {
     numeral: "২",
     numeralLang: "bn",
-    title: "Tell us how you learn",
-    body: "Your language, whether you want to understand, practise or revise, and how hard to pitch it. Four taps, saved for every lecture.",
+    title: "Pause and ask",
+    body: "Stuck? Say or type your doubt in your language. The answer comes from what the professor said around that moment, with a jump back to where it was explained.",
   },
   {
     numeral: "௩",
     numeralLang: "ta",
-    title: "Study it your way",
-    body: "Sarvam's Indian-language models write notes, quizzes and flashcards from the lecture and answer doubts you speak. OpenUI turns them into screens you play with.",
+    title: "Practise it",
+    body: "Quizzes, flashcards and notes written from the same lecture, pitched to your goal and level. Sarvam's Indian-language models write them; OpenUI turns them into screens you play with.",
   },
 ];
 
 const MODES = [
-  { icon: BookOpen, label: "Notes", colour: "var(--color-signal)" },
+  { icon: Mic, label: "Doubts by voice", colour: "var(--color-deep)" },
   { icon: Trophy, label: "Quizzes", colour: "var(--color-accent)" },
   { icon: Layers, label: "Flashcards", colour: "var(--color-flow)" },
-  { icon: Mic, label: "Voice doubts", colour: "var(--color-deep)" },
+  { icon: BookOpen, label: "Notes", colour: "var(--color-signal)" },
 ];
 
 export default function HomePage() {
@@ -54,17 +56,17 @@ export default function HomePage() {
       <section className="haze">
        <div className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-8">
-          <p className="eyebrow text-(--color-signal)">NPTEL · in {INDIAN_LANGUAGE_COUNT} Indian languages</p>
+          <p className="eyebrow text-(--color-signal)">Free · for every NPTEL lecture</p>
           <h1 className="text-[2.6rem] leading-[1.06] tracking-[-0.035em] sm:text-[4rem]">
-            <span className="sr-only">Watch an NPTEL lecture. Learn it in your language.</span>
+            <span className="sr-only">Pause any NPTEL lecture and ask. Answers in your language.</span>
             <span aria-hidden>
-              Watch an NPTEL lecture.
+              Pause any NPTEL lecture and ask.
               <br />
-              Learn it in <CyclingLanguage />
+              Answers in <CyclingLanguage />
             </span>
           </h1>
           <p className="max-w-lg text-xl leading-relaxed text-(--color-mist)">
-            Free lectures from the IITs, IISc and over 100 other institutes, turned into notes, quizzes and flashcards in the language you think in.
+            Ask by voice or text and get an answer from what the professor just said. Then practise it with quizzes and flashcards from the same lecture.
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link href="/courses" className="btn btn-primary text-lg">
@@ -121,9 +123,9 @@ export default function HomePage() {
                 )}
                 {n === 1 &&
                   [
-                    { icon: Languages, label: "Language" },
-                    { icon: Target, label: "Goal" },
-                    { icon: Feather, label: "Level" },
+                    { icon: Mic, label: "Say it" },
+                    { icon: Keyboard, label: "Type it" },
+                    { icon: Rewind, label: "Jump back" },
                   ].map((c) => (
                     <span key={c.label} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-(--color-line) bg-(--color-node) px-3 text-sm">
                       <c.icon size={15} className="text-(--color-signal)" aria-hidden /> {c.label}

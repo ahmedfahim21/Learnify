@@ -56,9 +56,9 @@ const oriya = Noto_Sans_Oriya({ weight: "400", subsets: ["oriya"], variable: "--
 const indic = [devanagari, bengali, tamil, telugu, kannada, malayalam, gujarati, gurmukhi, oriya];
 
 const SITE_NAME = "Learnify";
-const TAGLINE = "Watch an NPTEL lecture, learn it in your language";
+const TAGLINE = "Pause any NPTEL lecture and ask";
 const DESCRIPTION =
-  "Pick a free NPTEL lecture from over 100 Indian institutes, the IITs and IISc among them, watch it as it is, then learn it in Tamil, Hindi, Telugu, Kannada and more: notes, quizzes and flashcards written from that lecture, and doubts answered by voice.";
+  "Stuck on an NPTEL lecture? Pause and ask, by voice or text, in Hindi, Tamil, Bengali, Telugu and more. The answer comes from what the professor just said. Then practise it with quizzes and flashcards from the same lecture. Free, for courses from the IITs, IISc and over 100 other institutes.";
 
 /** Absolute URLs for OG tags need an origin. Set NEXT_PUBLIC_SITE_URL in the
  *  deployed environment; locally the dev origin is the honest answer. */
@@ -77,6 +77,8 @@ export const metadata: Metadata = {
   keywords: [
     "NPTEL",
     "NPTEL lectures",
+    "NPTEL doubts",
+    "ask doubts in Hindi",
     "IIT lectures",
     "learn in Tamil",
     "Indian languages",

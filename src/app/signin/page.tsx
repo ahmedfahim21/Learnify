@@ -12,9 +12,9 @@ export const metadata = { title: "Sign in", robots: { index: false, follow: fals
 
 /** What signing in adds; lectures and anything already written stay open to everyone. */
 const FEATURES = [
-  { icon: BookOpen, colour: "var(--color-signal)", title: "Notes written for you", body: "Chapter by chapter, with key ideas and cards to flip." },
-  { icon: Trophy, colour: "var(--color-accent)", title: "Quizzes with checked answers", body: "Play for points; every key is checked against the lecture." },
   { icon: Mic, colour: "var(--color-deep)", title: "Doubts by voice", body: "Pause, ask in your language, get an answer from that moment." },
+  { icon: Trophy, colour: "var(--color-accent)", title: "Quizzes with checked answers", body: "Play for points; every key is checked against the lecture." },
+  { icon: BookOpen, colour: "var(--color-signal)", title: "Notes written for you", body: "Chapter by chapter, with key ideas and cards to flip." },
   { icon: Layers, colour: "var(--color-flow)", title: "Flashcards and a streak", body: "Spaced review just before you'd forget, and a streak to keep." },
 ];
 
@@ -37,7 +37,7 @@ export default async function SignInPage({
           <div className="space-y-4">
             <p className="eyebrow text-(--color-signal)">Free · {INDIAN_LANGUAGE_COUNT} Indian languages</p>
             <h2 id="signin-why" className="text-4xl leading-[1.08] tracking-[-0.03em] sm:text-5xl">
-              Learn every lecture in the language you think in.
+              Stuck mid-lecture? Ask in the language you think in.
             </h2>
           </div>
           <ul className="grid gap-3 sm:grid-cols-2">

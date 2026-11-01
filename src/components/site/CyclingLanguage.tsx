@@ -6,7 +6,7 @@ import { LANGUAGES } from "@/lib/languages";
 
 /**
  * The hero's last words, cycling through each language in its own script:
- * "learn it in தமிழ்", "learn it in తెలుగు", … Screen readers get the plain
+ * "Answers in தமிழ்", "Answers in తెలుగు", … Screen readers get the plain
  * sentence once (the parent renders it sr-only); this is decoration.
  * Holds still under reduced motion.
  */
