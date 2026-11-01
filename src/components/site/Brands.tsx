@@ -31,13 +31,13 @@ export function PoweredBy({ openui = true }: { openui?: boolean }) {
     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-(--color-faint)">
       <span>Written by</span>
       <a href={BRANDS.sarvam.href} target="_blank" rel="noreferrer" className="opacity-80 transition-opacity hover:opacity-100">
-        <BrandLogo brand="sarvam" height={12} />
+        <BrandLogo brand="sarvam" height={9} />
       </a>
       {openui && (
         <>
           <span>· rendered with</span>
           <a href={BRANDS.openui.href} target="_blank" rel="noreferrer" className="opacity-80 transition-opacity hover:opacity-100">
-            <BrandLogo brand="openui" height={14} />
+            <BrandLogo brand="openui" height={19} />
           </a>
         </>
       )}

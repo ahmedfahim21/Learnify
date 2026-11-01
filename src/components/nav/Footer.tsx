@@ -55,7 +55,7 @@ export function Footer() {
                   className="group flex items-center gap-3"
                 >
                   <span className="flex h-9 w-28 items-center rounded-lg border border-(--color-line) bg-white px-2.5 transition-colors group-hover:border-(--color-faint)">
-                    <BrandLogo brand={brand} height={brand === "openui" ? 22 : 16} />
+                    <BrandLogo brand={brand} height={brand === "openui" ? 26 : brand === "sarvam" ? 12 : 16} />
                   </span>
                   <span className="text-sm text-(--color-mist) group-hover:text-(--color-fg)">{what}</span>
                 </a>
