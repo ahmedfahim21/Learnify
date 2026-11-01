@@ -317,7 +317,7 @@ export async function transcribe(
   const form = new FormData();
   // A real extension helps Sarvam pick the codec (browsers record webm or mp4).
   form.set("file", audio, opts?.filename ?? "doubt.webm");
-  form.set("model", "saaras:v3");
+  form.set("model", "saaras:v4");
   form.set("mode", "codemix");
   form.set("language_code", languageCode);
   const res = await sarvamFetch("/speech-to-text", form, { timeoutMs: 30_000, ...opts }, {});
