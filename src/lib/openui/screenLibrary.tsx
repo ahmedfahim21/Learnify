@@ -21,7 +21,7 @@ import { type CSSProperties, createContext, type ReactNode, useCallback, useCont
 
 import { LectureClockContext, StudyActionsContext, StudyNavContext } from "./contexts";
 import { plainMath, Tex } from "./math";
-import { Callout, Formula, Paragraph, Steps, TimeChip } from "./doubtLibrary";
+import { Callout, Formula, Paragraph, Steps, TimeChip } from "./parts";
 import {
   ExampleSpec,
   FillBlankSpec,
