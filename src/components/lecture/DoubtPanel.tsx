@@ -5,7 +5,6 @@ import { Loader2, Mic, RotateCcw, Send, Square, Volume2, X } from "lucide-react"
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { PoweredBy } from "@/components/site/Brands";
 import { useSession } from "@/lib/authClient";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import { doubtLibrary } from "@/lib/openui/doubtLibrary";
@@ -345,7 +344,6 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
             </div>
           )}
 
-          {phase.kind === "answered" && <PoweredBy />}
           {phase.kind === "answered" && (
             <div className="flex flex-wrap items-center gap-2 border-t border-(--color-line) pt-3">
               {/* Bulbul reads eleven languages aloud; the rest have no voice yet. */}
