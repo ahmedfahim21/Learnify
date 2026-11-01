@@ -216,6 +216,20 @@ describe("speakableText", () => {
 });
 
 describe("fitForSpeech", () => {
+  it("reads the richer parts sensibly: key idea, example, comparison rows, flip card and check question, not options", () => {
+    const rich = [
+      'root = Answer("Coulomb vs gravity", [k, c, e, r, q])',
+      'k = KeyIdea("Both fall off as one over r squared.")',
+      'c = Compare(["", "Coulomb", "Gravity"], [["Acts on", "charges", "masses"], ["Sign", "attracts or repels", "only attracts"]])',
+      'e = Example("Double the distance", "What happens to the force?", "It drops to a quarter.")',
+      'r = Reveal("Can gravity repel?", "No, mass has no sign.")',
+      'q = Mcq("Which can repel?", ["Coulomb force", "Gravity"], 0, "Charges have signs.", 120)',
+    ].join("\n");
+    expect(speakableText(rich)).toBe(
+      "Coulomb vs gravity. Both fall off as one over r squared. Acts on: charges, masses. Sign: attracts or repels, only attracts. Double the distance. What happens to the force? It drops to a quarter. Can gravity repel? No, mass has no sign. Which can repel?",
+    );
+  });
+
   it("cuts at a sentence end within the limit", () => {
     expect(fitForSpeech("aaa. bbb. ccc", 9)).toBe("aaa. bbb.");
   });
