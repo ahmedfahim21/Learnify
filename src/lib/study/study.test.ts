@@ -166,3 +166,13 @@ describe("ensurePack", () => {
     expect(rows).toHaveLength(0);
   });
 });
+
+describe("translatorFor", () => {
+  it("uses the hybrid path where sarvam-105b writes the language, and Sarvam-Translate elsewhere", async () => {
+    const { translatorFor, hybridTexts, sarvamTexts } = await import("./translatePack");
+    expect(translatorFor("ta")).toBe(hybridTexts);
+    expect(translatorFor("hi")).toBe(hybridTexts);
+    expect(translatorFor("ne")).toBe(sarvamTexts);
+    expect(translatorFor("as")).toBe(sarvamTexts);
+  });
+});

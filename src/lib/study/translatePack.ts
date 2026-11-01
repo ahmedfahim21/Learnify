@@ -1,5 +1,6 @@
-import type { Lang } from "@/lib/languages";
+import { LANGUAGES, type Lang } from "@/lib/languages";
 import { translateSegments } from "@/lib/sarvam/translateSegments";
+import { translateTexts } from "@/lib/sarvam/translateText";
 import type { Segment } from "@/lib/transcripts/merge";
 
 import type { StudyPack } from "./pack";
@@ -23,6 +24,12 @@ export const hybridTexts: PackTranslator = async (texts, lang, tag) => {
   const out = await translateSegments(pseudo, lang, { translator: "hybrid", tag });
   return out.map((s) => s.text);
 };
+
+/** Sarvam-Translate, one string at a time with maths kept, for languages sarvam-105b and Mayura don't cover. */
+export const sarvamTexts: PackTranslator = (texts, lang, tag) => translateTexts(texts, lang, undefined, tag);
+
+/** The translator that covers a language: the hybrid path where sarvam-105b writes it, Sarvam-Translate elsewhere. */
+export const translatorFor = (lang: Lang): PackTranslator => (LANGUAGES[lang].writes ? hybridTexts : sarvamTexts);
 
 /** Every translatable string in the pack, in a fixed order, with a way to put it back. */
 function slots(pack: StudyPack): { text: string; set: (p: StudyPack, t: string) => void }[] {
@@ -48,11 +55,11 @@ function slots(pack: StudyPack): { text: string; set: (p: StudyPack, t: string) 
 export async function translatePack(
   english: StudyPack,
   lang: Lang,
-  translateTexts: PackTranslator = hybridTexts,
+  translate: PackTranslator = translatorFor(lang),
   tag?: string,
 ): Promise<StudyPack> {
   const all = slots(english);
-  const translated = await translateTexts(
+  const translated = await translate(
     all.map((x) => x.text),
     lang,
     tag,
