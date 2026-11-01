@@ -5,16 +5,16 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { type Doubt, doubts, type NewDoubt } from "@/db/schema";
 import { refundDoubt } from "@/lib/budget";
-import { LANGUAGES, type Lang } from "@/lib/languages";
+import { LANGUAGES, type Lang, scriptShare } from "@/lib/languages";
 import { doubtCore } from "@/lib/openui/doubtSpec";
 import { checkOpenUi } from "@/lib/openui/validate";
-import { chatStream } from "@/lib/sarvam/client";
+import { type ChatMessage, chatStream } from "@/lib/sarvam/client";
 import { sarvamTranslateToEnglish, translateProgram } from "@/lib/sarvam/translateText";
 import { dbPackDeps } from "@/lib/study/store";
 import type { Segment } from "@/lib/transcripts/merge";
 import { dbDeps as transcriptDeps } from "@/lib/transcripts/store";
 
-import { doubtMessages } from "./prompt";
+import { doubtMessages, rewriteInScript } from "./prompt";
 
 /**
  * Answer a doubt as a stream of events, then store it.
@@ -48,7 +48,7 @@ export interface AnswerDeps {
   lectureTitle: (lectureId: string) => Promise<string | null>;
   englishSegments: (lectureId: string) => Promise<Segment[] | null>;
   concepts: (lectureId: string, lang: Lang) => Promise<{ title: string; startSec: number }[]>;
-  stream: (messages: ReturnType<typeof doubtMessages>, tag: string) => AsyncIterable<string>;
+  stream: (messages: ChatMessage[], tag: string) => AsyncIterable<string>;
   save: (row: NewDoubt) => Promise<void>;
   refund: (userId: string) => Promise<void>;
   /** For languages sarvam-105b can't write: the question into English, the answer back out. */
@@ -71,6 +71,25 @@ export const liveAnswerDeps: AnswerDeps = {
   toEnglish: (text, lang) => sarvamTranslateToEnglish(text, lang, "doubt question"),
   translate: (program, lang, tag) => translateProgram(program, lang, undefined, tag),
 };
+
+/**
+ * Below this share of letters in the student's script, an answer is taken to
+ * be romanised rather than code-mixed. Code-mixed answers keep English terms
+ * and still measured 0.3 and up on their prose; a romanised one is 0.
+ */
+export const MIN_SCRIPT_SHARE = 0.1;
+
+/** The prose a student reads in an answer: its string literals, without Formula expressions or maths. */
+export function answerProse(program: string): string {
+  return program
+    .split("\n")
+    .map((line) => {
+      const literals = [...line.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]);
+      return (/^\w+\s*=\s*Formula\(/.test(line) ? literals.slice(1) : literals).join(" ");
+    })
+    .join(" ")
+    .replace(/\$\$[^$]+\$\$|\$[^$\n]+\$/g, " ");
+}
 
 export class NotReadyError extends Error {
   constructor(message: string) {
@@ -138,6 +157,29 @@ export async function* answerDoubt(
   }
 
   let answer = stripFences(text);
+
+  // An answer in the wrong script (romanised Hindi instead of Devanagari) gets one rewrite.
+  if (!failure && direct && input.lang !== "en" && scriptShare(answerProse(answer), input.lang) < MIN_SCRIPT_SHARE) {
+    const { name, native } = LANGUAGES[input.lang];
+    console.warn(`doubt ${id}: answer was ${Math.round(scriptShare(answerProse(answer), input.lang) * 100)}% ${name} script; asking for a rewrite`);
+    yield { type: "status", text: `Rewriting it in ${native} script` };
+    let again = "";
+    try {
+      const followUp: ChatMessage[] = [...messages, { role: "assistant", content: text }, { role: "user", content: rewriteInScript(input.lang) }];
+      for await (const delta of deps.stream(followUp, `doubt ${id} rewrite`)) again += delta;
+      const rewritten = stripFences(again);
+      const check = checkOpenUi(rewritten, doubtCore);
+      if (!check.ok) failure = `The rewritten answer came back malformed (${check.problems.slice(0, 3).join("; ")}).`;
+      else if (scriptShare(answerProse(rewritten), input.lang) < MIN_SCRIPT_SHARE) failure = `The answer didn't come back in ${name} script.`;
+      else {
+        answer = rewritten;
+        yield { type: "program", text: answer };
+      }
+    } catch (err) {
+      failure = err instanceof Error ? err.message : String(err);
+    }
+  }
+
   if (!failure && !direct) {
     yield { type: "status", text: `Translating into ${LANGUAGES[input.lang].name}` };
     try {
