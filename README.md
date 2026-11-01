@@ -1,8 +1,10 @@
 # Learnify
 
-**Watch an NPTEL lecture. Learn it in your language.**
+**Pause any NPTEL lecture and ask. Answers in your language.**
 
-Pick any of 3,050 free [NPTEL](https://nptel.ac.in) courses from the IITs, IISc and over 100 other institutes. The lecture plays as it was recorded; Learnify writes notes, quizzes and flashcards from it in 17 Indian languages, and answers spoken doubts from what the lecturer just said.
+Stuck halfway through one of [NPTEL](https://nptel.ac.in)'s 3,050 free courses from the IITs, IISc and over 100 other institutes? Pause, then say or type your doubt in Hindi, Tamil, Bengali or another Indian language. Learnify answers from what the professor said around that moment, then helps you practise it with quizzes and flashcards from the same lecture.
+
+NPTEL translates some courses itself. Learnify adds what it doesn't have: someone to ask, and something to practise with.
 
 ![Landing page](docs/screenshots/landing.png)
 
@@ -16,19 +18,19 @@ Pick any of 3,050 free [NPTEL](https://nptel.ac.in) courses from the IITs, IISc 
 
 ## What it does
 
-- **Interactive notes:** chapters with key ideas, worked examples and flip cards.
+- **Doubts, by voice or text:** pause, ask in your language, get an answer grounded in that moment of the lecture: key ideas, comparison tables, worked examples, a quick check, and a jump back to where it was explained.
 - **Quizzes that play like a game:** five question types, streaks and points. Every answer key is checked against the lecture before it's saved.
 - **Flashcards and a concept map**, with spaced review.
-- **Doubts by voice:** pause, ask in your language, get an answer grounded in that moment of the lecture.
+- **Interactive notes:** chapters with key ideas, worked examples and flip cards.
 - **Nothing is generated until you ask**, and everything generated is saved and shared with the next student.
 
 ## How it's built
 
 - **Next.js 15**, TypeScript, Tailwind v4, Supabase (Postgres and Auth) via Drizzle.
 - **[Sarvam AI](https://www.sarvam.ai):**
-  - `sarvam-105b` writes notes, quizzes and answers, and checks quiz keys;
+  - `sarvam-105b` answers doubts, writes notes and quizzes, and checks quiz keys;
   - Sarvam-Translate covers Assamese, Nepali, Konkani, Maithili, Dogri, Sanskrit and Bodo;
-  - Saaras turns speech into text, Bulbul reads answers aloud.
+  - Saaras v4 turns spoken doubts into text, biased toward the lecture's own terms; Bulbul reads answers aloud.
 - **[OpenUI](https://www.openui.com):** the model writes OpenUI Lang against Learnify's own components (`src/lib/openui`), validated before it's stored.
 - **Lectures:** NPTEL's course data and captions, played in YouTube's embedded player.
 
