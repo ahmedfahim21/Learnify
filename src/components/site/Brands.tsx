@@ -9,6 +9,7 @@ export const BRANDS = {
   openui: { name: "OpenUI", href: "https://www.openui.com", mark: "/brands/openui-mark.svg", wordmark: "/brands/openui-wordmark.svg", ratio: 594 / 165 },
   nptel: { name: "NPTEL", href: "https://nptel.ac.in", mark: null, wordmark: "/brands/nptel.png", ratio: 248 / 56 },
   youtube: { name: "YouTube", href: "https://www.youtube.com", mark: "/brands/youtube.svg", wordmark: null, ratio: 1 },
+  github: { name: "GitHub", href: "https://github.com/ahmedfahim21/Learnify", mark: "/brands/github.svg", wordmark: null, ratio: 1 },
 } as const;
 
 export type Brand = keyof typeof BRANDS;

@@ -1,4 +1,4 @@
-import { BrandLogo, type Brand } from "@/components/site/Brands";
+import { type Brand, BrandLogo, BRANDS } from "@/components/site/Brands";
 import { Logo } from "@/components/site/Logo";
 
 const REPO = "https://github.com/ahmedfahim21/Learnify";
@@ -7,16 +7,6 @@ const BUILT_WITH: { brand: Brand; what: string }[] = [
   { brand: "sarvam", what: "Indian-language AI" },
   { brand: "openui", what: "Generative UI" },
   { brand: "nptel", what: "Lectures" },
-];
-
-const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
-  {
-    title: "Source",
-    links: [
-      { href: REPO, label: "Repository" },
-      { href: `${REPO}/issues`, label: "Issues" },
-    ],
-  },
 ];
 
 /**
@@ -49,7 +39,7 @@ export function Footer() {
             {BUILT_WITH.map(({ brand, what }) => (
               <li key={brand}>
                 <a
-                  href={brand === "sarvam" ? "https://www.sarvam.ai" : brand === "openui" ? "https://www.openui.com" : "https://nptel.ac.in"}
+                  href={BRANDS[brand].href}
                   target="_blank"
                   rel="noreferrer"
                   className="group flex items-center gap-3"
@@ -63,26 +53,20 @@ export function Footer() {
             ))}
           </ul>
         </nav>
-        {COLUMNS.map((col) => (
-          <nav key={col.title} aria-label={col.title} className="space-y-3">
-            <p className="label">{col.title}</p>
-            <ul className="space-y-2">
-              {col.links.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-(--color-mist) transition-colors hover:text-(--color-fg)"
-                  >
-                    {link.label}
-                    <span className="ml-1 text-(--color-faint)">↗</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        ))}
+        <nav aria-label="Source" className="space-y-3">
+          <p className="label">Source</p>
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noreferrer"
+            className="group flex items-center gap-3"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-(--color-line) bg-white transition-colors group-hover:border-(--color-faint)">
+              <BrandLogo brand="github" height={18} mark />
+            </span>
+            <span className="text-sm text-(--color-mist) group-hover:text-(--color-fg)">GitHub</span>
+          </a>
+        </nav>
       </div>
     </footer>
   );

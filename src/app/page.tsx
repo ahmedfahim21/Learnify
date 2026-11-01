@@ -137,7 +137,7 @@ export default function HomePage() {
 }
 
 /** Heights that give the logos the same visual weight: Sarvam's wordmark is wide and bold, OpenUI's has room around it. */
-const BRAND_HEIGHT: Record<keyof typeof BRANDS, number> = { sarvam: 11, openui: 24, nptel: 16, youtube: 16 };
+const BRAND_HEIGHT: Record<keyof typeof BRANDS, number> = { sarvam: 11, openui: 24, nptel: 16, youtube: 16, github: 16 };
 
 function BrandChip({ brand, label }: { brand: keyof typeof BRANDS; label?: string }) {
   return (
