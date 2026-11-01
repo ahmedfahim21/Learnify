@@ -5,10 +5,11 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { type Doubt, doubts, type NewDoubt } from "@/db/schema";
 import { refundDoubt } from "@/lib/budget";
-import type { Lang } from "@/lib/languages";
+import { LANGUAGES, type Lang } from "@/lib/languages";
 import { doubtCore } from "@/lib/openui/doubtSpec";
 import { checkOpenUi } from "@/lib/openui/validate";
 import { chatStream } from "@/lib/sarvam/client";
+import { sarvamTranslateToEnglish, translateProgram } from "@/lib/sarvam/translateText";
 import { dbPackDeps } from "@/lib/study/store";
 import type { Segment } from "@/lib/transcripts/merge";
 import { dbDeps as transcriptDeps } from "@/lib/transcripts/store";
@@ -29,6 +30,9 @@ export const DOUBT_MODEL = "sarvam-105b-conversations";
 
 export type DoubtEvent =
   | { type: "delta"; text: string }
+  /** For a language the model can't write: what's happening, then the whole translated answer. */
+  | { type: "status"; text: string }
+  | { type: "program"; text: string }
   | { type: "done"; doubtId: string }
   | { type: "error"; doubtId: string; message: string };
 
@@ -47,6 +51,9 @@ export interface AnswerDeps {
   stream: (messages: ReturnType<typeof doubtMessages>, tag: string) => AsyncIterable<string>;
   save: (row: NewDoubt) => Promise<void>;
   refund: (userId: string) => Promise<void>;
+  /** For languages sarvam-105b can't write: the question into English, the answer back out. */
+  toEnglish: (text: string, lang: Lang) => Promise<string>;
+  translate: (program: string, lang: Lang, tag: string) => Promise<string>;
 }
 
 export const liveAnswerDeps: AnswerDeps = {
@@ -61,6 +68,8 @@ export const liveAnswerDeps: AnswerDeps = {
     await getDb().insert(doubts).values(row);
   },
   refund: refundDoubt,
+  toEnglish: (text, lang) => sarvamTranslateToEnglish(text, lang, "doubt question"),
+  translate: (program, lang, tag) => translateProgram(program, lang, undefined, tag),
 };
 
 export class NotReadyError extends Error {
@@ -88,8 +97,11 @@ export async function prepareDoubt(input: AskInput, deps: AnswerDeps = liveAnswe
   ]);
   if (!title) throw new NotReadyError("No such lecture.");
   if (!english) throw new NotReadyError("This lecture's transcript isn't ready yet, so doubts can't be grounded in it.");
+  // The model answers in English when it can't write the student's language; the answer is translated after.
+  const direct = LANGUAGES[input.lang].writes;
+  const question = direct ? input.question : await deps.toEnglish(input.question, input.lang);
   return doubtMessages(
-    { lectureTitle: title, lang: input.lang, atSec: input.atSec, question: input.question, english, concepts },
+    { lectureTitle: title, lang: direct ? input.lang : "en", atSec: input.atSec, question, english, concepts },
     doubtCore,
   );
 }
@@ -109,18 +121,30 @@ export async function* answerDoubt(
     question: input.question,
     model: DOUBT_MODEL,
   };
+  const direct = LANGUAGES[input.lang].writes;
   let text = "";
   let failure: string | null = null;
+  if (!direct) yield { type: "status", text: "Working out the answer" };
 
   try {
     for await (const delta of deps.stream(messages, `doubt ${id}`)) {
       text += delta;
-      yield { type: "delta", text: delta };
+      if (direct) yield { type: "delta", text: delta };
     }
     const check = checkOpenUi(stripFences(text), doubtCore);
     if (!check.ok) failure = `The answer came back malformed (${check.problems.slice(0, 3).join("; ")}).`;
   } catch (err) {
     failure = err instanceof Error ? err.message : String(err);
+  }
+
+  let answer = stripFences(text);
+  if (!failure && !direct) {
+    yield { type: "status", text: `Translating into ${LANGUAGES[input.lang].name}` };
+    try {
+      answer = await deps.translate(answer, input.lang, `doubt ${id}`);
+    } catch (err) {
+      failure = `Translating into ${LANGUAGES[input.lang].name} failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
   }
 
   if (failure) {
@@ -130,7 +154,8 @@ export async function* answerDoubt(
     yield { type: "error", doubtId: id, message: failure };
     return;
   }
-  await deps.save({ ...base, status: "answered", answer: stripFences(text), error: null });
+  await deps.save({ ...base, model: direct ? DOUBT_MODEL : `${DOUBT_MODEL}+sarvam-translate:v1`, status: "answered", answer, error: null });
+  if (!direct) yield { type: "program", text: answer };
   yield { type: "done", doubtId: id };
 }
 
