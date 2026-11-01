@@ -116,7 +116,7 @@ export const Compare = defineComponent({
           <thead>
             <tr className="bg-(--color-surface)">
               {pad(headers).map((h, i) => (
-                <th key={i} scope="col" className="px-3 py-2 text-left font-normal text-(--color-mist)">
+                <th key={i} scope="col" className={`px-3 py-2 text-left font-normal text-(--color-mist) ${i === 0 ? "whitespace-nowrap" : ""}`}>
                   <Tex text={h} />
                 </th>
               ))}
