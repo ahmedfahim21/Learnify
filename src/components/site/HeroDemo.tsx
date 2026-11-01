@@ -91,7 +91,7 @@ export default function HeroDemo() {
   const { source, writing } = useWriting(items[step]);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-(--color-line) bg-(--color-node) shadow-(--shadow-card)">
+    <div className="overflow-hidden rounded-[1.75rem] border border-(--color-line)/70 bg-(--color-node)/95 shadow-(--shadow-card) backdrop-blur">
       {/* The lecture, as NPTEL recorded it */}
       <Link href={`/lecture/${LECTURE.id}`} className="group flex items-center gap-4 border-b border-(--color-line) p-4 sm:p-5">
         <span className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xl bg-(--color-raised) sm:w-40">

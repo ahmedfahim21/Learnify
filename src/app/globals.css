@@ -29,6 +29,13 @@
   --color-node: #fffdf8;
   --wash-selection: rgba(46, 63, 143, 0.14);
   --shadow-card: 0 10px 28px rgba(29, 25, 20, 0.12);
+  /* Resting elevation for cards and pills: a hairline plus a long, faint fall. */
+  --shadow-soft: 0 1px 2px rgba(29, 25, 20, 0.05), 0 10px 30px -12px rgba(29, 25, 20, 0.14);
+
+  /* Haze: decoration only, never text or controls. Turmeric dawn into indigo
+     dusk, soft enough to sit behind the hero without competing with it. */
+  --haze-warm: #f2a65a;
+  --haze-cool: #9fb0ee;
 
   /* ---- Accents (accent only, never a large fill or body text) -------
      Named by role, coloured from Indian dyes and materials. Each holds at
@@ -221,63 +228,7 @@ button.chip {
   line-height: inherit;
 }
 
-/* Actions. Distinct from .chip, which is a mono metadata tag — an action is
-   prose the reader is meant to click, so it sets in the sans face at a normal
-   sentence case, and the primary one carries fill so it outranks its
-   alternative instead of matching it. */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid var(--color-signal);
-  border-radius: var(--radius);
-  background: var(--color-signal);
-  color: var(--color-ink);
-  padding: 0.5rem 0.95rem;
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.15s ease;
-}
-.btn:hover {
-  background: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
-  border-color: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
-}
-.btn:active {
-  transform: scale(0.99);
-}
-.btn:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-.btn-quiet {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--color-mist);
-  padding: 0.5rem 0.95rem;
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-.btn-quiet:hover {
-  border-color: var(--color-faint);
-  background: var(--color-raised);
-  color: var(--color-fg);
-}
+/* Actions are the pill buttons (btn, btn-primary, btn-secondary) further down. */
 
 .sr-only {
   position: absolute;
@@ -571,4 +522,94 @@ a:hover .arr-d { transform: translateY(2px); }
 @media (prefers-reduced-motion: reduce) {
   .marquee-track { animation: none; }
   .marquee { overflow-x: auto; }
+}
+
+
+/* ---- Haze, eyebrows, pills (borrowed in spirit from Sarvam's site, in our
+   own paper, turmeric and indigo) ------------------------------------------ */
+
+/* A soft dawn-to-dusk glow behind a hero. Sits under content (z-index -1). */
+.haze {
+  position: relative;
+  isolation: isolate;
+}
+.haze::before {
+  content: "";
+  position: absolute;
+  inset: -6rem 0 -2rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(48% 55% at 18% 18%, color-mix(in srgb, var(--haze-warm) 55%, transparent), transparent 70%),
+    radial-gradient(45% 55% at 85% 30%, color-mix(in srgb, var(--haze-cool) 58%, transparent), transparent 72%),
+    radial-gradient(40% 40% at 55% 85%, color-mix(in srgb, var(--haze-warm) 18%, transparent), transparent 70%);
+  filter: blur(8px);
+}
+
+/* A small tracked line above a heading, between two hairlines. */
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+  &::before,
+  &::after {
+    content: "";
+    width: 1.75rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+}
+
+/* Pill buttons. Primary is our indigo; secondary is paper-white on a soft shadow. */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 9999px;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+  &:hover { transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+}
+@utility btn-primary {
+  color: white;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-signal) 88%, white), var(--color-signal));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 6px 18px -6px color-mix(in srgb, var(--color-signal) 70%, transparent);
+}
+@utility btn-secondary {
+  color: var(--color-fg);
+  background: var(--color-node);
+  box-shadow: var(--shadow-soft);
+  &:hover { box-shadow: 0 1px 2px rgba(29, 25, 20, 0.06), 0 14px 32px -12px rgba(29, 25, 20, 0.2); }
+}
+
+/* A card with a warm glow in one corner; set --glow to the accent. */
+.glow-corner {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.glow-corner::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 70%;
+  aspect-ratio: 1;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--glow, var(--haze-warm)) 32%, transparent), transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover, .btn:active { transform: none; }
 }

@@ -79,7 +79,7 @@ export function CourseCard({ course }: { course: CourseDto }) {
   return (
     <Link
       href={`/courses/${course.id}`}
-      className="tile group flex h-full flex-col gap-3 rounded-2xl border border-(--color-line) bg-(--color-node) p-5 hover:border-(--color-signal)"
+      className="tile group flex h-full flex-col gap-3 rounded-[1.25rem] border border-(--color-line)/70 bg-(--color-node) p-5 shadow-(--shadow-soft) hover:border-(--color-signal)"
     >
       <span className="flex items-center gap-2 text-xs tracking-wide text-(--color-mist) uppercase">
         <SubjectIcon name={course.disciplineName} colour={colour} />

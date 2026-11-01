@@ -35,12 +35,15 @@ export function FeaturedShelf() {
   if (error || courses?.length === 0) return null;
 
   return (
-    <section className="wrap space-y-5" aria-labelledby="featured-heading">
-      <div className="flex items-end justify-between gap-4">
-        <h2 id="featured-heading" className="text-3xl">
-          Start with one of these
-        </h2>
-        <Link href="/courses" className="text-sm text-(--color-signal)">
+    <section className="wrap space-y-8" aria-labelledby="featured-heading">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-3">
+          <p className="eyebrow">Start here</p>
+          <h2 id="featured-heading" className="text-4xl tracking-[-0.03em] sm:text-5xl">
+            Lectures ready to open
+          </h2>
+        </div>
+        <Link href="/courses" className="btn btn-secondary">
           All courses →
         </Link>
       </div>

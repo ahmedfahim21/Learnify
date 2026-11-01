@@ -63,7 +63,7 @@ export function TopNav() {
           ) : (
             <Link
               href="/signin"
-              className="ml-2 border border-(--color-line) px-3 py-1.5 text-sm text-(--color-mist) transition-colors hover:border-(--color-faint) hover:text-(--color-fg)"
+              className="btn btn-secondary ml-2 min-h-9 px-4 text-sm"
             >
               Sign in
             </Link>

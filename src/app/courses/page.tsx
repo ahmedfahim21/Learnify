@@ -75,11 +75,14 @@ export default function CoursesPage() {
 
   return (
     <main className="pb-12">
-      <div className="wrap space-y-2 pt-10 pb-6">
-        <h1 className="text-4xl tracking-tight sm:text-5xl">Pick a course</h1>
+      <div className="haze">
+      <div className="wrap space-y-3 pt-12 pb-8">
+        <p className="eyebrow text-(--color-signal)">NPTEL catalogue</p>
+        <h1 className="text-4xl tracking-[-0.035em] sm:text-6xl">Pick a course</h1>
         <p className="text-lg text-(--color-mist)">
           {total ? `${total.toLocaleString("en-IN")} NPTEL video courses` : "NPTEL video courses"} from over 100 Indian institutes, the IITs and IISc among them.
         </p>
+      </div>
       </div>
 
       {/* Search and subjects stay in reach while the list scrolls. */}

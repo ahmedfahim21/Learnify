@@ -50,9 +50,14 @@ const MODES = [
 export default function HomePage() {
   return (
     <main className="space-y-24 pb-8">
-      <section className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <section className="haze">
+       <div className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-8">
-          <h1 className="text-[2.6rem] leading-[1.08] tracking-tight sm:text-6xl">
+          <div className="space-y-4">
+            <Kolam />
+            <p className="eyebrow text-(--color-signal)">NPTEL · in 10 Indian languages</p>
+          </div>
+          <h1 className="text-[2.6rem] leading-[1.06] tracking-[-0.035em] sm:text-[4rem]">
             <span className="sr-only">Watch an NPTEL lecture. Learn it in your language.</span>
             <span aria-hidden>
               Watch an NPTEL lecture.
@@ -64,17 +69,16 @@ export default function HomePage() {
             Free lectures from the IITs, IISc and over 100 other institutes, turned into notes, quizzes and flashcards in the language you think in.
           </p>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-            <Link
-              href="/courses"
-              className="tile inline-flex min-h-13 items-center gap-2 rounded-full bg-(--color-signal) px-7 text-lg text-white"
-            >
+            <Link href="/courses" className="btn btn-primary text-lg">
               Pick a lecture <ArrowRight size={18} aria-hidden />
             </Link>
-            <span className="font-mono text-sm text-(--color-faint)">Free · 10 Indian languages</span>
+            <a href="#how-heading" className="btn btn-secondary">
+              How it works
+            </a>
           </div>
           <ul className="flex flex-wrap gap-2" aria-label="What you get">
             {MODES.map((m) => (
-              <li key={m.label} className="inline-flex items-center gap-2 rounded-full border border-(--color-line) bg-(--color-node) py-1 pr-3.5 pl-1">
+              <li key={m.label} className="inline-flex items-center gap-2 rounded-full bg-(--color-node)/80 py-1 pr-3.5 pl-1 shadow-(--shadow-soft) backdrop-blur">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full text-white" style={{ background: m.colour }}>
                   <m.icon size={14} aria-hidden />
                 </span>
@@ -86,17 +90,25 @@ export default function HomePage() {
 
         {/* Proof, not a picture: one real lecture and what was written from it. */}
         <HeroDemo />
+       </div>
       </section>
 
       <InstituteMarquee />
 
-      <section className="wrap space-y-8" aria-labelledby="how-heading">
-        <h2 id="how-heading" className="text-3xl">
-          How it works
-        </h2>
+      <section className="wrap space-y-10" aria-labelledby="how-heading">
+        <div className="space-y-3 text-center">
+          <p className="eyebrow">How it works</p>
+          <h2 id="how-heading" className="scroll-mt-24 text-4xl tracking-[-0.03em] sm:text-5xl">
+            One lecture, three steps
+          </h2>
+        </div>
         <ol className="grid gap-4 md:grid-cols-3">
           {STEPS.map((s, n) => (
-            <li key={s.title} className="flex flex-col gap-3 rounded-2xl border border-(--color-line) bg-(--color-surface) p-6">
+            <li
+              key={s.title}
+              className="glow-corner flex flex-col gap-3 rounded-[1.5rem] border border-(--color-line)/70 bg-(--color-node) p-7 shadow-(--shadow-soft)"
+              style={{ "--glow": GLOWS[n] } as React.CSSProperties}
+            >
               <span lang={s.numeralLang} aria-hidden className="block text-4xl leading-none text-(--color-warn)">
                 {s.numeral}
               </span>
@@ -133,6 +145,27 @@ export default function HomePage() {
 
       <FeaturedShelf />
     </main>
+  );
+}
+
+/** Each step's corner glow: turmeric, indigo, jamun. */
+const GLOWS = ["var(--haze-warm)", "var(--haze-cool)", "var(--color-flow)"];
+
+/** The kolam ornament over the hero's eyebrow: pulli dots joined by a looping line. */
+function Kolam() {
+  return (
+    <svg viewBox="0 0 120 24" width={120} height={24} aria-hidden className="text-(--color-warn)">
+      <path
+        d="M4 12 C 14 0, 26 0, 36 12 S 58 24, 60 12 S 74 0, 84 12 S 106 24, 116 12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      {[12, 36, 60, 84, 108].map((x) => (
+        <circle key={x} cx={x} cy={12} r={1.8} fill="currentColor" />
+      ))}
+    </svg>
   );
 }
 

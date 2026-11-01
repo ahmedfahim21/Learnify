@@ -66,9 +66,11 @@ function Row({ hidden }: { hidden?: boolean }) {
 export function InstituteMarquee() {
   return (
     <section aria-labelledby="institutes-heading" className="space-y-5">
-      <h2 id="institutes-heading" className="wrap text-center text-(--color-mist)">
-        Lectures from the IITs, IISc and over 100 other institutes
-      </h2>
+      <div className="wrap text-center">
+        <h2 id="institutes-heading" className="eyebrow">
+          Lectures from the IITs, IISc and 100+ institutes
+        </h2>
+      </div>
       <div className="marquee group relative overflow-hidden">
         {/* Two copies side by side; the strip moves by exactly one copy and loops. */}
         <div className="marquee-track flex w-max group-hover:[animation-play-state:paused]">
