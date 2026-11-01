@@ -50,7 +50,7 @@
     var(--font-orya), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
-  --measure: min(90vw, 76rem);
+  --measure: 76rem;
   --measure-mid: 60rem;
   --measure-prose: 44rem;
 
@@ -140,20 +140,28 @@ html {
 .wrap {
   max-width: var(--measure);
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   position: relative;
 }
 .wrap-mid {
   max-width: var(--measure-mid);
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   position: relative;
 }
 .wrap-prose {
   max-width: var(--measure-prose);
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   position: relative;
+}
+
+@media (min-width: 40rem) {
+  .wrap,
+  .wrap-mid,
+  .wrap-prose {
+    padding-inline: 1.5rem;
+  }
 }
 
 /* Small tracked metadata — the "label" system. Space Mono, for technical
