@@ -53,10 +53,7 @@ export default function HomePage() {
       <section className="haze">
        <div className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-8">
-          <div className="space-y-4">
-            <Kolam />
-            <p className="eyebrow text-(--color-signal)">NPTEL · in 10 Indian languages</p>
-          </div>
+          <p className="eyebrow text-(--color-signal)">NPTEL · in 10 Indian languages</p>
           <h1 className="text-[2.6rem] leading-[1.06] tracking-[-0.035em] sm:text-[4rem]">
             <span className="sr-only">Watch an NPTEL lecture. Learn it in your language.</span>
             <span aria-hidden>
@@ -150,24 +147,6 @@ export default function HomePage() {
 
 /** Each step's corner glow: turmeric, indigo, jamun. */
 const GLOWS = ["var(--haze-warm)", "var(--haze-cool)", "var(--color-flow)"];
-
-/** The kolam ornament over the hero's eyebrow: pulli dots joined by a looping line. */
-function Kolam() {
-  return (
-    <svg viewBox="0 0 120 24" width={120} height={24} aria-hidden className="text-(--color-warn)">
-      <path
-        d="M4 12 C 14 0, 26 0, 36 12 S 58 24, 60 12 S 74 0, 84 12 S 106 24, 116 12"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      {[12, 36, 60, 84, 108].map((x) => (
-        <circle key={x} cx={x} cy={12} r={1.8} fill="currentColor" />
-      ))}
-    </svg>
-  );
-}
 
 /** Heights that give the logos the same visual weight: Sarvam's wordmark is wide and bold, OpenUI's has room around it. */
 const BRAND_HEIGHT: Record<keyof typeof BRANDS, number> = { sarvam: 11, openui: 24, nptel: 16, youtube: 16, github: 16 };
