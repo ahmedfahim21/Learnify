@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { checkScreen } from "./generate";
 import { QUIZ_EXAMPLE } from "./prompt";
-import { applyFix, applyVerdicts, describe as describeQuestion, quizQuestions, type Verdict, verifyMessages, verifyQuiz } from "./verifyKeys";
+import { applyFix, applyVerdicts, describe as describeQuestion, excerpt, quizQuestions, type Verdict, verifyMessages, verifyQuiz } from "./verifyKeys";
 
 const ok = (id: string): Verdict => ({ id, verdict: "correct", answerIndex: null, answer: null, fillAnswer: null, order: null, matches: null, explanation: null });
 const fix = (id: string, f: Partial<Verdict>): Verdict => ({ ...ok(id), verdict: "fixed", ...f });
@@ -26,9 +26,24 @@ describe("quizQuestions", () => {
     expect(describeQuestion(q2)).toBe("[q2] True or false: Every integer is a rational number.\nClaimed answer: true");
   });
 
-  it("puts the transcript before the questions", () => {
-    const [, user] = verifyMessages(quizQuestions(QUIZ_EXAMPLE), "Transcript:\n[10s] hello");
-    expect(user.content.startsWith("Transcript:\n[10s] hello\n\nQuestions:\n\n[q1] Multiple choice")).toBe(true);
+  it("puts the relevant transcript before the questions", () => {
+    const [, user] = verifyMessages(quizQuestions(QUIZ_EXAMPLE), "Transcript:\n[60s] hello\n[900s] far away");
+    expect(user.content.startsWith("Lecture transcript, the parts these questions are about:\n[60s] hello\n\nQuestions:\n\n[q1] Multiple choice")).toBe(true);
+    expect(user.content).not.toContain("far away");
+  });
+});
+
+describe("excerpt", () => {
+  const transcript = ["Transcript:", "[0s] a", "[100s] b", "[300s] c", "[500s] d", "[700s] e", "", "Write the screen in English."].join("\n");
+
+  it("keeps only lines within two minutes of a question's moment, marking gaps", () => {
+    expect(excerpt(transcript, [100])).toBe("[0s] a\n[100s] b");
+    expect(excerpt(transcript, [100, 600])).toBe("[0s] a\n[100s] b\n…\n[500s] d\n[700s] e");
+  });
+
+  it("passes a transcript without timestamps, or questions without moments, through whole", () => {
+    expect(excerpt("just text", [100])).toBe("just text");
+    expect(excerpt(transcript, [])).toBe(transcript);
   });
 });
 

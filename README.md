@@ -1,124 +1,75 @@
 # Learnify
 
-**Watch an IIT lecture in English, learn it in your language.**
+**Watch an NPTEL lecture. Learn it in your language.**
 
-Learnify takes an [NPTEL](https://nptel.ac.in) lecture, keeps the official
-video playing in YouTube's embedded player, and builds a learning layer around
-it in Hindi, Bengali, Tamil, Telugu, Kannada, Malayalam, Marathi, Gujarati,
-Odia and Punjabi:
+Pick any of 3,050 free [NPTEL](https://nptel.ac.in) courses from the IITs, IISc and over 100 other institutes. The lecture plays as it was recorded; Learnify writes notes, quizzes and flashcards from it in 17 Indian languages, and answers spoken doubts from what the lecturer just said.
 
-- **Subtitles in your language.** English captions are translated with their
-  timestamps kept and shown under the video. When NPTEL already has a human
-  translation, that's what you see.
-- **Checks during the video.** At the right moments the video pauses for a
-  short question in your language. If you get it wrong, it replays the part that
-  explains it.
-- **Ask a doubt by voice.** Pause and ask, for example in Tamil, "why did he
-  divide by n here?" The answer is grounded in what the lecturer just said. It
-  arrives as a generated explanation card and can be read aloud.
-- **Study screens for each lecture.** A concept map, flashcards and a recap.
-  Every item links to its timestamp.
+![Landing page](docs/screenshots/landing.png)
 
-Each lecture is processed once per language and cached, so the second student
-to open it costs nothing. The build plan and its review are in
-[`PLAN.md`](./PLAN.md).
-
-## How it works
-
-| Piece | What does it |
+| Quiz, in Bengali | Notes, in Tamil |
 | --- | --- |
-| Course bank | NPTEL's own `__data.json` payloads: 3,484 courses, each lesson's YouTube id and caption files (`src/lib/nptel`) |
-| Transcript | NPTEL's VTT captions from Google Drive or SWAYAM's bucket, merged into sentence segments (`src/lib/transcripts`) |
-| Subtitles | Sarvam `mayura:v1` in `code-mixed` mode, one segment at a time, timestamps never touched (`src/lib/sarvam`) |
-| Study material | `sarvam-105b` reads the whole transcript once and returns concepts, checks, flashcards and a recap as strict JSON, then a validator checks every timestamp (`src/lib/study`) |
-| Doubt answers | `sarvam-105b-conversations` writes [OpenUI](https://www.openui.com) Lang against Learnify's own component library, validated before it is stored (`src/lib/openui`, `src/lib/doubts`) |
-| Voice | Saaras (`codemix`) for spoken doubts, Bulbul to read answers aloud |
-| Storage and sign-in | Supabase Postgres via Drizzle, Supabase Auth (Google, GitHub) |
+| ![A quiz question answered](docs/screenshots/quiz.png) | ![Notes with a flip card](docs/screenshots/notes.png) |
+| **Four-tap setup** | **3,050 courses** |
+| ![Choosing a language](docs/screenshots/setup.png) | ![Course catalogue](docs/screenshots/courses.png) |
 
-## Getting started
+<img src="docs/screenshots/phone.png" alt="The lecture on a phone" width="260" align="right">
 
-### Prerequisites
+## What it does
 
-- Node.js 20+ and npm
-- A [Supabase](https://supabase.com) project
-- A [Sarvam](https://dashboard.sarvam.ai) API key
+- **Interactive notes:** chapters with key ideas, worked examples and flip cards.
+- **Quizzes that play like a game:** five question types, streaks and points. Every answer key is checked against the lecture before it's saved.
+- **Flashcards and a concept map**, with spaced review.
+- **Doubts by voice:** pause, ask in your language, get an answer grounded in that moment of the lecture.
+- **Nothing is generated until you ask**, and everything generated is saved and shared with the next student.
 
-### Setup
+## How it's built
 
-1. Install, with OpenUI's install-time telemetry turned off:
+- **Next.js 15**, TypeScript, Tailwind v4, Supabase (Postgres and Auth) via Drizzle.
+- **[Sarvam AI](https://www.sarvam.ai):**
+  - `sarvam-105b` writes notes, quizzes and answers, and checks quiz keys;
+  - Sarvam-Translate covers Assamese, Nepali, Konkani, Maithili, Dogri, Sanskrit and Bodo;
+  - Saaras turns speech into text, Bulbul reads answers aloud.
+- **[OpenUI](https://www.openui.com):** the model writes OpenUI Lang against Learnify's own components (`src/lib/openui`), validated before it's stored.
+- **Lectures:** NPTEL's course data and captions, played in YouTube's embedded player.
 
-   ```shell
-   git clone https://github.com/ahmedfahim21/Learnify.git
-   cd Learnify
-   OPENUI_TELEMETRY_DISABLED=1 npm install
-   ```
+## Run it
 
-2. Copy the environment template and fill it in. Each variable has a comment
-   saying where to find it:
+You need Node 20+, a [Supabase](https://supabase.com) project and a [Sarvam](https://dashboard.sarvam.ai) API key.
 
-   ```shell
-   cp .env.example .env
-   ```
+```bash
+OPENUI_TELEMETRY_DISABLED=1 npm install
+```
 
-3. In the Supabase dashboard:
-   - enable Google and/or GitHub under **Authentication > Sign In / Providers**
-   - add `http://localhost:3000/auth/callback` under **Authentication > URL Configuration > Redirect URLs**
+```bash
+cp .env.example .env
+```
 
-4. Apply the migrations. They create the tables, link them to `auth.users`, and
-   turn on row-level security:
+Fill in `.env` (each variable says where to find it), enable Google sign-in in Supabase, and add `http://localhost:3000/auth/callback` to its redirect URLs. Then:
 
-   ```shell
-   npm run db:migrate
-   ```
+```bash
+npm run db:migrate
+```
 
-5. Start the dev server and open [http://localhost:3000](http://localhost:3000):
+```bash
+npm run dev
+```
 
-   ```shell
-   npm run dev
-   ```
+## Test it
 
-## Testing
-
-```shell
+```bash
 npm test
 ```
 
-```shell
+```bash
 npm run typecheck
 ```
 
-```shell
+```bash
 npm run lint
 ```
 
-Unit tests cover NPTEL decoding against saved real payloads, caption parsing
-against real NPTEL tracks, the Sarvam client with a mocked network,
-translation alignment, study-pack validation, the API routes, and a check that
-every table has row-level security.
-
-To check model quality on real lectures, run the Sarvam spike. It calls Sarvam,
-so it needs `SARVAM_API_KEY`, and writes `spike-output/report.md`:
-
-```shell
-OPENUI_TELEMETRY_DISABLED=1 npx tsx --env-file=.env --tsconfig tsconfig.json scripts/spike.ts
-```
-
-### Scripts
-
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start the Next.js dev server |
-| `npm run build` | Production build |
-| `npm test` | Run the unit tests |
-| `npm run typecheck` | TypeScript, no emit |
-| `npm run lint` | ESLint |
-| `npm run db:generate` | Generate a Drizzle migration from the schema |
-| `npm run db:migrate` | Apply migrations (uses `DIRECT_URL`) |
-| `npm run db:studio` | Open Drizzle Studio |
+The tests cover the API routes, NPTEL decoding, the Sarvam client, translation, generated-screen checks and answer-key fixes, and that every table has row-level security. `GET /api/health` reports which settings a deployment is missing.
 
 ## Licence of the content
 
-Lectures are by IIT and IISc faculty via NPTEL, under
-[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/).
-Translations and study material Learnify generates from them are shared under
-the same licence.
+Lectures are by NPTEL's faculty under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Study material Learnify generates from them is shared under the same licence.
