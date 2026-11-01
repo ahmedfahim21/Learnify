@@ -156,8 +156,8 @@ export function StudyTabs({ tab, onTab, lectureId, lang, level, transcriptReady,
 function StudyPlaceholder({ note }: { note: string | null }) {
   return (
     <div className="space-y-3">
-      <div className="h-40 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-      <div className="h-4 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+      <div className="h-40 animate-pulse rounded-xl bg-(--color-raised)" />
+      <div className="h-4 w-2/3 animate-pulse rounded-xl bg-(--color-raised)" />
       {note && <p className="text-sm text-(--color-mist)">{note}</p>}
     </div>
   );
