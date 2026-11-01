@@ -14,6 +14,7 @@ import { dbPackDeps } from "@/lib/study/store";
 import type { Segment } from "@/lib/transcripts/merge";
 import { dbDeps as transcriptDeps } from "@/lib/transcripts/store";
 
+import { keyTerms } from "./keyterms";
 import { doubtMessages, rewriteInScript } from "./prompt";
 
 /**
@@ -123,6 +124,17 @@ export async function prepareDoubt(input: AskInput, deps: AnswerDeps = liveAnswe
     { lectureTitle: title, lang: direct ? input.lang : "en", atSec: input.atSec, question, english, concepts },
     doubtCore,
   );
+}
+
+/** Terms to bias speech recognition toward for a doubt about this lecture at `atSec`; null for an unknown lecture. */
+export async function lectureKeyTerms(lectureId: string, atSec: number, deps: AnswerDeps = liveAnswerDeps): Promise<string[] | null> {
+  const [title, english, concepts] = await Promise.all([
+    deps.lectureTitle(lectureId),
+    deps.englishSegments(lectureId),
+    deps.concepts(lectureId, "en"),
+  ]);
+  if (!title) return null;
+  return keyTerms({ lectureTitle: title, concepts: concepts.map((c) => c.title), english, atSec });
 }
 
 export async function* answerDoubt(

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
 
-import { chat, chatJson, retryAfterMs, SarvamError, sarvamFetch, sseData, translate } from "./client";
+import { chat, chatJson, retryAfterMs, SarvamError, sarvamFetch, sseData, transcribe, translate } from "./client";
 import { AlignmentError, alignBatch, partialAlign, splitForLimit, translateSegments } from "./translateSegments";
 
 const noSleep = { sleep: async () => {} };
@@ -105,6 +105,36 @@ describe("sarvam client", () => {
       model: "mayura:v1",
       mode: "code-mixed",
     });
+  });
+
+  it("transcribes with Saaras v4 in code-mix mode, in the student's language", async () => {
+    const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () =>
+      json({ transcript: "Coulomb force में permittivity का role?", language_code: "hi-IN" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const audio = new Blob(["x"], { type: "audio/webm" });
+    await expect(transcribe(audio, "hi-IN", { filename: "doubt.webm" })).resolves.toEqual({
+      transcript: "Coulomb force में permittivity का role?",
+      languageCode: "hi-IN",
+    });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://api.sarvam.ai/speech-to-text");
+    const form = init.body as FormData;
+    expect([...form.keys()]).toEqual(["file", "model", "mode", "language_code"]);
+    expect(form.get("model")).toBe("saaras:v4");
+    expect(form.get("mode")).toBe("codemix");
+    expect(form.get("language_code")).toBe("hi-IN");
+    expect((form.get("file") as File).name).toBe("doubt.webm");
+  });
+
+  it("sends key terms as a JSON array, and leaves the field out when there are none", async () => {
+    const fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>(async () => json({ transcript: "x", language_code: "hi-IN" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const audio = new Blob(["x"], { type: "audio/webm" });
+    await transcribe(audio, "hi-IN", { keyterms: ["Coulomb's law", "permittivity"] });
+    await transcribe(audio, "hi-IN", { keyterms: [] });
+    expect((fetchMock.mock.calls[0][1].body as FormData).get("keyterms")).toBe('["Coulomb\'s law","permittivity"]');
+    expect((fetchMock.mock.calls[1][1].body as FormData).has("keyterms")).toBe(false);
   });
 });
 

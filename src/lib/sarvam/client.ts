@@ -312,14 +312,15 @@ export async function translate(req: TranslateRequest, opts?: RequestOptions): P
 export async function transcribe(
   audio: Blob,
   languageCode: string,
-  opts?: RequestOptions & { filename?: string },
+  opts?: RequestOptions & { filename?: string; keyterms?: string[] },
 ): Promise<{ transcript: string; languageCode: string | null }> {
   const form = new FormData();
   // A real extension helps Sarvam pick the codec (browsers record webm or mp4).
   form.set("file", audio, opts?.filename ?? "doubt.webm");
-  form.set("model", "saaras:v3");
+  form.set("model", "saaras:v4");
   form.set("mode", "codemix");
   form.set("language_code", languageCode);
+  if (opts?.keyterms?.length) form.set("keyterms", JSON.stringify(opts.keyterms));
   const res = await sarvamFetch("/speech-to-text", form, { timeoutMs: 30_000, ...opts }, {});
   const body = (await res.json()) as { transcript?: string; language_code?: string | null };
   if (typeof body.transcript !== "string") {
