@@ -63,7 +63,7 @@ export function CheckpointPanel({ state, lang, index, total, onAnswer, onResume,
   }, [asking, choice, onAnswer, state.check.options.length]);
 
   return (
-    <section aria-labelledby="check-heading" className="space-y-4 rounded-(--radius) border border-(--color-line) bg-(--color-surface) p-5">
+    <section aria-labelledby="check-heading" className="space-y-4 rounded-[1.25rem] border border-(--color-line)/70 bg-(--color-node) p-5 shadow-(--shadow-soft)">
       <div className="flex items-center justify-between">
         <p className="label">
           Quick check · {index} of {total}
@@ -97,7 +97,7 @@ export function CheckpointPanel({ state, lang, index, total, onAnswer, onResume,
           <button
             type="button"
             onClick={onSkipReplay}
-            className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-line) px-3 text-sm hover:border-(--color-faint)"
+            className="btn btn-secondary min-h-11 border border-(--color-line) px-4 text-sm"
           >
             Skip replay, try again now
           </button>
@@ -119,7 +119,7 @@ export function CheckpointPanel({ state, lang, index, total, onAnswer, onResume,
                 onClick={() => setChoice(n)}
                 lang={textLang}
                 className={[
-                  "flex min-h-11 w-full items-start gap-3 rounded-(--radius) border px-3 py-2.5 text-left transition-colors",
+                  "flex min-h-12 w-full items-start gap-3 rounded-xl border-2 px-4 py-3 text-left transition-colors",
                   isRight
                     ? "border-(--color-deep) bg-(--color-deep)/[0.06]"
                     : isWrongPick
@@ -147,7 +147,7 @@ export function CheckpointPanel({ state, lang, index, total, onAnswer, onResume,
             type="button"
             disabled={choice === null || state.submitting}
             onClick={() => choice !== null && onAnswer(choice)}
-            className="min-h-11 rounded-(--radius) bg-(--color-signal) px-4 text-white disabled:opacity-40"
+            className="btn btn-primary min-h-11 px-5 text-sm disabled:opacity-40"
           >
             {state.submitting ? "Checking…" : "Answer"}
           </button>
@@ -169,7 +169,7 @@ export function CheckpointPanel({ state, lang, index, total, onAnswer, onResume,
               {state.grade.explanation}
             </p>
           )}
-          <button type="button" onClick={onResume} className="min-h-11 rounded-(--radius) bg-(--color-signal) px-4 text-white">
+          <button type="button" onClick={onResume} className="btn btn-primary min-h-11 px-5 text-sm">
             Continue the lecture
           </button>
         </div>

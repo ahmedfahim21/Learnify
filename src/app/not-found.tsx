@@ -10,7 +10,7 @@ export default function NotFound() {
         The link may be old, or the lecture may have moved. Every NPTEL course is still a search away.
       </p>
       <div>
-        <Link href="/courses" className="inline-flex min-h-11 items-center rounded-(--radius) bg-(--color-signal) px-4 text-white">
+        <Link href="/courses" className="btn btn-primary">
           Browse courses
         </Link>
       </div>

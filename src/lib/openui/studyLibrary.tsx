@@ -102,7 +102,7 @@ function ConceptMapView({ concepts }: { concepts: ConceptProps[] }) {
   const current = concepts.find((c) => c.id === selected) ?? null;
   return (
     <div className="space-y-3">
-      <div className="h-[24rem] overflow-hidden rounded-(--radius) border border-(--color-line) bg-(--color-canvas)">
+      <div className="h-[24rem] overflow-hidden rounded-xl border border-(--color-line) bg-(--color-canvas)">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -125,7 +125,7 @@ function ConceptMapView({ concepts }: { concepts: ConceptProps[] }) {
             type="button"
             disabled={!clock}
             onClick={() => clock?.seekTo(current.startSec)}
-            className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-line) px-3 text-(--color-signal) hover:border-(--color-signal) disabled:opacity-50"
+            className="btn btn-secondary min-h-11 border border-(--color-line) px-4 text-sm text-(--color-signal) hover:border-(--color-signal) disabled:opacity-50"
           >
             <span className="font-mono">{formatTime(current.startSec)}</span>
             <span>Watch this part</span>
@@ -203,7 +203,7 @@ function DeckView({ cards }: { cards: CardProps[] }) {
         type="button"
         onClick={() => setFlipped((f) => !f)}
         aria-label={flipped ? "Show the question" : "Show the answer"}
-        className="flex min-h-48 w-full flex-col justify-between gap-6 rounded-(--radius) border border-(--color-line) bg-(--color-surface) p-5 text-left transition-colors hover:border-(--color-faint)"
+        className="flex min-h-48 w-full flex-col justify-between gap-6 rounded-xl border border-(--color-line) bg-(--color-surface) p-5 text-left transition-colors hover:border-(--color-faint)"
       >
         <span className="label">{flipped ? "Answer" : "Question"}</span>
         <span className="text-lg">{flipped ? card.back : card.front}</span>
@@ -223,7 +223,7 @@ function DeckView({ cards }: { cards: CardProps[] }) {
                 disabled={saving}
                 onClick={() => rate(rating)}
                 title={hint}
-                className={`min-h-11 rounded-(--radius) border px-2 text-sm transition-colors disabled:opacity-50 ${
+                className={`min-h-11 rounded-full border px-3 text-sm transition-colors disabled:opacity-50 ${
                   rating === "again"
                     ? "border-(--color-line) text-(--color-warn) hover:border-(--color-warn)"
                     : "border-(--color-line) hover:border-(--color-signal) hover:text-(--color-signal)"
@@ -253,7 +253,7 @@ function DeckView({ cards }: { cards: CardProps[] }) {
             onClick={() => go(-1)}
             disabled={index === 0}
             aria-label="Previous card"
-            className="flex h-11 w-11 items-center justify-center rounded-(--radius) border border-(--color-line) disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-(--color-line) bg-(--color-node) disabled:opacity-40"
           >
             <ChevronLeft size={18} aria-hidden />
           </button>
@@ -262,7 +262,7 @@ function DeckView({ cards }: { cards: CardProps[] }) {
             onClick={() => go(1)}
             disabled={index === cards.length - 1}
             aria-label="Next card"
-            className="flex h-11 w-11 items-center justify-center rounded-(--radius) border border-(--color-line) disabled:opacity-40"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-(--color-line) bg-(--color-node) disabled:opacity-40"
           >
             <ChevronRight size={18} aria-hidden />
           </button>
@@ -274,7 +274,7 @@ function DeckView({ cards }: { cards: CardProps[] }) {
           type="button"
           disabled={!clock}
           onClick={() => clock?.seekTo(card.startSec)}
-          className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) px-2 text-(--color-signal) disabled:opacity-50"
+          className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-(--color-signal) hover:bg-(--color-signal)/[0.06] disabled:opacity-50"
         >
           <span className="font-mono">{formatTime(card.startSec)}</span>
           <span>Watch the moment</span>

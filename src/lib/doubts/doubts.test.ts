@@ -146,6 +146,49 @@ describe("answerDoubt", () => {
     expect(d.refunded).toEqual(["u1"]);
   });
 
+  it("asks once for a rewrite when a Hindi answer comes back romanised, and shows only the rewrite", async () => {
+    const romanised = ['root = Answer("Coulomb law basics", [p1])', 'p1 = Paragraph("Dekho, course electromagnetic theory ka hai aur basic se hi samjhenge.")'].join("\n");
+    const devanagari = ['root = Answer("Coulomb law की बुनियाद", [p1])', 'p1 = Paragraph("देखो, यह course electromagnetic theory का है और हम basic से ही समझेंगे।")'].join("\n");
+    const d = deps([romanised]);
+    vi.mocked(d.stream)
+      .mockImplementationOnce(async function* () {
+        yield romanised;
+      })
+      .mockImplementationOnce(async function* () {
+        yield devanagari;
+      });
+    const hi = { ...input, lang: "hi" as const, question: "कूलम लो समझो।" };
+    const messages = await prepareDoubt(hi, d);
+
+    const events = await collect(answerDoubt(hi, messages, d));
+
+    expect(events).toContainEqual({ type: "status", text: "Rewriting it in हिन्दी script" });
+    expect(events).toContainEqual({ type: "program", text: devanagari });
+    const followUp = vi.mocked(d.stream).mock.calls[1][0];
+    expect(followUp.slice(0, messages.length)).toEqual(messages);
+    expect(followUp.slice(messages.length)).toEqual([
+      { role: "assistant", content: romanised },
+      { role: "user", content: expect.stringMatching(/^That answer is written in Latin letters\. Write the same answer again, in Hindi script \(हिन्दी\)/) },
+    ]);
+    expect(d.saved).toEqual([expect.objectContaining({ status: "answered", answer: devanagari })]);
+    expect(d.refunded).toEqual([]);
+  });
+
+  it("fails and refunds when the rewrite is still in the wrong script", async () => {
+    const romanised = ['root = Answer("Basics", [p1])', 'p1 = Paragraph("Dekho, basic se hi samjhenge.")'].join("\n");
+    const d = deps([romanised]);
+    const hi = { ...input, lang: "hi" as const };
+    const events = await collect(answerDoubt(hi, await prepareDoubt(hi, d), d));
+    expect(events.at(-1)).toMatchObject({ type: "error", message: "The answer didn't come back in Hindi script." });
+    expect(d.saved).toEqual([expect.objectContaining({ status: "failed", answer: null })]);
+    expect(d.refunded).toEqual(["u1"]);
+  });
+
+  it("ends the prompt with the language rule, after the question", async () => {
+    const messages = await prepareDoubt({ ...input, lang: "hi" }, deps());
+    expect(messages[1].content).toMatch(/Answer in Hindi \(हिन्दी\) written in Hindi script, not in Latin letters, even if the doubt was typed in Latin letters\. Keep only technical terms, symbols and formulas in English\.$/);
+  });
+
   it("refuses before charging when the transcript isn't ready", async () => {
     const d = deps();
     vi.mocked(d.englishSegments).mockResolvedValue(null);
@@ -178,5 +221,22 @@ describe("fitForSpeech", () => {
   });
   it("falls back to a word boundary", () => {
     expect(fitForSpeech("aaaa bbbb cccc", 10)).toBe("aaaa bbbb");
+  });
+});
+
+describe("scriptShare", () => {
+  it("tells code-mixed Hindi from romanised Hindi", async () => {
+    const { scriptShare } = await import("@/lib/languages");
+    expect(scriptShare("देखो, यह course electromagnetic theory का है और हम basic से ही समझेंगे।", "hi")).toBeGreaterThan(0.25);
+    expect(scriptShare("Dekho, course electromagnetic theory ka hai aur basic se hi samjhenge.", "hi")).toBe(0);
+    expect(scriptShare("", "ta")).toBe(1);
+  });
+
+  it("measures only the prose of an answer, not component names, formulas or maths", async () => {
+    const { answerProse } = await import("./answer");
+    const { scriptShare } = await import("@/lib/languages");
+    expect(answerProse(GOOD)).toBe("ஏன் n-ஆல் divide? Average-க்கு count-ஆல divide பண்றோம். அதனால n. Average define பண்ற இடம் n = values");
+    expect(scriptShare(answerProse(GOOD), "ta")).toBeGreaterThan(0.25);
+    expect(answerProse('p = Paragraph("Force is $F = ma$ here")')).toBe("Force is   here");
   });
 });

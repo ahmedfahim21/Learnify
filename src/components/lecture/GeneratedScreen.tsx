@@ -133,7 +133,7 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div role="group" aria-label="Style" className="flex rounded-(--radius) border border-(--color-line) p-0.5">
+        <div role="group" aria-label="Style" className="flex rounded-full border border-(--color-line) bg-(--color-node) p-1">
           {VARIANTS.map((v) => (
             <button
               key={v.variant}
@@ -141,7 +141,7 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
               aria-pressed={variant === v.variant}
               disabled={generating}
               onClick={() => setVariant(v.variant)}
-              className={`min-h-9 rounded-(--radius) px-3 text-sm transition-colors disabled:opacity-50 ${
+              className={`min-h-9 rounded-full px-4 text-sm transition-colors disabled:opacity-50 ${
                 variant === v.variant ? "bg-(--color-signal) text-white" : "text-(--color-mist) hover:text-(--color-fg)"
               }`}
             >
@@ -185,9 +185,9 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
         </div>
       ) : state.phase === "loading" || (generating && !program) ? (
         <div className="space-y-3">
-          <div className="h-7 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-          <div className="h-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-          <div className="h-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+          <div className="h-7 w-2/3 animate-pulse rounded-xl bg-(--color-raised)" />
+          <div className="h-24 animate-pulse rounded-xl bg-(--color-raised)" />
+          <div className="h-24 animate-pulse rounded-xl bg-(--color-raised)" />
         </div>
       ) : state.phase === "missing" ? (
         <div className="kolam flex flex-col items-start gap-4 rounded-2xl border border-(--color-line) p-6">
@@ -223,7 +223,7 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
             <button
               type="button"
               onClick={generate}
-              className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-line) px-3 hover:border-(--color-signal)"
+              className="btn btn-secondary min-h-11 border border-(--color-line) px-4 text-sm"
             >
               <RefreshCw size={14} aria-hidden /> Try again
             </button>

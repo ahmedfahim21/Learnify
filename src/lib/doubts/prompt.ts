@@ -28,6 +28,22 @@ export interface DoubtInput {
   concepts: { title: string; startSec: number }[];
 }
 
+/**
+ * Repeated last, after the transcript and the question: with the rule only in
+ * the system prompt, the model answered Hindi doubts in romanised Hinglish.
+ */
+export function answerLanguageReminder(lang: Lang): string {
+  if (lang === "en") return "Answer in English.";
+  const { name, native } = LANGUAGES[lang];
+  return `Answer in ${name} (${native}) written in ${name} script, not in Latin letters, even if the doubt was typed in Latin letters. Keep only technical terms, symbols and formulas in English.`;
+}
+
+/** The follow-up when an answer came back in the wrong script. */
+export function rewriteInScript(lang: Lang): string {
+  const { name, native } = LANGUAGES[lang];
+  return `That answer is written in Latin letters. Write the same answer again, in ${name} script (${native}), as openui-lang only. Keep technical terms, symbols and formulas in English.`;
+}
+
 export function doubtMessages(input: DoubtInput, library: DoubtCore) {
   const { name } = LANGUAGES[input.lang];
   const from = Math.max(0, input.atSec - DOUBT_WINDOW_BEFORE_SEC);
@@ -60,6 +76,8 @@ export function doubtMessages(input: DoubtInput, library: DoubtCore) {
     window,
     "",
     `Student's doubt: ${input.question}`,
+    "",
+    answerLanguageReminder(input.lang),
   ].join("\n");
 
   return [

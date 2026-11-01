@@ -45,3 +45,16 @@ export function isLang(value: string): value is Lang {
 
 /** The languages besides English, for "N Indian languages" in copy. */
 export const INDIAN_LANGUAGE_COUNT = Object.keys(LANGUAGES).length - 1;
+
+/**
+ * The share of a text's letters written in the language's own script, from 0
+ * to 1. Code-mixed answers keep English technical terms, so a right answer
+ * is rarely near 1; a romanised one ("Dekho, course electromagnetic…") is
+ * near 0. Maths and markup aren't letters and don't count.
+ */
+export function scriptShare(text: string, lang: Lang): number {
+  const letters = text.match(/\p{L}/gu) ?? [];
+  if (letters.length === 0) return 1;
+  const own = new RegExp(LANGUAGES[lang].script.source, "u");
+  return letters.filter((c) => own.test(c)).length / letters.length;
+}

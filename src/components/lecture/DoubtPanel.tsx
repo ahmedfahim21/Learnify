@@ -5,7 +5,6 @@ import { Loader2, Mic, RotateCcw, Send, Square, Volume2, X } from "lucide-react"
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { PoweredBy } from "@/components/site/Brands";
 import { useSession } from "@/lib/authClient";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import { doubtLibrary } from "@/lib/openui/doubtLibrary";
@@ -187,7 +186,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
       </div>
 
       {isPending ? (
-        <div className="h-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+        <div className="h-24 animate-pulse rounded-lg bg-(--color-raised)" />
       ) : !user ? (
         <p className="text-(--color-mist)">
           Doubts are answered by a model, so they need an account.{" "}
@@ -260,7 +259,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
               maxLength={500}
               lang={textLang}
               placeholder="…or type it here"
-              className="w-full resize-y rounded-(--radius) border border-(--color-line) bg-(--color-ink) px-3 py-2"
+              className="w-full resize-y rounded-xl border border-(--color-line) bg-(--color-node) px-4 py-3 outline-none focus:border-(--color-signal)"
             />
           </label>
 
@@ -272,7 +271,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
               type="button"
               onClick={ask}
               disabled={question.trim().length < 2 || outOfDoubts || phase.kind === "transcribing"}
-              className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) bg-(--color-signal) px-4 text-white disabled:opacity-40"
+              className="btn btn-primary min-h-11 px-5 text-sm disabled:opacity-40"
             >
               Ask <Send size={15} aria-hidden />
             </button>
@@ -287,7 +286,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
                     <button
                       type="button"
                       onClick={() => setPhase({ kind: "answered", question: d.question, answer: d.answer, doubtId: d.id })}
-                      className="flex min-h-11 w-full items-baseline gap-3 rounded-(--radius) px-2 text-left text-(--color-mist) hover:bg-(--color-raised) hover:text-(--color-fg)"
+                      className="flex min-h-11 w-full items-baseline gap-3 rounded-xl px-3 text-left text-(--color-mist) hover:bg-(--color-raised) hover:text-(--color-fg)"
                     >
                       <span className="font-mono text-xs text-(--color-faint)">{formatTime(d.atSec)}</span>
                       <span lang={textLang} className="line-clamp-1">
@@ -316,7 +315,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
                   setQuestion(phase.question);
                   setPhase({ kind: "compose" });
                 }}
-                className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-line) px-3 hover:border-(--color-faint)"
+                className="btn btn-secondary min-h-11 border border-(--color-line) px-4 text-sm"
               >
                 <RotateCcw size={15} aria-hidden /> Try again
               </button>
@@ -334,9 +333,9 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
                 />
               ) : (
                 <div className="space-y-2">
-                  <div className="h-5 w-3/4 animate-pulse rounded-(--radius) bg-(--color-raised)" />
-                  <div className="h-4 w-full animate-pulse rounded-(--radius) bg-(--color-raised)" />
-                  <div className="h-4 w-5/6 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+                  <div className="h-5 w-3/4 animate-pulse rounded-lg bg-(--color-raised)" />
+                  <div className="h-4 w-full animate-pulse rounded-lg bg-(--color-raised)" />
+                  <div className="h-4 w-5/6 animate-pulse rounded-lg bg-(--color-raised)" />
                   {phase.kind === "answering" && phase.status && (
                     <p className="pt-1 text-sm text-(--color-signal)">{phase.status}…</p>
                   )}
@@ -345,7 +344,6 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
             </div>
           )}
 
-          {phase.kind === "answered" && <PoweredBy />}
           {phase.kind === "answered" && (
             <div className="flex flex-wrap items-center gap-2 border-t border-(--color-line) pt-3">
               {/* Bulbul reads eleven languages aloud; the rest have no voice yet. */}
@@ -353,11 +351,11 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
               <button
                 type="button"
                 onClick={() => setPhase({ kind: "compose" })}
-                className="inline-flex min-h-11 items-center rounded-(--radius) border border-(--color-line) px-3 hover:border-(--color-faint)"
+                className="btn btn-secondary min-h-11 border border-(--color-line) px-4 text-sm"
               >
                 Ask another
               </button>
-              <button type="button" onClick={onClose} className="ml-auto min-h-11 rounded-(--radius) bg-(--color-signal) px-4 text-white">
+              <button type="button" onClick={onClose} className="btn btn-primary ml-auto min-h-11 px-5 text-sm">
                 Back to the lecture
               </button>
             </div>
@@ -451,7 +449,7 @@ function ReadAloud({ doubtId }: { doubtId: string }) {
         type="button"
         onClick={play}
         disabled={state === "loading"}
-        className="inline-flex min-h-11 items-center gap-2 rounded-(--radius) border border-(--color-line) px-3 text-(--color-signal) hover:border-(--color-signal) disabled:opacity-60"
+        className="btn btn-secondary min-h-11 border border-(--color-line) px-4 text-sm text-(--color-signal) disabled:opacity-60"
       >
         {state === "loading" ? (
           <Loader2 size={15} className="animate-spin" aria-hidden />

@@ -1,6 +1,7 @@
 "use client";
 
 import { createLibrary, defineComponent } from "@openuidev/react-lang";
+import { Play } from "lucide-react";
 import { useContext } from "react";
 
 import { LectureClockContext } from "./contexts";
@@ -57,9 +58,9 @@ export const Formula = defineComponent({
   description: FormulaSpec.description,
   props: FormulaSpec.props,
   component: ({ props }) => (
-    <figure className="rounded-[var(--radius)] bg-[var(--color-surface)] px-3 py-2">
+    <figure className="overflow-x-auto rounded-xl bg-(--color-surface) px-4 py-3">
       <span className="text-lg"><TexExpression text={props.expression} /></span>
-      {props.caption ? <figcaption className="text-[var(--color-mist)]"><Tex text={props.caption} /></figcaption> : null}
+      {props.caption ? <figcaption className="text-sm text-(--color-mist)"><Tex text={props.caption} /></figcaption> : null}
     </figure>
   ),
 });
@@ -77,10 +78,12 @@ export const TimeChip = defineComponent({
         disabled={!clock}
         onClick={() => clock?.seekTo(sec)}
         aria-label={`Jump to ${formatTime(sec)}: ${props.label}`}
-        className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius)] border border-[var(--color-line)] px-2 text-[var(--color-signal)] disabled:opacity-50"
+        className="inline-flex min-h-10 max-w-full items-center gap-2 rounded-2xl border border-(--color-line) bg-(--color-node) py-1.5 pr-3.5 pl-2.5 text-left text-sm text-(--color-signal) transition-colors hover:border-(--color-signal) disabled:opacity-50"
       >
-        <span className="font-mono">{formatTime(sec)}</span>
-        <span><Tex text={props.label} /></span>
+        <Play size={13} className="shrink-0" aria-hidden />
+        {/* The time never wraps; a long label wraps beside it. */}
+        <span className="shrink-0 font-mono whitespace-nowrap">{formatTime(sec)}</span>
+        <span className="min-w-0"><Tex text={props.label} /></span>
       </button>
     );
   },
@@ -94,7 +97,7 @@ export const Callout = defineComponent({
   // should always know which parts the lecturer actually said.
   component: ({ props }) => (
     <aside
-      className={`space-y-1 border-l-2 pl-3 ${props.kind === "outside" ? "border-(--color-warn)" : "border-(--color-signal)"}`}
+      className={`space-y-1 rounded-xl border-l-4 px-4 py-3 ${props.kind === "outside" ? "border-(--color-warn) bg-(--color-warn)/[0.05]" : "border-(--color-signal) bg-(--color-signal)/[0.05]"}`}
     >
       <p className="label">{props.kind === "outside" ? "Beyond this lecture" : "Note"}</p>
       <p><Tex text={props.text} /></p>

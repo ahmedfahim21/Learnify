@@ -36,7 +36,7 @@ import { FIRST_MODE } from "@/lib/preferences";
 // The doubt panel (recorder, OpenUI renderer) loads when a doubt is first opened.
 const DoubtPanel = dynamic(() => import("@/components/lecture/DoubtPanel").then((m) => m.DoubtPanel), {
   ssr: false,
-  loading: () => <div className="h-64 animate-pulse rounded-(--radius) bg-(--color-raised)" />,
+  loading: () => <div className="h-64 animate-pulse rounded-xl bg-(--color-raised)" />,
 });
 
 const LANG_KEY = "learnify.lang";
@@ -278,12 +278,12 @@ export default function LecturePage() {
               ← {view.lecture.unitName}
             </Link>
           ) : (
-            <div className="h-4 w-24 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+            <div className="h-4 w-24 animate-pulse rounded-xl bg-(--color-raised)" />
           )}
           {view ? (
             <h1 className="text-3xl">{view.lecture.title}</h1>
           ) : (
-            <div className="h-9 w-2/3 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+            <div className="h-9 w-2/3 animate-pulse rounded-xl bg-(--color-raised)" />
           )}
         </div>
 
