@@ -19,7 +19,7 @@ import { MARK } from "@/components/site/Logo";
  * the card never silently falls back to a default sans.
  */
 
-export const alt = "Learnify: watch an NPTEL lecture, learn it in your language";
+export const alt = "Learnify: pause any NPTEL lecture and ask, answers in your language";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -50,11 +50,11 @@ export default async function OpengraphImage() {
             Learn<span style={{ color: SIGNAL }}>ify</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, fontSize: 64, lineHeight: 1.1, letterSpacing: -1.5 }}>
-            <span>Watch an NPTEL lecture.</span>
-            <span style={{ color: SIGNAL }}>Learn it in your language.</span>
+            <span>Pause any NPTEL lecture and ask.</span>
+            <span style={{ color: SIGNAL }}>Answers in your language.</span>
           </div>
           <div style={{ display: "flex", fontFamily: "Plex Mono", fontSize: 22, color: MIST }}>
-            Notes · Quizzes · Flashcards · Voice doubts
+            Voice doubts · Quizzes · Flashcards · Notes
           </div>
         </div>
 
