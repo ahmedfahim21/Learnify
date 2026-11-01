@@ -25,7 +25,7 @@ type Variant = "standard" | "simpler" | "harder";
 type State =
   | { phase: "loading" }
   | { phase: "missing" }
-  | { phase: "generating"; program: string }
+  | { phase: "generating"; program: string; status?: string }
   | { phase: "ready"; program: string }
   | { phase: "error"; message: string; program: string | null };
 
@@ -72,9 +72,20 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
           const line = buffer.slice(0, nl);
           buffer = buffer.slice(nl + 1);
           if (!line.trim()) continue;
-          const event = JSON.parse(line) as { type: "delta"; text: string } | { type: "done" } | { type: "error"; message: string };
+          const event = JSON.parse(line) as
+            | { type: "delta"; text: string }
+            | { type: "status"; text: string }
+            | { type: "program"; text: string }
+            | { type: "done" }
+            | { type: "error"; message: string };
           if (event.type === "delta") {
             program += event.text;
+            setState({ phase: "generating", program });
+          } else if (event.type === "status") {
+            // Languages the model can't write arrive whole, after translation; say what's happening meanwhile.
+            setState({ phase: "generating", program, status: event.text });
+          } else if (event.type === "program") {
+            program = event.text;
             setState({ phase: "generating", program });
           } else if (event.type === "done") {
             setState({ phase: "ready", program });
@@ -152,7 +163,7 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
       {generating && (
         <p className="flex items-center gap-2 text-sm text-(--color-signal)" aria-live="polite">
           <Sparkles size={15} className="animate-pulse" aria-hidden />
-          {COPY[kind].building} in {LANGUAGES[lang].native}…
+          {state.status ?? `${COPY[kind].building} in ${LANGUAGES[lang].native}`}…
         </p>
       )}
 

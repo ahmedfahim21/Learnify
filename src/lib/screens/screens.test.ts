@@ -72,6 +72,8 @@ function deps(chunks: string[] | Error): ScreenDeps & { saved: unknown[]; refund
       return "screen-1";
     }),
     refund: vi.fn(async (u: string) => void refunded.push(u)),
+    // Stands in for Sarvam-Translate: marks every string so the test can see what moved.
+    translate: vi.fn(async (program: string) => program.replace(/"([^"\\]*)"/g, (m, t: string) => (t ? `"NE:${t}"` : m))),
   };
 }
 
@@ -122,6 +124,40 @@ describe("generateScreen", () => {
     expect(system.content).toMatch(/This student wants a challenge/);
     expect(system.content).toMatch(/one Quiz with 8 to 10 questions/);
     expect(user.content).toMatch(/^Transcript:\n\[216s\] A rational number is p by q\.\n\nWrite the whole screen in Hindi \(हिन्दी\), in Hindi script/);
+  });
+
+  it("writes in English and stores only the translation for a language the model can't write", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    const ne = { ...input, lang: "ne" as const };
+    const messages = await prepareScreen(ne, d);
+    expect(messages[0].content).not.toMatch(/Nepali/);
+    expect(messages[1].content).toMatch(/Write the screen in English\.$/);
+
+    const events = await collect(generateScreen(ne, messages, d));
+
+    // No English ever reaches the student: statuses, then the whole translated screen.
+    expect(events.filter((e) => e.type === "delta")).toEqual([]);
+    expect(events.filter((e) => e.type === "status")).toEqual([
+      { type: "status", text: "Writing from the lecture" },
+      { type: "status", text: "Translating into Nepali" },
+    ]);
+    const program = (events.find((e) => e.type === "program") as { text: string }).text;
+    expect(program).toContain('"NE:');
+    expect(events.at(-1)).toEqual({ type: "done", screenId: "screen-1" });
+    expect(d.translate).toHaveBeenCalledWith(QUIZ_EXAMPLE, "ne", "screen lec-1/ne/quiz/standard");
+    expect(d.saved).toEqual([
+      { lectureId: "lec-1", lang: "ne", kind: "quiz", variant: "standard", program, model: "sarvam-105b-conversations+sarvam-translate:v1" },
+    ]);
+  });
+
+  it("refunds and stores nothing when translation fails", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    vi.mocked(d.translate).mockRejectedValue(new Error("Sarvam /translate failed (HTTP 429)"));
+    const ne = { ...input, lang: "ne" as const };
+    const events = await collect(generateScreen(ne, await prepareScreen(ne, d), d));
+    expect(events.at(-1)).toEqual({ type: "error", message: "Translating into Nepali failed: Sarvam /translate failed (HTTP 429)" });
+    expect(d.saved).toEqual([]);
+    expect(d.refunded).toEqual(["u1"]);
   });
 
   it("refuses before charging when there's no transcript", async () => {
