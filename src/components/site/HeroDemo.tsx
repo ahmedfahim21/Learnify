@@ -3,7 +3,7 @@
 import { Renderer } from "@openuidev/react-lang";
 import { ArrowRight, Play, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { LANGUAGES } from "@/lib/languages";
 import { screenLibrary } from "@/lib/openui/screenLibrary";
@@ -53,42 +53,80 @@ const LANGS = Object.keys(ITEMS) as DemoLang[];
 const HEAD = `root = Screen("", [x])\n`;
 
 /** How long writing one example takes, start to finish, as it would stream in. */
-const WRITE_MS = 1400;
+const WRITE_MS = 1600;
 
 /**
- * Plays an example the way the lecture page receives one: the model's OpenUI
- * Lang streams in, then OpenUI renders it. (A component draws only once its
- * text is complete, so the source is what shows while it's being written.)
- * Held finished for anyone who prefers reduced motion.
+ * Plays an example the way a generated screen arrives on the lecture page:
+ * the real component renders, and its text streams into it. The finished
+ * screen is rendered once by OpenUI; this walks its text nodes and reveals
+ * them a few characters at a time (maths, as KaTeX, appears whole when the
+ * stream reaches it). Held finished for anyone who prefers reduced motion.
  */
-function useWriting(statement: string): { source: string; writing: boolean } {
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
+function useStreamedText(root: React.RefObject<HTMLDivElement | null>, key: string): boolean {
+  const [writing, setWriting] = useState(true);
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setShown(statement.length);
+      setWriting(false);
       return;
     }
-    setShown(0);
+    setWriting(true);
+    // Text nodes to fill, and KaTeX blocks to show whole, in reading order.
+    const pieces: ({ kind: "text"; node: Text; full: string } | { kind: "math"; node: HTMLElement })[] = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) =>
+        n instanceof HTMLElement && n.classList.contains("katex")
+          ? NodeFilter.FILTER_ACCEPT
+          : n instanceof HTMLElement && n.closest(".katex")
+            ? NodeFilter.FILTER_REJECT
+            : n.nodeType === Node.TEXT_NODE && n.textContent?.trim()
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_SKIP,
+    });
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n instanceof HTMLElement) pieces.push({ kind: "math", node: n });
+      else pieces.push({ kind: "text", node: n as Text, full: n.textContent ?? "" });
+    }
+    const total = pieces.reduce((sum, p) => sum + (p.kind === "text" ? p.full.length : 4), 0);
+    const show = (budget: number) => {
+      let left = budget;
+      for (const p of pieces) {
+        if (p.kind === "math") {
+          p.node.style.visibility = left >= 4 ? "" : "hidden";
+          left -= 4;
+        } else {
+          p.node.textContent = p.full.slice(0, Math.max(0, left));
+          left -= p.full.length;
+        }
+      }
+    };
+    show(0);
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / WRITE_MS);
-      // Ease out, and move in word-sized chunks the way tokens arrive.
-      const n = Math.round(statement.length * (1 - (1 - t) ** 2));
-      setShown(t < 1 ? Math.max(0, n - (n % 6)) : statement.length);
+      const n = Math.round(total * t);
+      // Word-sized steps, the way tokens arrive.
+      show(t < 1 ? n - (n % 4) : total);
       if (t < 1) raf = requestAnimationFrame(tick);
+      else setWriting(false);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [statement]);
-  return { source: statement.slice(0, shown), writing: shown < statement.length };
+    return () => {
+      cancelAnimationFrame(raf);
+      show(total);
+    };
+  }, [root, key]);
+  return writing;
 }
 
 export default function HeroDemo() {
   const [lang, setLang] = useState<DemoLang>("hi");
   const [step, setStep] = useState(0);
   const items = ITEMS[lang];
-  const { source, writing } = useWriting(items[step]);
+  const screen = useRef<HTMLDivElement>(null);
+  const writing = useStreamedText(screen, `${lang}-${step}`);
 
   return (
     <div className="overflow-hidden rounded-[1.75rem] border border-(--color-line)/70 bg-(--color-node)/95 shadow-(--shadow-card) backdrop-blur">
@@ -144,17 +182,9 @@ export default function HeroDemo() {
 
         {/* One piece at a time, the height held so switching doesn't jump the page */}
         <div key={`${lang}-${step}`} lang={LANGUAGES[lang].sarvam} className="flex min-h-[22rem] flex-col justify-center gap-3" aria-busy={writing}>
-          {writing ? (
-            <pre className="overflow-hidden rounded-2xl bg-(--color-fg) p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-white/85" aria-hidden>
-              <span className="text-white/45">{HEAD}</span>
-              {source}
-              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse bg-(--color-warn)" />
-            </pre>
-          ) : (
-            <div className="rise">
-              <Renderer response={HEAD + source} library={screenLibrary} isStreaming={false} />
-            </div>
-          )}
+          <div ref={screen}>
+            <Renderer response={HEAD + items[step]} library={screenLibrary} isStreaming={false} />
+          </div>
         </div>
         <div className="flex min-h-5 items-center" aria-live="polite">
           {writing ? (
