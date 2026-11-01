@@ -1,4 +1,7 @@
+import { z } from "zod";
+
 import { getBudget } from "@/lib/budget";
+import { lectureKeyTerms } from "@/lib/doubts/answer";
 import { isLang, LANGUAGES } from "@/lib/languages";
 import { SarvamError, transcribe } from "@/lib/sarvam/client";
 import { requireUserId } from "@/lib/session";
@@ -20,7 +23,8 @@ const EXTENSIONS: Record<string, string> = {
 /**
  * Transcribe a spoken doubt with Saaras in code-mix mode: Tamil words in
  * Tamil script, English terms in Latin, the way students actually speak. The
- * text goes back to the student to check and edit before it's asked.
+ * lecture and the moment it's paused at supply the terms Saaras should expect.
+ * The text goes back to the student to check and edit before it's asked.
  *
  * Signed in, and only while the student still has doubts left today — the
  * transcription is the first half of a doubt, so it shouldn't outlive the cap.
@@ -32,8 +36,15 @@ export async function POST(request: Request): Promise<Response> {
   const declared = Number(request.headers.get("content-length"));
   if (declared > MAX_AUDIO_BYTES + 4096) return Response.json({ error: "Recording is too long." }, { status: 413 });
 
-  const lang = new URL(request.url).searchParams.get("lang") ?? "";
+  const params = new URL(request.url).searchParams;
+  const lang = params.get("lang") ?? "";
   if (!isLang(lang)) return Response.json({ error: `Unsupported language "${lang}".` }, { status: 400 });
+  const lectureId = params.get("lectureId") ?? "";
+  if (!z.uuid().safeParse(lectureId).success) return Response.json({ error: "lectureId must be a uuid." }, { status: 400 });
+  const atSec = Number(params.get("at"));
+  if (params.get("at") === null || !Number.isFinite(atSec) || atSec < 0) {
+    return Response.json({ error: "at must be the lecture time in seconds." }, { status: 400 });
+  }
 
   let form: FormData;
   try {
@@ -53,12 +64,15 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: `You've used all ${budget.limit} doubts for today.`, budget }, { status: 429 });
   }
 
+  const keyterms = await lectureKeyTerms(lectureId, atSec);
+  if (!keyterms) return Response.json({ error: "No such lecture." }, { status: 404 });
+
   // Browsers label recordings "audio/webm;codecs=opus"; Sarvam accepts the
   // bare type and rejects the codec suffix, so send it under the bare type.
   const clean = new Blob([audio], { type });
   let transcript: string;
   try {
-    ({ transcript } = await transcribe(clean, LANGUAGES[lang].sarvam, { filename: `doubt.${ext}`, tag: `stt ${userId}` }));
+    ({ transcript } = await transcribe(clean, LANGUAGES[lang].sarvam, { filename: `doubt.${ext}`, keyterms, tag: `stt ${userId}` }));
   } catch (err) {
     if (!(err instanceof SarvamError)) throw err;
     console.error(`transcribe for ${userId} failed:`, err.message);

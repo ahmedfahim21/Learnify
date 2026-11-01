@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   listOwnDoubts: vi.fn(),
   getOwnDoubt: vi.fn(),
   transcribe: vi.fn(),
+  lectureKeyTerms: vi.fn(),
   speak: vi.fn(),
   touchStreak: vi.fn(),
 }));
@@ -30,6 +31,7 @@ vi.mock("@/lib/doubts/answer", async (importOriginal) => {
     answerDoubt: mocks.answerDoubt,
     listOwnDoubts: mocks.listOwnDoubts,
     getOwnDoubt: mocks.getOwnDoubt,
+    lectureKeyTerms: mocks.lectureKeyTerms,
   };
 });
 vi.mock("@/lib/sarvam/client", async (importOriginal) => {
@@ -55,6 +57,7 @@ beforeEach(() => {
   mocks.prepareDoubt.mockResolvedValue([{ role: "system", content: "s" }]);
   mocks.consumeDoubt.mockResolvedValue({ allowed: true, state: { used: 3, limit: 20, remaining: 17, exceeded: false } });
   mocks.getBudget.mockResolvedValue({ used: 3, limit: 20, remaining: 17, exceeded: false });
+  mocks.lectureKeyTerms.mockResolvedValue(["Sample mean", "denominator"]);
   mocks.answerDoubt.mockImplementation(async function* () {
     yield { type: "delta", text: 'root = Answer("t", [p])\n' };
     yield { type: "delta", text: 'p = Paragraph("x")' };
@@ -135,10 +138,10 @@ describe("GET /api/doubts", () => {
   });
 });
 
-function audioUpload(type: string, bytes = 2000, lang = "ta") {
+function audioUpload(type: string, bytes = 2000, lang = "ta", query = `&lectureId=${LECTURE}&at=330`) {
   const form = new FormData();
   form.set("audio", new Blob([new Uint8Array(bytes)], { type }), "doubt");
-  return new Request(`http://x/api/voice/transcribe?lang=${lang}`, { method: "POST", body: form });
+  return new Request(`http://x/api/voice/transcribe?lang=${lang}${query}`, { method: "POST", body: form });
 }
 
 describe("POST /api/voice/transcribe", () => {
@@ -152,7 +155,9 @@ describe("POST /api/voice/transcribe", () => {
     // Sarvam rejects "audio/webm;codecs=opus"; the codec suffix must be gone.
     expect(blob.type).toBe("audio/webm");
     expect(code).toBe("ta-IN");
-    expect(opts).toMatchObject({ filename: "doubt.webm" });
+    expect(opts).toEqual({ filename: "doubt.webm", keyterms: ["Sample mean", "denominator"], tag: "stt u1" });
+    // The terms are the lecture's, at the moment the student paused.
+    expect(mocks.lectureKeyTerms).toHaveBeenCalledWith(LECTURE, 330);
   });
 
   it("names Safari's mp4 recordings .m4a", async () => {
@@ -166,6 +171,10 @@ describe("POST /api/voice/transcribe", () => {
     ["too large", () => {}, audioUpload("audio/webm", 1024 * 1024 + 1), 413],
     ["not audio", () => {}, audioUpload("text/plain"), 415],
     ["bad language", () => {}, audioUpload("audio/webm", 2000, "xx"), 400],
+    ["no lecture", () => {}, audioUpload("audio/webm", 2000, "ta", "&at=330"), 400],
+    ["no moment", () => {}, audioUpload("audio/webm", 2000, "ta", `&lectureId=${LECTURE}`), 400],
+    ["a negative moment", () => {}, audioUpload("audio/webm", 2000, "ta", `&lectureId=${LECTURE}&at=-5`), 400],
+    ["an unknown lecture", () => mocks.lectureKeyTerms.mockResolvedValue(null), audioUpload("audio/webm"), 404],
     ["out of doubts", () => mocks.getBudget.mockResolvedValue({ used: 20, limit: 20, remaining: 0, exceeded: true }), audioUpload("audio/webm"), 429],
   ] as const)("refuses %s before calling Sarvam", async (_name, setup, req, code) => {
     setup();

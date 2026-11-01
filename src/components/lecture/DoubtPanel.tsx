@@ -79,7 +79,7 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
     setNotice(null);
     const form = new FormData();
     form.set("audio", audio, "doubt");
-    fetch(`/api/voice/transcribe?lang=${lang}`, { method: "POST", body: form })
+    fetch(`/api/voice/transcribe?lang=${lang}&lectureId=${lectureId}&at=${Math.round(atSec)}`, { method: "POST", body: form })
       .then(async (res) => {
         const body = await res.json();
         if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
