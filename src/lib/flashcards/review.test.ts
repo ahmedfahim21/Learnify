@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { cardId, dayKey, identifyCards, nextStreak } from "./review";
+import { asOf, dayKey, nextStreak } from "@/lib/streaks";
+
+import { cardId, identifyCards } from "./review";
 
 const en = [
   { front: "What is ENIAC?", back: "The first digital computer", startSec: 55 },
@@ -59,5 +61,15 @@ describe("dayKey", () => {
   it("rolls over at midnight IST, not UTC", () => {
     expect(dayKey(new Date("2026-10-31T18:29:00Z"))).toBe("2026-10-31");
     expect(dayKey(new Date("2026-10-31T18:31:00Z"))).toBe("2026-11-01");
+  });
+});
+
+describe("asOf", () => {
+  const now = new Date("2026-11-01T06:00:00Z");
+  it("keeps a streak active today or yesterday, and lapses an older one to 0", () => {
+    expect(asOf({ current: 4, longest: 9, lastActiveDate: "2026-11-01" }, now).current).toBe(4);
+    expect(asOf({ current: 4, longest: 9, lastActiveDate: "2026-10-31" }, now).current).toBe(4);
+    expect(asOf({ current: 4, longest: 9, lastActiveDate: "2026-10-30" }, now)).toEqual({ current: 0, longest: 9, lastActiveDate: "2026-10-30" });
+    expect(asOf(null, now)).toEqual({ current: 0, longest: 0, lastActiveDate: null });
   });
 });

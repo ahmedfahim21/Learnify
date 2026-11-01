@@ -78,6 +78,13 @@
       "when": 1793477140970,
       "tag": "0010_learner_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793517571932,
+      "tag": "0011_quiz_attempts",
+      "breakpoints": true
     }
   ]
 }

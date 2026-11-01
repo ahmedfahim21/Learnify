@@ -3,10 +3,11 @@
 import { Renderer } from "@openuidev/react-lang";
 import { RefreshCw, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSession } from "@/lib/authClient";
 import { LANGUAGES, type Lang } from "@/lib/languages";
+import { StudyActionsContext } from "@/lib/openui/contexts";
 import { screenLibrary } from "@/lib/openui/screenLibrary";
 import { PoweredBy } from "@/components/site/Brands";
 
@@ -169,6 +170,7 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
 
       {program ? (
         <div lang={LANGUAGES[lang].sarvam} aria-busy={generating}>
+          <WithVariant variant={variant}>
           <Renderer
             response={program}
             library={screenLibrary}
@@ -177,6 +179,7 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
               if (errors.length && !generating) console.error(`${kind} render errors:`, errors);
             }}
           />
+          </WithVariant>
           {state.phase === "ready" && (
             <div className="mt-6 border-t border-(--color-line) pt-3">
               <PoweredBy />
@@ -232,4 +235,14 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
       ) : null}
     </div>
   );
+}
+
+/** Passes the style that's showing to whatever a finished quiz saves. */
+function WithVariant({ variant, children }: { variant: Variant; children: ReactNode }) {
+  const parent = useContext(StudyActionsContext);
+  const value = useMemo(
+    () => (parent ? { ...parent, quizFinished: (r: Parameters<typeof parent.quizFinished>[0]) => parent.quizFinished({ ...r, variant }) } : null),
+    [parent, variant],
+  );
+  return <StudyActionsContext.Provider value={value}>{children}</StudyActionsContext.Provider>;
 }

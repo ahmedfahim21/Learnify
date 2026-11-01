@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, CheckCircle2, Play, VideoOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Play, Trophy, VideoOff } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { courseTitle, disciplineColour, InstituteBadge, SubjectIcon } from "@/components/courses/CourseCard";
+import { useSession } from "@/lib/authClient";
 import type { CourseDto, LectureDto } from "@/lib/courses/repo";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 
@@ -14,6 +15,9 @@ export default function CoursePage() {
   const { courseId } = useParams<{ courseId: string }>();
   const [data, setData] = useState<{ course: CourseDto; lectures: LectureDto[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useSession();
+  /** The signed-in student's best quiz score per lecture; empty until loaded or when signed out. */
+  const [best, setBest] = useState<Record<string, { score: number; total: number }>>({});
 
   useEffect(() => {
     fetch(`/api/courses/${courseId}`)
@@ -27,6 +31,18 @@ export default function CoursePage() {
         setError(err.message);
       });
   }, [courseId]);
+
+  const lectureIds = data?.lectures.map((l) => l.id).join(",");
+  useEffect(() => {
+    if (!user || !lectureIds) return;
+    fetch(`/api/me/best-scores?lectureIds=${lectureIds}`, { cache: "no-store" })
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+        setBest(body.best);
+      })
+      .catch((err: Error) => console.error("loading your quiz scores failed:", err));
+  }, [user, lectureIds]);
 
   if (error) {
     return (
@@ -109,7 +125,7 @@ export default function CoursePage() {
             <ol className="grid gap-3 lg:grid-cols-2 [&>*]:min-w-0">
               {unitLectures.map((l) => (
                 <li key={l.id}>
-                  <LectureRow lecture={l} />
+                  <LectureRow lecture={l} best={best[l.id]} />
                 </li>
               ))}
             </ol>
@@ -120,7 +136,7 @@ export default function CoursePage() {
   );
 }
 
-function LectureRow({ lecture }: { lecture: LectureDto }) {
+function LectureRow({ lecture, best }: { lecture: LectureDto; best?: { score: number; total: number } }) {
   const thumb = (
     <span className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xl bg-(--color-raised) sm:w-36">
       {lecture.youtubeId ? (
@@ -149,6 +165,11 @@ function LectureRow({ lecture }: { lecture: LectureDto }) {
     <span className="min-w-0 flex-1 space-y-1">
       <span className="block font-mono text-xs text-(--color-faint)">Lecture {lecture.position + 1}</span>
       <span className="line-clamp-2 block leading-snug">{lecture.title}</span>
+      {best && (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-(--color-deep)/[0.09] px-2.5 py-0.5 text-sm text-(--color-deep)">
+          <Trophy size={13} aria-hidden /> Your best: {best.score}/{best.total}
+        </span>
+      )}
       {!lecture.youtubeId && <span className="block text-sm text-(--color-faint)">No video on NPTEL</span>}
       {(lecture.ready.notes.length > 0 || lecture.ready.quiz.length > 0) && (
         <span className="flex flex-wrap items-center gap-x-1.5 text-sm text-(--color-deep)">

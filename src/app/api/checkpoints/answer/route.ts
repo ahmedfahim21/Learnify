@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 import { isLang, type Lang } from "@/lib/languages";
+import { getCurrentUserId } from "@/lib/session";
+import { touchStreak } from "@/lib/streaks";
 import { grade } from "@/lib/study/grading";
 import { dbPackDeps } from "@/lib/study/store";
 
@@ -18,6 +20,7 @@ const body = z.object({
  * Grade a check. The answer key lives only on the server; the reply says
  * whether the choice was right and where to replay, and releases the
  * explanation and the right option only when the flow has earned them.
+ * Anyone can answer; a signed-in student's answer counts toward their streak.
  */
 export async function POST(request: Request): Promise<Response> {
   let json: unknown;
@@ -34,5 +37,7 @@ export async function POST(request: Request): Promise<Response> {
   if (!pack) return Response.json({ error: "This lecture's checks aren't ready." }, { status: 404 });
   const result = grade(pack.payload, checkpointId, choice, attempt);
   if (!result) return Response.json({ error: "No such check in this lecture." }, { status: 404 });
+  const userId = await getCurrentUserId();
+  if (userId) await touchStreak(userId);
   return Response.json(result);
 }

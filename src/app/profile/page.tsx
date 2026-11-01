@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Flame, Layers, LogOut, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ArrowRight, Flame, Layers, LogOut, SlidersHorizontal, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -24,7 +24,18 @@ interface DueCard {
   startSec: number;
 }
 
+interface RecentQuiz {
+  lectureId: string;
+  lectureTitle: string;
+  courseTitle: string;
+  lang: string;
+  score: number;
+  total: number;
+  createdAt: string;
+}
+
 interface Progress {
+  quizzes: { taken: number; averagePct: number | null; recent: RecentQuiz[] };
   due: DueCard[];
   upcoming: number;
   nextDueAt: string | null;
@@ -135,13 +146,20 @@ export default function ProfilePage() {
         </p>
       )}
 
-      <section aria-label="Progress" className="grid gap-4 sm:grid-cols-3">
+      <section aria-label="Progress" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           icon={Flame}
           colour="var(--color-accent)"
           label="Day streak"
           value={progress ? String(progress.streak.current) : null}
           note={progress ? `Longest ${progress.streak.longest}` : null}
+        />
+        <Stat
+          icon={Trophy}
+          colour="var(--color-deep)"
+          label="Quizzes taken"
+          value={progress ? String(progress.quizzes.taken) : null}
+          note={progress ? (progress.quizzes.averagePct === null ? "Finish one to see your average" : `Average ${progress.quizzes.averagePct}%`) : null}
         />
         <Stat
           icon={Layers}
@@ -193,6 +211,54 @@ export default function ProfilePage() {
           </dl>
         ) : (
           <p className="text-(--color-mist)">Not chosen yet. You&apos;ll be asked when you open your first lecture.</p>
+        )}
+      </section>
+
+      <section className="space-y-4" aria-labelledby="quizzes-heading">
+        <h2 id="quizzes-heading" className="text-2xl">
+          Recent quizzes
+        </h2>
+        {!progress ? (
+          !error && <div className="h-24 animate-pulse rounded-2xl bg-(--color-raised)" />
+        ) : progress.quizzes.recent.length === 0 ? (
+          <div className="kolam rounded-2xl border border-(--color-line) p-6">
+            <p className="text-lg">No quizzes yet.</p>
+            <p className="text-(--color-mist)">Finish a quiz on any lecture and your score lands here.</p>
+          </div>
+        ) : (
+          <ul className="space-y-2">
+            {progress.quizzes.recent.map((q) => {
+              const pct = Math.round((q.score / q.total) * 100);
+              const tone = pct >= 80 ? "var(--color-deep)" : pct >= 50 ? "var(--color-signal)" : "var(--color-warn)";
+              return (
+                <li key={`${q.lectureId}-${q.createdAt}`}>
+                  <Link
+                    href={`/lecture/${q.lectureId}`}
+                    className="tile group flex items-center gap-4 rounded-2xl border border-(--color-line) bg-(--color-node) p-4 hover:border-(--color-signal)"
+                  >
+                    <span
+                      className="flex h-12 w-14 shrink-0 flex-col items-center justify-center rounded-xl font-mono text-white"
+                      style={{ background: tone }}
+                    >
+                      <span className="text-lg leading-none">
+                        {q.score}/{q.total}
+                      </span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{q.lectureTitle}</span>
+                      <span className="block truncate text-sm text-(--color-mist)">
+                        {q.courseTitle.replace(/^NOC:\s*/, "")} ·{" "}
+                        <span lang={isLang(q.lang) ? LANGUAGES[q.lang].sarvam : undefined}>{isLang(q.lang) ? LANGUAGES[q.lang].native : q.lang}</span>
+                        {" · "}
+                        {new Date(q.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                      </span>
+                    </span>
+                    <ArrowRight size={16} className="shrink-0 text-(--color-faint) group-hover:text-(--color-signal)" aria-hidden />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 

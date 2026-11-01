@@ -23,9 +23,6 @@ import type { StudyPack } from "@/lib/study/pack";
  * `user_id` columns are plain uuids, and their foreign keys onto
  * `auth.users(id)` are declared in SQL (drizzle/0001_supabase_auth_rls.sql),
  * which also enables row-level security on every table.
- *
- * Study-pack, doubt and flashcard tables arrive with the pipeline (PLAN.md
- * steps 5–7).
  */
 
 /**
@@ -328,9 +325,34 @@ export const learnerPreferences = pgTable("learner_preferences", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/**
+ * A finished practice quiz: one row each time a signed-in student reaches a
+ * quiz's score screen. The profile reads these for quizzes taken, the
+ * average and recent results; course pages mark lectures quizzed on.
+ */
+export const quizAttempts = pgTable(
+  "quiz_attempts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id").notNull(),
+    lectureId: uuid("lecture_id")
+      .notNull()
+      .references(() => lectures.id, { onDelete: "cascade" }),
+    lang: text("lang").notNull(),
+    variant: text("variant").notNull(),
+    score: integer("score").notNull(),
+    total: integer("total").notNull(),
+    points: integer("points").notNull(),
+    bestStreak: integer("best_streak").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("quiz_attempts_user_idx").on(table.userId, table.createdAt)],
+);
+
 export type NewStudyPackRow = typeof studyPacks.$inferInsert;
 export type Doubt = typeof doubts.$inferSelect;
 export type NewDoubt = typeof doubts.$inferInsert;
 export type CardReview = typeof cardReviews.$inferSelect;
 export type GeneratedScreen = typeof generatedScreens.$inferSelect;
 export type LearnerPreferencesRow = typeof learnerPreferences.$inferSelect;
+export type QuizAttempt = typeof quizAttempts.$inferSelect;

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ requireUserId: vi.fn(), reviewCard: vi.fn(), today: vi.fn() }));
+const mocks = vi.hoisted(() => ({ requireUserId: vi.fn(), reviewCard: vi.fn(), today: vi.fn(), quizSummary: vi.fn() }));
 
 vi.mock("@/lib/session", () => ({ requireUserId: mocks.requireUserId }));
+vi.mock("@/lib/progress", () => ({ quizSummary: mocks.quizSummary }));
 vi.mock("@/lib/flashcards/review", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/flashcards/review")>();
   return { RATINGS: real.RATINGS, UnknownCardError: real.UnknownCardError, reviewCard: mocks.reviewCard, today: mocks.today };
@@ -61,14 +62,18 @@ describe("GET /api/me/progress", () => {
       nextDueAt: new Date("2026-11-02T08:00:00Z"),
       streak: { current: 3, longest: 9, lastActiveDate: "2026-11-01" },
     });
+    const quizzes = { taken: 2, averagePct: 75, recent: [{ lectureId: LECTURE, lectureTitle: "The Real line", courseTitle: "Basic Calculus", lang: "ta", score: 6, total: 8, createdAt: "2026-11-01T06:00:00.000Z" }] };
+    mocks.quizSummary.mockResolvedValue(quizzes);
     const res = await GET();
     expect(res.headers.get("cache-control")).toBe("no-store");
-    expect(await res.json()).toEqual({ due, upcoming: 7, nextDueAt: "2026-11-02T08:00:00.000Z", streak: { current: 3, longest: 9 } });
+    expect(await res.json()).toEqual({ due, upcoming: 7, nextDueAt: "2026-11-02T08:00:00.000Z", streak: { current: 3, longest: 9 }, quizzes });
+    expect(mocks.quizSummary).toHaveBeenCalledWith("u1");
     expect(mocks.today).toHaveBeenCalledWith("u1");
   });
 
   it("needs a user", async () => {
     mocks.requireUserId.mockResolvedValue(anon);
     expect((await GET()).status).toBe(401);
+    expect(mocks.quizSummary).not.toHaveBeenCalled();
   });
 });
