@@ -1,18 +1,23 @@
 "use client";
 
 import { Renderer } from "@openuidev/react-lang";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Play, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LANGUAGES } from "@/lib/languages";
 import { screenLibrary } from "@/lib/openui/screenLibrary";
+
+import { PoweredBy } from "./Brands";
 
 /**
  * The hero's proof: one NPTEL lecture, and what Learnify wrote from it in
  * three languages. Every statement below is model output stored for NPTEL's
  * "Coulomb's Law" (IIT Kanpur), copied verbatim, so switching language shows
  * the real thing, rendered by the same OpenUI library as the lecture page.
+ * Each one was checked by hand for correctness and language; the stored
+ * Hindi quiz's first question (force "proportional to r²") was left out
+ * because its answer key is wrong.
  */
 
 const LECTURE = {
@@ -27,8 +32,8 @@ type DemoLang = "hi" | "bn" | "ml";
 
 const ITEMS: Record<DemoLang, string[]> = {
   hi: [
-    String.raw`x = KeyIdea("Coulomb's Law दो point charges के बीच force को define करता है।")`,
-    String.raw`x = Mcq("दो point charges $q_1$ और $q_2$ के बीच बल का परिमाण (magnitude) किसके समानुपाती होता है?", ["$r_{12}$", "$r_{12}^2$", "$r_{12}^3$", "$r_{12}^{1/2}$"], 1, "परिमाण $r_{12}^2$ के व्युत्क्रमानुपाती (inversely proportional) होता है, जैसा कि व्याख्यान में बताया गया है।", 135)`,
+    String.raw`x = KeyIdea("दो point charges के बीच का force उनके magnitude और distance पर depend करता है।")`,
+    String.raw`x = Mcq("दो आवेशों के बीच की दूरी दोगुनी करने पर बल में क्या परिवर्तन होता है?", ["दोगुना हो जाता है", "चार गुना हो जाता है", "आधा हो जाता है", "चौथाई हो जाता है"], 3, "दूरी दोगुनी होने पर बल $1/r^2$ निर्भरता के कारण चौथाई (1/4) हो जाता है, जैसा कि व्याख्यान में समझाया गया है।", 185)`,
     String.raw`x = TrueFalse("गुरुत्वाकर्षण बल (gravitational force) हमेशा आकर्षक (attractive) होता है।", true, "व्याख्यान में बताया गया है कि गुरुत्वाकर्षण में द्रव्यमान (mass) का कोई चिह्न नहीं होता, इसलिए बल हमेशा आकर्षक होता है।", 568)`,
   ],
   bn: [
@@ -45,12 +50,45 @@ const ITEMS: Record<DemoLang, string[]> = {
 
 const LANGS = Object.keys(ITEMS) as DemoLang[];
 
-const program = (statement: string) => `root = Screen("", [x])\n${statement}`;
+const HEAD = `root = Screen("", [x])\n`;
+
+/** How long writing one example takes, start to finish, as it would stream in. */
+const WRITE_MS = 1400;
+
+/**
+ * Plays an example the way the lecture page receives one: the model's OpenUI
+ * Lang streams in, then OpenUI renders it. (A component draws only once its
+ * text is complete, so the source is what shows while it's being written.)
+ * Held finished for anyone who prefers reduced motion.
+ */
+function useWriting(statement: string): { source: string; writing: boolean } {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setShown(statement.length);
+      return;
+    }
+    setShown(0);
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / WRITE_MS);
+      // Ease out, and move in word-sized chunks the way tokens arrive.
+      const n = Math.round(statement.length * (1 - (1 - t) ** 2));
+      setShown(t < 1 ? Math.max(0, n - (n % 6)) : statement.length);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [statement]);
+  return { source: statement.slice(0, shown), writing: shown < statement.length };
+}
 
 export default function HeroDemo() {
   const [lang, setLang] = useState<DemoLang>("hi");
   const [step, setStep] = useState(0);
   const items = ITEMS[lang];
+  const { source, writing } = useWriting(items[step]);
 
   return (
     <div className="overflow-hidden rounded-3xl border border-(--color-line) bg-(--color-node) shadow-(--shadow-card)">
@@ -105,8 +143,27 @@ export default function HeroDemo() {
         </div>
 
         {/* One piece at a time, the height held so switching doesn't jump the page */}
-        <div key={`${lang}-${step}`} lang={LANGUAGES[lang].sarvam} className="rise flex min-h-[22rem] flex-col justify-center">
-          <Renderer response={program(items[step])} library={screenLibrary} isStreaming={false} />
+        <div key={`${lang}-${step}`} lang={LANGUAGES[lang].sarvam} className="flex min-h-[22rem] flex-col justify-center gap-3" aria-busy={writing}>
+          {writing ? (
+            <pre className="overflow-hidden rounded-2xl bg-(--color-fg) p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-white/85" aria-hidden>
+              <span className="text-white/45">{HEAD}</span>
+              {source}
+              <span className="ml-0.5 inline-block h-3.5 w-1.5 translate-y-0.5 animate-pulse bg-(--color-warn)" />
+            </pre>
+          ) : (
+            <div className="rise">
+              <Renderer response={HEAD + source} library={screenLibrary} isStreaming={false} />
+            </div>
+          )}
+        </div>
+        <div className="flex min-h-5 items-center" aria-live="polite">
+          {writing ? (
+            <p className="flex items-center gap-1.5 text-xs text-(--color-signal)">
+              <Sparkles size={13} className="animate-pulse" aria-hidden /> Sarvam is writing in {LANGUAGES[lang].native}…
+            </p>
+          ) : (
+            <PoweredBy />
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-(--color-line) pt-4">
