@@ -4,6 +4,7 @@ import { consumeDoubt } from "@/lib/budget";
 import { answerDoubt, listOwnDoubts, NotReadyError, prepareDoubt } from "@/lib/doubts/answer";
 import { isLang, type Lang } from "@/lib/languages";
 import { requireUserId } from "@/lib/session";
+import { touchStreak } from "@/lib/streaks";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -51,6 +52,8 @@ export async function POST(request: Request): Promise<Response> {
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       for await (const event of answerDoubt(input, messages)) {
+        // An answered doubt counts toward the streak, before the student hears it's done.
+        if (event.type === "done") await touchStreak(userId);
         controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       }
       controller.close();

@@ -16,9 +16,11 @@ const mocks = vi.hoisted(() => ({
   getOwnDoubt: vi.fn(),
   transcribe: vi.fn(),
   speak: vi.fn(),
+  touchStreak: vi.fn(),
 }));
 
 vi.mock("@/lib/session", () => ({ requireUserId: mocks.requireUserId }));
+vi.mock("@/lib/streaks", () => ({ touchStreak: mocks.touchStreak }));
 vi.mock("@/lib/budget", () => ({ consumeDoubt: mocks.consumeDoubt, getBudget: mocks.getBudget, refundDoubt: vi.fn() }));
 vi.mock("@/lib/doubts/answer", async (importOriginal) => {
   const real = await importOriginal<typeof import("@/lib/doubts/answer")>();
@@ -73,6 +75,9 @@ describe("POST /api/doubts", () => {
       { type: "done", doubtId: DOUBT },
     ]);
     expect(mocks.answerDoubt).toHaveBeenCalledWith({ userId: "u1", ...ask }, [{ role: "system", content: "s" }]);
+    // An answered doubt counts toward the asker's streak.
+    expect(mocks.touchStreak).toHaveBeenCalledTimes(1);
+    expect(mocks.touchStreak).toHaveBeenCalledWith("u1");
   });
 
   it("trims the question", async () => {

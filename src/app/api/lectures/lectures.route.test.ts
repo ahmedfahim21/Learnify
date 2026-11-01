@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   runStages: vi.fn(),
   stagesStartedToday: vi.fn(),
   getCurrentUserId: vi.fn(),
+  touchStreak: vi.fn(),
   after: vi.fn(),
 }));
 
@@ -35,6 +36,7 @@ vi.mock("@/lib/jobs/claim", async (importOriginal) => ({
   stagesStartedToday: mocks.stagesStartedToday,
 }));
 vi.mock("@/lib/session", () => ({ getCurrentUserId: mocks.getCurrentUserId }));
+vi.mock("@/lib/streaks", () => ({ touchStreak: mocks.touchStreak }));
 
 const { GET: viewGET } = await import("./[lectureId]/route");
 const { POST: preparePOST } = await import("./[lectureId]/prepare/route");
@@ -218,6 +220,17 @@ describe("POST /api/checkpoints/answer", () => {
       explanation: null,
       answerIndex: null,
     });
+  });
+
+  it("counts a signed-in student's answer toward their streak", async () => {
+    await answer({ ...base, choice: 2, attempt: 1 });
+    expect(mocks.touchStreak).toHaveBeenCalledWith("user-1");
+  });
+
+  it("grades an anonymous answer without touching any streak", async () => {
+    mocks.getCurrentUserId.mockResolvedValue(null);
+    expect((await answer({ ...base, choice: 2, attempt: 1 })).status).toBe(200);
+    expect(mocks.touchStreak).not.toHaveBeenCalled();
   });
 
   it("reveals the answer after the second wrong try", async () => {
