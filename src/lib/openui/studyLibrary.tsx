@@ -114,7 +114,7 @@ function ConceptMapView({ concepts }: { concepts: ConceptProps[] }) {
           minZoom={0.55}
         >
           {/* Kolam pulli dots behind the map. */}
-          <Background gap={22} size={1.4} color="color-mix(in srgb, var(--color-warn) 30%, transparent)" />
+          <Background gap={22} size={1.4} color="color-mix(in srgb, var(--color-deep) 28%, transparent)" />
         </ReactFlow>
       </div>
       {current && (

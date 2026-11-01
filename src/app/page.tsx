@@ -107,7 +107,7 @@ export default function HomePage() {
               className="glow-corner flex flex-col gap-3 rounded-[1.5rem] border border-(--color-line)/70 bg-(--color-node) p-7 shadow-(--shadow-soft)"
               style={{ "--glow": GLOWS[n] } as React.CSSProperties}
             >
-              <span lang={s.numeralLang} aria-hidden className="block text-4xl leading-none text-(--color-warn)">
+              <span lang={s.numeralLang} aria-hidden className="block text-4xl leading-none text-(--color-deep)">
                 {s.numeral}
               </span>
               <h3 className="text-xl">{s.title}</h3>
@@ -146,8 +146,8 @@ export default function HomePage() {
   );
 }
 
-/** Each step's corner glow: turmeric, indigo, jamun. */
-const GLOWS = ["var(--haze-warm)", "var(--haze-cool)", "var(--color-flow)"];
+/** Each step's corner glow: mint, indigo, teal. */
+const GLOWS = ["var(--haze-mint)", "var(--haze-cool)", "var(--color-accent)"];
 
 /** Heights that give the logos the same visual weight: Sarvam's wordmark is wide and bold, OpenUI's has room around it. */
 const BRAND_HEIGHT: Record<keyof typeof BRANDS, number> = { sarvam: 11, openui: 24, nptel: 16, youtube: 16, github: 16 };
