@@ -1,7 +1,7 @@
 /**
  * The Learnify mark: a play button hanging from a shirorekha, the headline bar
  * Devanagari and Bengali letters hang from. Watch the lecture; learn it in
- * your script. Indigo tile, turmeric bar, paper triangle.
+ * your script. Indigo tile, mint bar, paper triangle.
  *
  * The same geometry is in app/icon.svg, app/apple-icon.svg and the OG card;
  * change them together.
@@ -9,8 +9,8 @@
 
 export const MARK = {
   tile: "#2e3f8f",
-  bar: "#f2b441",
-  play: "#fbf8f2",
+  bar: "#5fd0a4",
+  play: "#f6f9f8",
 } as const;
 
 export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {

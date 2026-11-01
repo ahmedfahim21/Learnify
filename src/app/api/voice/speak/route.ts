@@ -32,6 +32,9 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "No such answer." }, { status: 404 });
   }
   const lang = isLang(doubt.lang) ? doubt.lang : "en";
+  if (!LANGUAGES[lang].speaks) {
+    return Response.json({ error: `Reading aloud isn't available in ${LANGUAGES[lang].name} yet.` }, { status: 422 });
+  }
   const text = speakableText(doubt.answer);
   if (!text) return Response.json({ error: "This answer has nothing to read aloud." }, { status: 422 });
 

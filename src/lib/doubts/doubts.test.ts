@@ -30,6 +30,9 @@ function deps(chunks: string[] | Error = GOOD.match(/[\s\S]{1,40}/g)!): AnswerDe
     }),
     save: vi.fn(async (row: NewDoubt) => void saved.push(row)),
     refund: vi.fn(async (userId: string) => void refunded.push(userId)),
+    toEnglish: vi.fn(async (text: string) => `EN:${text}`),
+    // Stands in for Sarvam-Translate: marks every string so the test can see what moved.
+    translate: vi.fn(async (program: string) => program.replace(/"([^"\\]+)"/g, '"NE:$1"')),
   };
 }
 
@@ -105,6 +108,42 @@ describe("answerDoubt", () => {
     expect(system.content).toMatch(/answer in Tamil written in Tamil script/);
     expect(user.content).toContain("[300s] We divide by n.");
     expect(user.content).toContain("Student's doubt: n-ஆல் ஏன் divide?");
+  });
+
+  it("answers in English and stores only the translation for a language the model can't write", async () => {
+    const d = deps();
+    const ne = { ...input, lang: "ne" as const, question: "किन n ले भाग गर्ने?" };
+    const messages = await prepareDoubt(ne, d);
+    expect(d.toEnglish).toHaveBeenCalledWith("किन n ले भाग गर्ने?", "ne");
+    expect(messages[0].content).toMatch(/Always answer in English/);
+    expect(messages.at(-1)!.content).toContain("EN:किन n ले भाग गर्ने?");
+
+    const events = await collect(answerDoubt(ne, messages, d));
+
+    expect(events.filter((e) => e.type === "delta")).toEqual([]);
+    expect(events.filter((e) => e.type === "status").map((e) => (e as { text: string }).text)).toEqual(["Working out the answer", "Translating into Nepali"]);
+    const program = (events.find((e) => e.type === "program") as { text: string }).text;
+    expect(program).toContain('"NE:');
+    expect(d.saved).toEqual([
+      expect.objectContaining({
+        lang: "ne",
+        question: "किन n ले भाग गर्ने?",
+        status: "answered",
+        answer: program,
+        model: "sarvam-105b-conversations+sarvam-translate:v1",
+        error: null,
+      }),
+    ]);
+  });
+
+  it("stores a failed translation as failed and refunds", async () => {
+    const d = deps();
+    vi.mocked(d.translate).mockRejectedValue(new Error("HTTP 429"));
+    const ne = { ...input, lang: "ne" as const };
+    const events = await collect(answerDoubt(ne, await prepareDoubt(ne, d), d));
+    expect(events.at(-1)).toMatchObject({ type: "error", message: "Translating into Nepali failed: HTTP 429" });
+    expect(d.saved).toEqual([expect.objectContaining({ status: "failed", answer: null, error: "Translating into Nepali failed: HTTP 429" })]);
+    expect(d.refunded).toEqual(["u1"]);
   });
 
   it("refuses before charging when the transcript isn't ready", async () => {

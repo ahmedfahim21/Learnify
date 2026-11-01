@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { courseTitle, disciplineColour, InstituteBadge } from "@/components/courses/CourseCard";
+import { courseTitle, disciplineColour, InstituteBadge, SubjectIcon } from "@/components/courses/CourseCard";
 import type { CourseDto, LectureDto } from "@/lib/courses/repo";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 
@@ -60,7 +60,7 @@ export default function CoursePage() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-3">
               <p className="flex items-center gap-2 font-mono text-xs tracking-wide text-(--color-mist) uppercase">
-                <span aria-hidden className="h-2 w-2 rounded-full" style={{ background: colour }} />
+                <SubjectIcon name={course.disciplineName} colour={colour} size={26} />
                 {course.disciplineName}
               </p>
               <h1 className="text-4xl tracking-tight sm:text-5xl">{courseTitle(course.title)}</h1>
@@ -106,7 +106,7 @@ export default function CoursePage() {
               </h2>
               <span className="font-mono text-sm text-(--color-faint)">{unitLectures.length}</span>
             </div>
-            <ol className="grid gap-3 lg:grid-cols-2">
+            <ol className="grid gap-3 lg:grid-cols-2 [&>*]:min-w-0">
               {unitLectures.map((l) => (
                 <li key={l.id}>
                   <LectureRow lecture={l} />
@@ -205,7 +205,7 @@ function CourseSkeleton() {
       </div>
       <div className="wrap space-y-4 pt-10">
         <p className="text-(--color-mist)">Fetching lectures from NPTEL…</p>
-        <div className="grid gap-3 lg:grid-cols-2">
+        <div className="grid gap-3 lg:grid-cols-2 [&>*]:min-w-0">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="h-24 animate-pulse rounded-2xl bg-(--color-raised)" />
           ))}

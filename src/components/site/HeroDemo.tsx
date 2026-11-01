@@ -1,18 +1,23 @@
 "use client";
 
 import { Renderer } from "@openuidev/react-lang";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Play, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { LANGUAGES } from "@/lib/languages";
 import { screenLibrary } from "@/lib/openui/screenLibrary";
+
+import { PoweredBy } from "./Brands";
 
 /**
  * The hero's proof: one NPTEL lecture, and what Learnify wrote from it in
  * three languages. Every statement below is model output stored for NPTEL's
  * "Coulomb's Law" (IIT Kanpur), copied verbatim, so switching language shows
  * the real thing, rendered by the same OpenUI library as the lecture page.
+ * Each one was checked by hand for correctness and language; the stored
+ * Hindi quiz's first question (force "proportional to r²") was left out
+ * because its answer key is wrong.
  */
 
 const LECTURE = {
@@ -27,8 +32,8 @@ type DemoLang = "hi" | "bn" | "ml";
 
 const ITEMS: Record<DemoLang, string[]> = {
   hi: [
-    String.raw`x = KeyIdea("Coulomb's Law दो point charges के बीच force को define करता है।")`,
-    String.raw`x = Mcq("दो point charges $q_1$ और $q_2$ के बीच बल का परिमाण (magnitude) किसके समानुपाती होता है?", ["$r_{12}$", "$r_{12}^2$", "$r_{12}^3$", "$r_{12}^{1/2}$"], 1, "परिमाण $r_{12}^2$ के व्युत्क्रमानुपाती (inversely proportional) होता है, जैसा कि व्याख्यान में बताया गया है।", 135)`,
+    String.raw`x = KeyIdea("दो point charges के बीच का force उनके magnitude और distance पर depend करता है।")`,
+    String.raw`x = Mcq("दो आवेशों के बीच की दूरी दोगुनी करने पर बल में क्या परिवर्तन होता है?", ["दोगुना हो जाता है", "चार गुना हो जाता है", "आधा हो जाता है", "चौथाई हो जाता है"], 3, "दूरी दोगुनी होने पर बल $1/r^2$ निर्भरता के कारण चौथाई (1/4) हो जाता है, जैसा कि व्याख्यान में समझाया गया है।", 185)`,
     String.raw`x = TrueFalse("गुरुत्वाकर्षण बल (gravitational force) हमेशा आकर्षक (attractive) होता है।", true, "व्याख्यान में बताया गया है कि गुरुत्वाकर्षण में द्रव्यमान (mass) का कोई चिह्न नहीं होता, इसलिए बल हमेशा आकर्षक होता है।", 568)`,
   ],
   bn: [
@@ -45,15 +50,86 @@ const ITEMS: Record<DemoLang, string[]> = {
 
 const LANGS = Object.keys(ITEMS) as DemoLang[];
 
-const program = (statement: string) => `root = Screen("", [x])\n${statement}`;
+const HEAD = `root = Screen("", [x])\n`;
+
+/** How long writing one example takes, start to finish, as it would stream in. */
+const WRITE_MS = 1600;
+
+/**
+ * Plays an example the way a generated screen arrives on the lecture page:
+ * the real component renders, and its text streams into it. The finished
+ * screen is rendered once by OpenUI; this walks its text nodes and reveals
+ * them a few characters at a time (maths, as KaTeX, appears whole when the
+ * stream reaches it). Held finished for anyone who prefers reduced motion.
+ */
+function useStreamedText(root: React.RefObject<HTMLDivElement | null>, key: string): boolean {
+  const [writing, setWriting] = useState(true);
+  useLayoutEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setWriting(false);
+      return;
+    }
+    setWriting(true);
+    // Text nodes to fill, and KaTeX blocks to show whole, in reading order.
+    const pieces: ({ kind: "text"; node: Text; full: string } | { kind: "math"; node: HTMLElement })[] = [];
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) =>
+        n instanceof HTMLElement && n.classList.contains("katex")
+          ? NodeFilter.FILTER_ACCEPT
+          : n instanceof HTMLElement && n.closest(".katex")
+            ? NodeFilter.FILTER_REJECT
+            : n.nodeType === Node.TEXT_NODE && n.textContent?.trim()
+              ? NodeFilter.FILTER_ACCEPT
+              : NodeFilter.FILTER_SKIP,
+    });
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (n instanceof HTMLElement) pieces.push({ kind: "math", node: n });
+      else pieces.push({ kind: "text", node: n as Text, full: n.textContent ?? "" });
+    }
+    const total = pieces.reduce((sum, p) => sum + (p.kind === "text" ? p.full.length : 4), 0);
+    const show = (budget: number) => {
+      let left = budget;
+      for (const p of pieces) {
+        if (p.kind === "math") {
+          p.node.style.visibility = left >= 4 ? "" : "hidden";
+          left -= 4;
+        } else {
+          p.node.textContent = p.full.slice(0, Math.max(0, left));
+          left -= p.full.length;
+        }
+      }
+    };
+    show(0);
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / WRITE_MS);
+      const n = Math.round(total * t);
+      // Word-sized steps, the way tokens arrive.
+      show(t < 1 ? n - (n % 4) : total);
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else setWriting(false);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      show(total);
+    };
+  }, [root, key]);
+  return writing;
+}
 
 export default function HeroDemo() {
   const [lang, setLang] = useState<DemoLang>("hi");
   const [step, setStep] = useState(0);
   const items = ITEMS[lang];
+  const screen = useRef<HTMLDivElement>(null);
+  const writing = useStreamedText(screen, `${lang}-${step}`);
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-(--color-line) bg-(--color-node) shadow-(--shadow-card)">
+    <div className="overflow-hidden rounded-[1.75rem] border border-(--color-line)/70 bg-(--color-node)/95 shadow-(--shadow-card) backdrop-blur">
       {/* The lecture, as NPTEL recorded it */}
       <Link href={`/lecture/${LECTURE.id}`} className="group flex items-center gap-4 border-b border-(--color-line) p-4 sm:p-5">
         <span className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xl bg-(--color-raised) sm:w-40">
@@ -105,8 +181,19 @@ export default function HeroDemo() {
         </div>
 
         {/* One piece at a time, the height held so switching doesn't jump the page */}
-        <div key={`${lang}-${step}`} lang={LANGUAGES[lang].sarvam} className="rise flex min-h-[22rem] flex-col justify-center">
-          <Renderer response={program(items[step])} library={screenLibrary} isStreaming={false} />
+        <div key={`${lang}-${step}`} lang={LANGUAGES[lang].sarvam} className="flex min-h-[22rem] flex-col justify-center gap-3" aria-busy={writing}>
+          <div ref={screen}>
+            <Renderer response={HEAD + items[step]} library={screenLibrary} isStreaming={false} />
+          </div>
+        </div>
+        <div className="flex min-h-5 items-center" aria-live="polite">
+          {writing ? (
+            <p className="flex items-center gap-1.5 text-xs text-(--color-signal)">
+              <Sparkles size={13} className="animate-pulse" aria-hidden /> Sarvam is writing in {LANGUAGES[lang].native}…
+            </p>
+          ) : (
+            <PoweredBy />
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-(--color-line) pt-4">

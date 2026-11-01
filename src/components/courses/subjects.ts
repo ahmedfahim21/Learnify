@@ -1,0 +1,70 @@
+import {
+  Anchor,
+  Atom,
+  BookOpen,
+  Building2,
+  Cloud,
+  Cog,
+  Dna,
+  FlaskConical,
+  GraduationCap,
+  Landmark,
+  Layers,
+  Leaf,
+  type LucideIcon,
+  Mountain,
+  Network,
+  PenTool,
+  Plane,
+  Radio,
+  Scale,
+  Shirt,
+  Sigma,
+  Sparkles,
+  Sprout,
+  TrendingUp,
+  Briefcase,
+  Code2,
+  Zap,
+  Microscope,
+  Hammer,
+} from "lucide-react";
+
+/**
+ * An icon per NPTEL subject, matched on its name, so a subject reads at a
+ * glance in the filter, on course cards and on the course page.
+ */
+const ICONS: [RegExp, LucideIcon][] = [
+  [/mechanical/i, Cog],
+  [/humanities|social/i, BookOpen],
+  [/electronics|communication/i, Radio],
+  [/electrical/i, Zap],
+  [/computer/i, Code2],
+  [/civil/i, Building2],
+  [/math/i, Sigma],
+  [/management/i, Briefcase],
+  [/chemical engineering/i, FlaskConical],
+  [/physics/i, Atom],
+  [/biotech/i, Dna],
+  [/chemistry|biochem/i, Microscope],
+  [/metallurgy|material/i, Hammer],
+  [/multidisciplinary/i, Network],
+  [/aerospace/i, Plane],
+  [/architecture/i, Landmark],
+  [/agricultur/i, Sprout],
+  [/ocean/i, Anchor],
+  [/design/i, PenTool],
+  [/law/i, Scale],
+  [/economics/i, TrendingUp],
+  [/textile/i, Shirt],
+  [/mining/i, Mountain],
+  [/atmospheric/i, Cloud],
+  [/nano/i, Atom],
+  [/environment/i, Leaf],
+  [/basic courses/i, Layers],
+  [/special/i, Sparkles],
+];
+
+export function subjectIcon(name: string): LucideIcon {
+  return ICONS.find(([re]) => re.test(name))?.[1] ?? GraduationCap;
+}

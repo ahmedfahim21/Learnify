@@ -5,6 +5,7 @@ import { Loader2, Mic, RotateCcw, Send, Square, Volume2, X } from "lucide-react"
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { PoweredBy } from "@/components/site/Brands";
 import { useSession } from "@/lib/authClient";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import { doubtLibrary } from "@/lib/openui/doubtLibrary";
@@ -26,7 +27,7 @@ function formatTime(sec: number): string {
 type Phase =
   | { kind: "compose" }
   | { kind: "transcribing" }
-  | { kind: "answering"; question: string; answer: string }
+  | { kind: "answering"; question: string; answer: string; status?: string }
   | { kind: "answered"; question: string; answer: string; doubtId: string }
   | { kind: "failed"; question: string; message: string };
 
@@ -129,10 +130,18 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
           if (!line.trim()) continue;
           const event = JSON.parse(line) as
             | { type: "delta"; text: string }
+            | { type: "status"; text: string }
+            | { type: "program"; text: string }
             | { type: "done"; doubtId: string }
             | { type: "error"; message: string };
           if (event.type === "delta") {
             answer += event.text;
+            setPhase({ kind: "answering", question: q, answer });
+          } else if (event.type === "status") {
+            // Languages the model can't write arrive whole, after translation.
+            setPhase({ kind: "answering", question: q, answer, status: event.text });
+          } else if (event.type === "program") {
+            answer = event.text;
             setPhase({ kind: "answering", question: q, answer });
           } else if (event.type === "done") {
             setPhase({ kind: "answered", question: q, answer, doubtId: event.doubtId });
@@ -328,14 +337,19 @@ export function DoubtPanel({ lectureId, lang, atSec, onClose }: Props) {
                   <div className="h-5 w-3/4 animate-pulse rounded-(--radius) bg-(--color-raised)" />
                   <div className="h-4 w-full animate-pulse rounded-(--radius) bg-(--color-raised)" />
                   <div className="h-4 w-5/6 animate-pulse rounded-(--radius) bg-(--color-raised)" />
+                  {phase.kind === "answering" && phase.status && (
+                    <p className="pt-1 text-sm text-(--color-signal)">{phase.status}…</p>
+                  )}
                 </div>
               )}
             </div>
           )}
 
+          {phase.kind === "answered" && <PoweredBy />}
           {phase.kind === "answered" && (
             <div className="flex flex-wrap items-center gap-2 border-t border-(--color-line) pt-3">
-              <ReadAloud doubtId={phase.doubtId} />
+              {/* Bulbul reads eleven languages aloud; the rest have no voice yet. */}
+              {LANGUAGES[lang].speaks && <ReadAloud doubtId={phase.doubtId} />}
               <button
                 type="button"
                 onClick={() => setPhase({ kind: "compose" })}

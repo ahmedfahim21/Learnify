@@ -23,9 +23,9 @@ export const alt = "Learnify: watch an NPTEL lecture, learn it in your language"
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const INK = "#fbf8f2";
-const FG = "#1d1914";
-const MIST = "#6b6255";
+const INK = "#f6f9f8";
+const FG = "#13201c";
+const MIST = "#4f625b";
 const SIGNAL = "#2e3f8f";
 
 

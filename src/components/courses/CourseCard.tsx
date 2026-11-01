@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { instituteLogo } from "@/lib/courses/institutes";
+
+import { subjectIcon } from "./subjects";
 import type { CourseDto } from "@/lib/courses/repo";
 
 /**
@@ -57,6 +59,19 @@ export function InstituteBadge({ institute, colour, size = 32 }: { institute: st
   );
 }
 
+export function SubjectIcon({ name, colour, size = 22 }: { name: string; colour: string; size?: number }) {
+  const Icon = subjectIcon(name);
+  return (
+    <span
+      aria-hidden
+      className="flex shrink-0 items-center justify-center rounded-md"
+      style={{ width: size, height: size, color: colour, background: `color-mix(in srgb, ${colour} 12%, transparent)` }}
+    >
+      <Icon size={Math.round(size * 0.6)} />
+    </span>
+  );
+}
+
 export const courseTitle = (title: string) => title.replace(/^NOC:\s*/, "");
 
 export function CourseCard({ course }: { course: CourseDto }) {
@@ -64,10 +79,10 @@ export function CourseCard({ course }: { course: CourseDto }) {
   return (
     <Link
       href={`/courses/${course.id}`}
-      className="tile group flex h-full flex-col gap-3 rounded-2xl border border-(--color-line) bg-(--color-node) p-5 hover:border-(--color-signal)"
+      className="tile group flex h-full flex-col gap-3 rounded-[1.25rem] border border-(--color-line)/70 bg-(--color-node) p-5 shadow-(--shadow-soft) hover:border-(--color-signal)"
     >
       <span className="flex items-center gap-2 text-xs tracking-wide text-(--color-mist) uppercase">
-        <span aria-hidden className="h-2 w-2 shrink-0 rounded-full" style={{ background: colour }} />
+        <SubjectIcon name={course.disciplineName} colour={colour} />
         <span className="truncate font-mono">{course.disciplineName}</span>
         {course.lectureCount !== null && (
           <span className="ml-auto shrink-0 font-mono normal-case">{course.lectureCount} lectures</span>

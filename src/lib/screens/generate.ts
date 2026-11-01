@@ -5,13 +5,15 @@ import { getDb } from "@/db";
 import { type GeneratedScreen, generatedScreens } from "@/db/schema";
 import { refundDoubt } from "@/lib/budget";
 import { stripFences } from "@/lib/doubts/answer";
-import type { Lang } from "@/lib/languages";
+import { LANGUAGES, type Lang } from "@/lib/languages";
 import { screenCore } from "@/lib/openui/screenSpec";
 import { chatStream } from "@/lib/sarvam/client";
+import { translateProgram } from "@/lib/sarvam/translateText";
 import type { Segment } from "@/lib/transcripts/merge";
 import { dbDeps as transcriptDeps } from "@/lib/transcripts/store";
 
 import { type ScreenKind, screenMessages, type ScreenVariant } from "./prompt";
+import { type KeyReport, verifyQuiz } from "./verifyKeys";
 
 /**
  * Generate a study screen as a stream, then store it for everyone.
@@ -20,12 +22,23 @@ import { type ScreenKind, screenMessages, type ScreenVariant } from "./prompt";
  *   {"type":"delta","text":"…"}   OpenUI Lang as it arrives
  *   {"type":"done","screenId":"…"} checked and stored
  *   {"type":"error","message":"…"} not stored; the student's unit refunded
+ *
+ * For a language sarvam-105b can't write (see `writes` in lib/languages) the
+ * screen is written in English and its text translated before it's stored;
+ * the English never reaches the student. Those streams carry no deltas:
+ *   {"type":"status","text":"…"}   what's happening, for the waiting screen
+ *   {"type":"program","text":"…"}  the whole translated screen, once
+ *
+ * A quiz's answer keys are checked before it's stored (see verifyKeys): a
+ * "status" while that runs, then a "program" if anything was corrected.
  */
 
 export const SCREEN_MODEL = "sarvam-105b-conversations";
 
 export type ScreenEvent =
   | { type: "delta"; text: string }
+  | { type: "status"; text: string }
+  | { type: "program"; text: string }
   | { type: "done"; screenId: string }
   | { type: "error"; message: string };
 
@@ -144,6 +157,9 @@ export interface ScreenDeps {
   stream: (messages: ReturnType<typeof screenMessages>, tag: string) => AsyncIterable<string>;
   save: (row: Omit<GeneratedScreen, "id" | "createdAt">) => Promise<string>;
   refund: (userId: string) => Promise<void>;
+  translate: (program: string, lang: Lang, tag: string) => Promise<string>;
+  /** A quiz's answer keys checked against the lecture; wrong ones fixed, unsure ones dropped. */
+  verify: (program: string, transcript: string, tag: string) => Promise<{ program: string; report: KeyReport }>;
 }
 
 export const liveScreenDeps: ScreenDeps = {
@@ -167,6 +183,8 @@ export const liveScreenDeps: ScreenDeps = {
     return saved.id;
   },
   refund: refundDoubt,
+  translate: (program, lang, tag) => translateProgram(program, lang, undefined, tag),
+  verify: (program, transcript, tag) => verifyQuiz(program, transcript, undefined, `${tag} keys`),
 };
 
 export async function getScreen(lectureId: string, lang: Lang, kind: ScreenKind, variant: ScreenVariant) {
@@ -195,7 +213,9 @@ export class ScreenNotReadyError extends Error {
 export async function prepareScreen(input: Omit<ScreenInput, "userId">, deps: ScreenDeps = liveScreenDeps) {
   const lecture = await deps.lecture(input.lectureId);
   if (!lecture) throw new ScreenNotReadyError();
-  return screenMessages({ ...input, title: lecture.title, english: lecture.english }, screenCore);
+  // Written in English when the model can't write the student's language; translated after.
+  const writing = LANGUAGES[input.lang].writes ? input.lang : "en";
+  return screenMessages({ ...input, lang: writing, title: lecture.title, english: lecture.english }, screenCore);
 }
 
 export async function* generateScreen(
@@ -204,24 +224,53 @@ export async function* generateScreen(
   deps: ScreenDeps = liveScreenDeps,
 ): AsyncGenerator<ScreenEvent> {
   const tag = `screen ${input.lectureId}/${input.lang}/${input.kind}/${input.variant}`;
+  const direct = LANGUAGES[input.lang].writes;
   let text = "";
   let failure: string | null = null;
+  if (!direct) yield { type: "status", text: "Writing from the lecture" };
   try {
     for await (const delta of deps.stream(messages, tag)) {
       text += delta;
-      yield { type: "delta", text: delta };
+      if (direct) yield { type: "delta", text: delta };
     }
   } catch (err) {
     failure = err instanceof Error ? err.message : String(err);
   }
 
   const repaired = attachOrphans(stripFences(text));
-  const program = repaired.program;
+  let program = repaired.program;
   if (repaired.attached.length) console.info(`${tag}: attached orphaned ${repaired.attached.join(", ")}`);
   if (!failure) {
     const check = checkScreen(program, input.kind);
     if (check.dropped.length) console.warn(`${tag}: ${check.dropped.join("; ")}`);
     if (!check.ok) failure = `The screen came back malformed (${check.fatal.slice(0, 3).join("; ")}).`;
+  }
+  if (!failure && input.kind === "quiz") {
+    yield { type: "status", text: "Checking the answers" };
+    try {
+      // The transcript the quiz was written from is the user message.
+      const transcript = messages.find((m) => m.role === "user")?.content ?? "";
+      const checked = await deps.verify(program, transcript, tag);
+      const { fixed, dropped } = checked.report;
+      if (fixed.length || dropped.length) console.info(`${tag}: keys fixed ${fixed.join(", ") || "none"}; dropped ${dropped.join(", ") || "none"}`);
+      program = checked.program;
+      const again = checkScreen(program, input.kind);
+      if (!again.ok) failure = `Too few questions held up when their answers were checked (${again.fatal.slice(0, 2).join("; ")}).`;
+      else if (direct && (fixed.length || dropped.length)) yield { type: "program", text: program };
+    } catch (err) {
+      failure = `Checking the answers failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  }
+  if (!failure && !direct) {
+    yield { type: "status", text: `Translating into ${LANGUAGES[input.lang].name}` };
+    try {
+      program = await deps.translate(program, input.lang, tag);
+      // Translation only touches string contents, but check the result is still a whole screen.
+      const again = checkScreen(program, input.kind);
+      if (!again.ok) failure = `The translated screen came back malformed (${again.fatal.slice(0, 3).join("; ")}).`;
+    } catch (err) {
+      failure = `Translating into ${LANGUAGES[input.lang].name} failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
   }
   if (failure) {
     console.error(`${tag} failed: ${failure}`);
@@ -235,7 +284,8 @@ export async function* generateScreen(
     kind: input.kind,
     variant: input.variant,
     program,
-    model: SCREEN_MODEL,
+    model: direct ? SCREEN_MODEL : `${SCREEN_MODEL}+sarvam-translate:v1`,
   });
+  if (!direct) yield { type: "program", text: program };
   yield { type: "done", screenId };
 }

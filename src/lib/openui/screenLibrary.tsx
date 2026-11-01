@@ -75,7 +75,7 @@ const NUDGES = ["Not quite.", "Close, but no.", "Good try."];
 
 /** The accents a pair, a chapter or a confetti piece can take. */
 const PALETTE = ["var(--color-signal)", "var(--color-accent)", "var(--color-deep)", "var(--color-flow)", "var(--color-warn)", "var(--color-alert)"];
-const GOLD = "#f2b441";
+const GOLD = "#7be0b6";
 
 function Burst({ seed }: { seed: number }) {
   const pieces = useMemo(
@@ -177,10 +177,10 @@ export const Reveal = defineComponent({
         data-flipped={flipped}
       >
         <span className="flip-inner">
-          <span className="flex min-h-36 flex-col justify-between gap-4 rounded-xl border-2 border-dashed border-(--color-warn)/60 bg-(--color-warn)/[0.06] p-5">
-            <span className="font-mono text-xs tracking-widest text-(--color-warn) uppercase">Think first</span>
+          <span className="flex min-h-36 flex-col justify-between gap-4 rounded-xl border-2 border-dashed border-(--color-accent)/50 bg-(--color-accent)/[0.06] p-5">
+            <span className="font-mono text-xs tracking-widest text-(--color-accent) uppercase">Think first</span>
             <span className="text-lg"><Tex text={props.prompt} /></span>
-            <span className="inline-flex items-center gap-1.5 self-end text-sm text-(--color-warn)">
+            <span className="inline-flex items-center gap-1.5 self-end text-sm text-(--color-accent)">
               <RotateCcw size={14} aria-hidden /> Tap to flip
             </span>
           </span>

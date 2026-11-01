@@ -56,7 +56,7 @@ function Row({ hidden }: { hidden?: boolean }) {
           className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-(--color-line) bg-white p-2 grayscale transition hover:grayscale-0 sm:h-20 sm:w-20"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- small static PNGs; next/image adds nothing here */}
-          <img src={`/institutes/${file}.png`} alt={hidden ? "" : name} width={64} height={64} loading="lazy" className="h-full w-full object-contain" />
+          <img src={`/institutes/${file}.png`} alt={hidden ? "" : name} width={64} height={64} decoding="async" className="h-full w-full object-contain" />
         </li>
       ))}
     </ul>
@@ -66,9 +66,11 @@ function Row({ hidden }: { hidden?: boolean }) {
 export function InstituteMarquee() {
   return (
     <section aria-labelledby="institutes-heading" className="space-y-5">
-      <h2 id="institutes-heading" className="wrap text-center text-(--color-mist)">
-        Lectures from the IITs, IISc and over 100 other institutes
-      </h2>
+      <div className="wrap text-center">
+        <h2 id="institutes-heading" className="eyebrow">
+          Lectures from the IITs, IISc and 100+ institutes
+        </h2>
+      </div>
       <div className="marquee group relative overflow-hidden">
         {/* Two copies side by side; the strip moves by exactly one copy and loops. */}
         <div className="marquee-track flex w-max group-hover:[animation-play-state:paused]">

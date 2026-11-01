@@ -1,23 +1,12 @@
+import { type Brand, BrandLogo, BRANDS } from "@/components/site/Brands";
 import { Logo } from "@/components/site/Logo";
 
 const REPO = "https://github.com/ahmedfahim21/Learnify";
 
-const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
-  {
-    title: "Built with",
-    links: [
-      { href: "https://www.sarvam.ai", label: "Sarvam AI" },
-      { href: "https://www.openui.com", label: "OpenUI" },
-      { href: "https://nptel.ac.in", label: "NPTEL" },
-    ],
-  },
-  {
-    title: "Source",
-    links: [
-      { href: REPO, label: "Repository" },
-      { href: `${REPO}/issues`, label: "Issues" },
-    ],
-  },
+const BUILT_WITH: { brand: Brand; what: string }[] = [
+  { brand: "sarvam", what: "Indian-language AI" },
+  { brand: "openui", what: "Generative UI" },
+  { brand: "nptel", what: "Lectures" },
 ];
 
 /**
@@ -44,26 +33,40 @@ export function Footer() {
             . Study material made here is shared under the same licence.
           </p>
         </div>
-        {COLUMNS.map((col) => (
-          <nav key={col.title} aria-label={col.title} className="space-y-3">
-            <p className="label">{col.title}</p>
-            <ul className="space-y-2">
-              {col.links.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-(--color-mist) transition-colors hover:text-(--color-fg)"
-                  >
-                    {link.label}
-                    <span className="ml-1 text-(--color-faint)">↗</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        ))}
+        <nav aria-label="Built with" className="space-y-3">
+          <p className="label">Built with</p>
+          <ul className="space-y-2.5">
+            {BUILT_WITH.map(({ brand, what }) => (
+              <li key={brand}>
+                <a
+                  href={BRANDS[brand].href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-center gap-3"
+                >
+                  <span className="flex h-9 w-28 items-center rounded-lg border border-(--color-line) bg-white px-2.5 transition-colors group-hover:border-(--color-faint)">
+                    <BrandLogo brand={brand} height={brand === "openui" ? 26 : brand === "sarvam" ? 12 : 16} />
+                  </span>
+                  <span className="text-sm text-(--color-mist) group-hover:text-(--color-fg)">{what}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <nav aria-label="Source" className="space-y-3">
+          <p className="label">Source</p>
+          <a
+            href={REPO}
+            target="_blank"
+            rel="noreferrer"
+            className="group flex items-center gap-3"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-(--color-line) bg-white transition-colors group-hover:border-(--color-faint)">
+              <BrandLogo brand="github" height={18} mark />
+            </span>
+            <span className="text-sm text-(--color-mist) group-hover:text-(--color-fg)">GitHub</span>
+          </a>
+        </nav>
       </div>
     </footer>
   );

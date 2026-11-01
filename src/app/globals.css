@@ -3,8 +3,9 @@
 /* ======================================================================
    Learnify's design system.
    
-   A warm paper foundation, accents drawn from Indian dyes (indigo, turmeric,
-   peacock, kumkum) used only as accent, and hierarchy carried by size and
+   Blue and green: a cool paper foundation, indigo and peacock as the main
+   accents with teal, berry and kumkum beside them, used only as accent, and
+   hierarchy carried by size and
    colour rather than font weight. IBM Plex for Latin, Noto for each Indic
    script, and a small radius rather than hard-square corners.
 
@@ -14,31 +15,37 @@
    ====================================================================== */
 
 @theme {
-  /* ---- Foundation: light is the base, as in the source system ------- */
-  /* Foundation: handmade paper and lamp-black ink rather than screen white
-     and cool grey. Warm neutrals let the Indic accents below sit naturally. */
-  --color-ink: #fbf8f2;        /* the canvas: khadi / handmade paper */
-  --color-surface: #f5efe4;    /* cards, the subtitle bar */
-  --color-raised: #ede5d6;     /* hover / inset wells, skeletons */
-  --color-fg: #1d1914;         /* primary text: warm lamp-black */
-  --color-mist: #6b6255;       /* secondary text, chrome, placeholders */
-  --color-faint: #82786a;      /* tertiary: metadata, ticks, markers */
-  --color-line: #e4dac9;       /* 1px borders, hairline rules */
+  /* ---- Foundation: light is the base --------------------------------- */
+  /* Blue and green: a cool paper with a breath of green and a deep
+     green-black ink, so the indigo and peacock accents below sit naturally. */
+  --color-ink: #f6f9f8;        /* the canvas */
+  --color-surface: #ecf3f0;    /* cards, panels */
+  --color-raised: #dfe9e5;     /* hover / inset wells, skeletons */
+  --color-fg: #13201c;         /* primary text: green-black */
+  --color-mist: #4f625b;       /* secondary text, chrome, placeholders */
+  --color-faint: #687a73;      /* tertiary: metadata, ticks, markers */
+  --color-line: #d3e0da;       /* 1px borders, hairline rules */
   /* Drawing surfaces (concept map), slightly apart from the page. */
-  --color-canvas: #f8f3ea;
-  --color-node: #fffdf8;
+  --color-canvas: #f1f6f4;
+  --color-node: #ffffff;
   --wash-selection: rgba(46, 63, 143, 0.14);
-  --shadow-card: 0 10px 28px rgba(29, 25, 20, 0.12);
+  --shadow-card: 0 10px 28px rgba(19, 32, 28, 0.12);
+  /* Resting elevation for cards and pills: a hairline plus a long, faint fall. */
+  --shadow-soft: 0 1px 2px rgba(19, 32, 28, 0.05), 0 10px 30px -12px rgba(19, 32, 28, 0.14);
+
+  /* Haze: decoration only, never text or controls. Mint into indigo, soft
+     enough to sit behind the hero without competing with it. */
+  --haze-mint: #5fd0a4;
+  --haze-cool: #9fb0ee;
 
   /* ---- Accents (accent only, never a large fill or body text) -------
-     Named by role, coloured from Indian dyes and materials. Each holds at
-     least 4.5:1 against the paper canvas. */
+     Named by role. Each holds at least 4.5:1 against the paper canvas. */
   --color-signal: #2e3f8f;   /* primary: indigo (neel) — interactive, live, progress */
   --color-flow: #6a3d8f;     /* jamun purple — movement, secondary links */
   --color-deep: #0f6b57;     /* peacock green (mor) — right answers, persistence */
-  --color-warn: #a35a00;     /* turmeric (haldi) — try again, retrying */
+  --color-warn: #a3366b;     /* berry — not quite, try again, retrying */
   --color-alert: #b3263e;    /* kumkum — failure, the thing that breaks */
-  --color-accent: #b4532a;   /* terracotta — everything else that needs separating */
+  --color-accent: #0b7285;   /* teal — everything else that needs separating */
 
   /* Corners: softened from the source system's hard square. Crisp enough to
      stay technical, not so sharp it reads as austere over a 25-minute read. */
@@ -50,7 +57,7 @@
     var(--font-orya), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
-  --measure: min(90vw, 76rem);
+  --measure: 76rem;
   --measure-mid: 60rem;
   --measure-prose: 44rem;
 
@@ -140,20 +147,28 @@ html {
 .wrap {
   max-width: var(--measure);
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   position: relative;
 }
 .wrap-mid {
   max-width: var(--measure-mid);
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   position: relative;
 }
 .wrap-prose {
   max-width: var(--measure-prose);
   margin-inline: auto;
-  padding-inline: 1.5rem;
+  padding-inline: 1rem;
   position: relative;
+}
+
+@media (min-width: 40rem) {
+  .wrap,
+  .wrap-mid,
+  .wrap-prose {
+    padding-inline: 1.5rem;
+  }
 }
 
 /* Small tracked metadata — the "label" system. Space Mono, for technical
@@ -213,63 +228,7 @@ button.chip {
   line-height: inherit;
 }
 
-/* Actions. Distinct from .chip, which is a mono metadata tag — an action is
-   prose the reader is meant to click, so it sets in the sans face at a normal
-   sentence case, and the primary one carries fill so it outranks its
-   alternative instead of matching it. */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid var(--color-signal);
-  border-radius: var(--radius);
-  background: var(--color-signal);
-  color: var(--color-ink);
-  padding: 0.5rem 0.95rem;
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.15s ease;
-}
-.btn:hover {
-  background: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
-  border-color: color-mix(in srgb, var(--color-signal) 85%, var(--color-fg));
-}
-.btn:active {
-  transform: scale(0.99);
-}
-.btn:disabled {
-  cursor: wait;
-  opacity: 0.6;
-}
-
-.btn-quiet {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  border: 1px solid var(--color-line);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--color-mist);
-  padding: 0.5rem 0.95rem;
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.2;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    color 0.15s ease,
-    background-color 0.15s ease;
-}
-.btn-quiet:hover {
-  border-color: var(--color-faint);
-  background: var(--color-raised);
-  color: var(--color-fg);
-}
+/* Actions are the pill buttons (btn, btn-primary, btn-secondary) further down. */
 
 .sr-only {
   position: absolute;
@@ -395,7 +354,7 @@ a:hover .arr-d { transform: translateY(2px); }
 
 /* Kolam / rangoli dot grid: the pulli dots a kolam is drawn around. */
 .kolam {
-  background-image: radial-gradient(circle at center, color-mix(in srgb, var(--color-warn) 38%, transparent) 1.1px, transparent 1.6px);
+  background-image: radial-gradient(circle at center, color-mix(in srgb, var(--color-deep) 34%, transparent) 1.1px, transparent 1.6px);
   background-size: 22px 22px;
   background-position: 11px 11px;
 }
@@ -413,7 +372,7 @@ a:hover .arr-d { transform: translateY(2px); }
   left: 0;
   width: 2.25rem;
   height: 2px;
-  background: var(--color-warn);
+  background: var(--color-deep);
 }
 
 /* The hero's cycling native-script word. */
@@ -528,7 +487,7 @@ a:hover .arr-d { transform: translateY(2px); }
 }
 .tile:not(:disabled):hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(29, 25, 20, 0.08);
+  box-shadow: 0 6px 16px rgba(19, 32, 28, 0.08);
 }
 .tile:not(:disabled):active { transform: translateY(0); box-shadow: none; }
 
@@ -563,4 +522,94 @@ a:hover .arr-d { transform: translateY(2px); }
 @media (prefers-reduced-motion: reduce) {
   .marquee-track { animation: none; }
   .marquee { overflow-x: auto; }
+}
+
+
+/* ---- Haze, eyebrows, pills (borrowed in spirit from Sarvam's site, in our
+   own paper, mint and indigo) ---------------------------------------------- */
+
+/* A soft mint-to-indigo glow behind a hero. Sits under content (z-index -1). */
+.haze {
+  position: relative;
+  isolation: isolate;
+}
+.haze::before {
+  content: "";
+  position: absolute;
+  inset: -6rem 0 -2rem;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(48% 55% at 18% 18%, color-mix(in srgb, var(--haze-mint) 55%, transparent), transparent 70%),
+    radial-gradient(45% 55% at 85% 30%, color-mix(in srgb, var(--haze-cool) 58%, transparent), transparent 72%),
+    radial-gradient(40% 40% at 55% 85%, color-mix(in srgb, var(--haze-mint) 18%, transparent), transparent 70%);
+  filter: blur(8px);
+}
+
+/* A small tracked line above a heading, between two hairlines. */
+@utility eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-mist);
+  &::before,
+  &::after {
+    content: "";
+    width: 1.75rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.45;
+  }
+}
+
+/* Pill buttons. Primary is our indigo; secondary is paper-white on a soft shadow. */
+@utility btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  padding-inline: 1.5rem;
+  border-radius: 9999px;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+  &:hover { transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+}
+@utility btn-primary {
+  color: white;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--color-signal) 88%, white), var(--color-signal));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 6px 18px -6px color-mix(in srgb, var(--color-signal) 70%, transparent);
+}
+@utility btn-secondary {
+  color: var(--color-fg);
+  background: var(--color-node);
+  box-shadow: var(--shadow-soft);
+  &:hover { box-shadow: 0 1px 2px rgba(19, 32, 28, 0.06), 0 14px 32px -12px rgba(19, 32, 28, 0.2); }
+}
+
+/* A card with a warm glow in one corner; set --glow to the accent. */
+.glow-corner {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.glow-corner::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 70%;
+  aspect-ratio: 1;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--glow, var(--haze-mint)) 32%, transparent), transparent);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:hover, .btn:active { transform: none; }
 }

@@ -189,11 +189,21 @@ export function LearningSetup({
                     <span lang={l.sarvam} className="text-xl leading-tight">
                       {l.native}
                     </span>
-                    {l.native !== l.name && <span className="text-xs text-(--color-mist)">{l.name}</span>}
+                    {l.native !== l.name && (
+                      <span className="text-xs text-(--color-mist)">
+                        {l.name}
+                        {!l.writes && " · translated"}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
+          )}
+          {step === 0 && !LANGUAGES[lang].writes && (
+            <p className="mt-4 text-sm text-(--color-mist)">
+              {LANGUAGES[lang].name} study screens are written in English and translated by Sarvam, so they take a little longer. Answers can&apos;t be read aloud in {LANGUAGES[lang].name} yet.
+            </p>
           )}
           {step === 1 && <Tiles choices={GOALS} value={goal} onPick={pickThen(setGoal)} />}
           {step === 2 && <Tiles choices={LEVELS} value={level} onPick={pickThen(setLevel)} />}

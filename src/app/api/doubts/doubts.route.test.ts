@@ -209,6 +209,14 @@ describe("POST /api/voice/speak", () => {
     expect(mocks.speak).not.toHaveBeenCalled();
   });
 
+  it("says read-aloud isn't available for a language Bulbul doesn't speak, without calling it", async () => {
+    mocks.getOwnDoubt.mockResolvedValue({ id: DOUBT, lang: "ne", status: "answered", answer });
+    const res = await speakPOST(post({ doubtId: DOUBT }));
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: "Reading aloud isn't available in Nepali yet." });
+    expect(mocks.speak).not.toHaveBeenCalled();
+  });
+
   it("refuses raw text and anonymous callers", async () => {
     expect((await speakPOST(post({ text: "say this" }))).status).toBe(400);
     mocks.requireUserId.mockResolvedValue(anon);

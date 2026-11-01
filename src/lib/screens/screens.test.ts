@@ -72,6 +72,10 @@ function deps(chunks: string[] | Error): ScreenDeps & { saved: unknown[]; refund
       return "screen-1";
     }),
     refund: vi.fn(async (u: string) => void refunded.push(u)),
+    // Stands in for Sarvam-Translate: marks every string so the test can see what moved.
+    // Keys check out by default; tests that need a fix set their own.
+    verify: vi.fn(async (program: string) => ({ program, report: { checked: 5, fixed: [], dropped: [] } })),
+    translate: vi.fn(async (program: string) => program.replace(/"([^"\\]*)"/g, (m, t: string) => (t ? `"NE:${t}"` : m))),
   };
 }
 
@@ -122,6 +126,82 @@ describe("generateScreen", () => {
     expect(system.content).toMatch(/This student wants a challenge/);
     expect(system.content).toMatch(/one Quiz with 8 to 10 questions/);
     expect(user.content).toMatch(/^Transcript:\n\[216s\] A rational number is p by q\.\n\nWrite the whole screen in Hindi \(हिन्दी\), in Hindi script/);
+  });
+
+  it("writes in English and stores only the translation for a language the model can't write", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    const ne = { ...input, lang: "ne" as const };
+    const messages = await prepareScreen(ne, d);
+    expect(messages[0].content).not.toMatch(/Nepali/);
+    expect(messages[1].content).toMatch(/Write the screen in English\.$/);
+
+    const events = await collect(generateScreen(ne, messages, d));
+
+    // No English ever reaches the student: statuses, then the whole translated screen.
+    expect(events.filter((e) => e.type === "delta")).toEqual([]);
+    expect(events.filter((e) => e.type === "status")).toEqual([
+      { type: "status", text: "Writing from the lecture" },
+      { type: "status", text: "Checking the answers" },
+      { type: "status", text: "Translating into Nepali" },
+    ]);
+    const program = (events.find((e) => e.type === "program") as { text: string }).text;
+    expect(program).toContain('"NE:');
+    expect(events.at(-1)).toEqual({ type: "done", screenId: "screen-1" });
+    expect(d.translate).toHaveBeenCalledWith(QUIZ_EXAMPLE, "ne", "screen lec-1/ne/quiz/standard");
+    expect(d.saved).toEqual([
+      { lectureId: "lec-1", lang: "ne", kind: "quiz", variant: "standard", program, model: "sarvam-105b-conversations+sarvam-translate:v1" },
+    ]);
+  });
+
+  it("refunds and stores nothing when translation fails", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    vi.mocked(d.translate).mockRejectedValue(new Error("Sarvam /translate failed (HTTP 429)"));
+    const ne = { ...input, lang: "ne" as const };
+    const events = await collect(generateScreen(ne, await prepareScreen(ne, d), d));
+    expect(events.at(-1)).toEqual({ type: "error", message: "Translating into Nepali failed: Sarvam /translate failed (HTTP 429)" });
+    expect(d.saved).toEqual([]);
+    expect(d.refunded).toEqual(["u1"]);
+  });
+
+  it("checks a quiz's answer keys against the transcript, and stores and shows the corrected quiz", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    const fixed = QUIZ_EXAMPLE.replace(', 2, "√2 has', ', 2, "Fixed: √2 has');
+    vi.mocked(d.verify).mockResolvedValue({ program: fixed, report: { checked: 5, fixed: ["q1"], dropped: [] } });
+    const messages = await prepareScreen(input, d);
+
+    const events = await collect(generateScreen(input, messages, d));
+
+    expect(d.verify).toHaveBeenCalledWith(QUIZ_EXAMPLE, messages[1].content, "screen lec-1/hi/quiz/standard");
+    expect(events).toContainEqual({ type: "status", text: "Checking the answers" });
+    expect(events.at(-2)).toEqual({ type: "program", text: fixed });
+    expect(d.saved).toEqual([expect.objectContaining({ program: fixed })]);
+  });
+
+  it("doesn't check notes", async () => {
+    const d = deps(NOTES_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    const notes = { ...input, kind: "notes" as const };
+    await collect(generateScreen(notes, await prepareScreen(notes, d), d));
+    expect(d.verify).not.toHaveBeenCalled();
+    expect(d.saved).toHaveLength(1);
+  });
+
+  it("refunds and stores nothing when too few questions survive the check", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    const gutted = QUIZ_EXAMPLE.split("\n").filter((l) => !/^q[2-5] = /.test(l)).join("\n").replace("[q1, q2, q3, q4, q5]", "[q1]");
+    vi.mocked(d.verify).mockResolvedValue({ program: gutted, report: { checked: 5, fixed: [], dropped: ["q2", "q3", "q4", "q5"] } });
+    const events = await collect(generateScreen(input, await prepareScreen(input, d), d));
+    expect((events.at(-1) as { message: string }).message).toMatch(/^Too few questions held up/);
+    expect(d.saved).toEqual([]);
+    expect(d.refunded).toEqual(["u1"]);
+  });
+
+  it("refunds and stores nothing when the check itself fails", async () => {
+    const d = deps(QUIZ_EXAMPLE.match(/[\s\S]{1,50}/g)!);
+    vi.mocked(d.verify).mockRejectedValue(new Error("Sarvam /v1/chat/completions failed (HTTP 503)"));
+    const events = await collect(generateScreen(input, await prepareScreen(input, d), d));
+    expect(events.at(-1)).toEqual({ type: "error", message: "Checking the answers failed: Sarvam /v1/chat/completions failed (HTTP 503)" });
+    expect(d.saved).toEqual([]);
+    expect(d.refunded).toEqual(["u1"]);
   });
 
   it("refuses before charging when there's no transcript", async () => {
