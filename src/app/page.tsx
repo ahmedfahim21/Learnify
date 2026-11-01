@@ -1,7 +1,8 @@
-import { ArrowRight, BookOpen, Layers, Mic, Trophy } from "lucide-react";
+import { ArrowRight, BookOpen, Feather, Languages, Layers, Mic, Target, Trophy } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
+import { BrandLogo, BRANDS } from "@/components/site/Brands";
 import { CyclingLanguage } from "@/components/site/CyclingLanguage";
 import { FeaturedShelf } from "@/components/site/FeaturedShelf";
 import { InstituteMarquee } from "@/components/site/InstituteMarquee";
@@ -16,25 +17,26 @@ const HeroDemo = dynamic(() => import("@/components/site/HeroDemo"), {
   loading: () => <div className="h-[30rem] animate-pulse rounded-3xl bg-(--color-raised)" />,
 });
 
-// Steps numbered in three scripts: Devanagari, Bengali, Tamil.
+// Steps numbered in three scripts: Devanagari, Bengali, Tamil. Each shows
+// what does the work: NPTEL and YouTube, your choices, Sarvam and OpenUI.
 const STEPS = [
   {
     numeral: "१",
     numeralLang: "hi",
     title: "Pick a lecture",
-    body: "Any of 3,050 NPTEL courses from over 100 institutes, the IITs and IISc among them, played as the professor recorded it.",
+    body: "Any of 3,050 NPTEL courses from over 100 institutes, the IITs and IISc among them, played in YouTube's player as the professor recorded it.",
   },
   {
     numeral: "২",
     numeralLang: "bn",
     title: "Tell us how you learn",
-    body: "Your language, whether you want to understand, practise or revise, and how hard to pitch it.",
+    body: "Your language, whether you want to understand, practise or revise, and how hard to pitch it. Four taps, saved for every lecture.",
   },
   {
     numeral: "௩",
     numeralLang: "ta",
     title: "Study it your way",
-    body: "Notes, quizzes and flashcards written from that lecture in your language, and doubts answered by voice.",
+    body: "Sarvam's Indian-language models write notes, quizzes and flashcards from the lecture and answer doubts you speak. OpenUI turns them into screens you play with.",
   },
 ];
 
@@ -93,13 +95,37 @@ export default function HomePage() {
           How it works
         </h2>
         <ol className="grid gap-4 md:grid-cols-3">
-          {STEPS.map((s) => (
-            <li key={s.title} className="space-y-3 rounded-2xl border border-(--color-line) bg-(--color-surface) p-6">
+          {STEPS.map((s, n) => (
+            <li key={s.title} className="flex flex-col gap-3 rounded-2xl border border-(--color-line) bg-(--color-surface) p-6">
               <span lang={s.numeralLang} aria-hidden className="block text-4xl leading-none text-(--color-warn)">
                 {s.numeral}
               </span>
               <h3 className="text-xl">{s.title}</h3>
               <p className="leading-relaxed text-(--color-mist)">{s.body}</p>
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
+                {n === 0 && (
+                  <>
+                    <BrandChip brand="nptel" />
+                    <BrandChip brand="youtube" label="YouTube" />
+                  </>
+                )}
+                {n === 1 &&
+                  [
+                    { icon: Languages, label: "Language" },
+                    { icon: Target, label: "Goal" },
+                    { icon: Feather, label: "Level" },
+                  ].map((c) => (
+                    <span key={c.label} className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-(--color-line) bg-(--color-node) px-3 text-sm">
+                      <c.icon size={15} className="text-(--color-signal)" aria-hidden /> {c.label}
+                    </span>
+                  ))}
+                {n === 2 && (
+                  <>
+                    <BrandChip brand="sarvam" />
+                    <BrandChip brand="openui" />
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ol>
@@ -107,5 +133,19 @@ export default function HomePage() {
 
       <FeaturedShelf />
     </main>
+  );
+}
+
+function BrandChip({ brand, label }: { brand: keyof typeof BRANDS; label?: string }) {
+  return (
+    <a
+      href={BRANDS[brand].href}
+      target="_blank"
+      rel="noreferrer"
+      className="tile inline-flex min-h-10 items-center gap-2 rounded-full border border-(--color-line) bg-white px-3.5 text-sm"
+    >
+      <BrandLogo brand={brand} height={brand === "openui" ? 20 : brand === "sarvam" ? 13 : 16} mark={Boolean(label)} />
+      {label}
+    </a>
   );
 }

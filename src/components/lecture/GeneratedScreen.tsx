@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "@/lib/authClient";
 import { LANGUAGES, type Lang } from "@/lib/languages";
 import { screenLibrary } from "@/lib/openui/screenLibrary";
+import { PoweredBy } from "@/components/site/Brands";
 
 /**
  * A study screen the model writes for this lecture — interactive notes or a
@@ -165,6 +166,11 @@ export default function GeneratedScreen({ lectureId, lang, kind, level }: { lect
               if (errors.length && !generating) console.error(`${kind} render errors:`, errors);
             }}
           />
+          {state.phase === "ready" && (
+            <div className="mt-6 border-t border-(--color-line) pt-3">
+              <PoweredBy />
+            </div>
+          )}
         </div>
       ) : state.phase === "loading" || (generating && !program) ? (
         <div className="space-y-3">

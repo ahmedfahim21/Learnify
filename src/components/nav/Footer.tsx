@@ -1,16 +1,15 @@
+import { BrandLogo, type Brand } from "@/components/site/Brands";
 import { Logo } from "@/components/site/Logo";
 
 const REPO = "https://github.com/ahmedfahim21/Learnify";
 
+const BUILT_WITH: { brand: Brand; what: string }[] = [
+  { brand: "sarvam", what: "Indian-language AI" },
+  { brand: "openui", what: "Generative UI" },
+  { brand: "nptel", what: "Lectures" },
+];
+
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
-  {
-    title: "Built with",
-    links: [
-      { href: "https://www.sarvam.ai", label: "Sarvam AI" },
-      { href: "https://www.openui.com", label: "OpenUI" },
-      { href: "https://nptel.ac.in", label: "NPTEL" },
-    ],
-  },
   {
     title: "Source",
     links: [
@@ -44,6 +43,26 @@ export function Footer() {
             . Study material made here is shared under the same licence.
           </p>
         </div>
+        <nav aria-label="Built with" className="space-y-3">
+          <p className="label">Built with</p>
+          <ul className="space-y-2.5">
+            {BUILT_WITH.map(({ brand, what }) => (
+              <li key={brand}>
+                <a
+                  href={brand === "sarvam" ? "https://www.sarvam.ai" : brand === "openui" ? "https://www.openui.com" : "https://nptel.ac.in"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex items-center gap-3"
+                >
+                  <span className="flex h-9 w-28 items-center rounded-lg border border-(--color-line) bg-white px-2.5 transition-colors group-hover:border-(--color-faint)">
+                    <BrandLogo brand={brand} height={brand === "openui" ? 22 : 16} />
+                  </span>
+                  <span className="text-sm text-(--color-mist) group-hover:text-(--color-fg)">{what}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
         {COLUMNS.map((col) => (
           <nav key={col.title} aria-label={col.title} className="space-y-3">
             <p className="label">{col.title}</p>
