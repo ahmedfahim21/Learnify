@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { BrandLogo, BRANDS } from "@/components/site/Brands";
 import { CyclingLanguage } from "@/components/site/CyclingLanguage";
+import { INDIAN_LANGUAGE_COUNT } from "@/lib/languages";
 import { FeaturedShelf } from "@/components/site/FeaturedShelf";
 import { InstituteMarquee } from "@/components/site/InstituteMarquee";
 
@@ -53,7 +54,7 @@ export default function HomePage() {
       <section className="haze">
        <div className="wrap grid items-center gap-12 pt-12 sm:pt-20 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-8">
-          <p className="eyebrow text-(--color-signal)">NPTEL · in 10 Indian languages</p>
+          <p className="eyebrow text-(--color-signal)">NPTEL · in {INDIAN_LANGUAGE_COUNT} Indian languages</p>
           <h1 className="text-[2.6rem] leading-[1.06] tracking-[-0.035em] sm:text-[4rem]">
             <span className="sr-only">Watch an NPTEL lecture. Learn it in your language.</span>
             <span aria-hidden>
