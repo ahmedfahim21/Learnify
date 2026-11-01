@@ -5,7 +5,8 @@ import type { ScreenKind, ScreenVariant } from "@/lib/screens/prompt";
 import { requireUserId } from "@/lib/session";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+// Writing, checking a quiz's answers and translating can together pass two minutes.
+export const maxDuration = 300;
 
 const KINDS: ScreenKind[] = ["notes", "quiz"];
 const VARIANTS: ScreenVariant[] = ["standard", "simpler", "harder"];

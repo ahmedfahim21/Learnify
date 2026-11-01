@@ -13,6 +13,7 @@ import type { Segment } from "@/lib/transcripts/merge";
 import { dbDeps as transcriptDeps } from "@/lib/transcripts/store";
 
 import { type ScreenKind, screenMessages, type ScreenVariant } from "./prompt";
+import { type KeyReport, verifyQuiz } from "./verifyKeys";
 
 /**
  * Generate a study screen as a stream, then store it for everyone.
@@ -27,6 +28,9 @@ import { type ScreenKind, screenMessages, type ScreenVariant } from "./prompt";
  * the English never reaches the student. Those streams carry no deltas:
  *   {"type":"status","text":"…"}   what's happening, for the waiting screen
  *   {"type":"program","text":"…"}  the whole translated screen, once
+ *
+ * A quiz's answer keys are checked before it's stored (see verifyKeys): a
+ * "status" while that runs, then a "program" if anything was corrected.
  */
 
 export const SCREEN_MODEL = "sarvam-105b-conversations";
@@ -154,6 +158,8 @@ export interface ScreenDeps {
   save: (row: Omit<GeneratedScreen, "id" | "createdAt">) => Promise<string>;
   refund: (userId: string) => Promise<void>;
   translate: (program: string, lang: Lang, tag: string) => Promise<string>;
+  /** A quiz's answer keys checked against the lecture; wrong ones fixed, unsure ones dropped. */
+  verify: (program: string, transcript: string, tag: string) => Promise<{ program: string; report: KeyReport }>;
 }
 
 export const liveScreenDeps: ScreenDeps = {
@@ -178,6 +184,7 @@ export const liveScreenDeps: ScreenDeps = {
   },
   refund: refundDoubt,
   translate: (program, lang, tag) => translateProgram(program, lang, undefined, tag),
+  verify: (program, transcript, tag) => verifyQuiz(program, transcript, undefined, `${tag} keys`),
 };
 
 export async function getScreen(lectureId: string, lang: Lang, kind: ScreenKind, variant: ScreenVariant) {
@@ -237,6 +244,22 @@ export async function* generateScreen(
     const check = checkScreen(program, input.kind);
     if (check.dropped.length) console.warn(`${tag}: ${check.dropped.join("; ")}`);
     if (!check.ok) failure = `The screen came back malformed (${check.fatal.slice(0, 3).join("; ")}).`;
+  }
+  if (!failure && input.kind === "quiz") {
+    yield { type: "status", text: "Checking the answers" };
+    try {
+      // The transcript the quiz was written from is the user message.
+      const transcript = messages.find((m) => m.role === "user")?.content ?? "";
+      const checked = await deps.verify(program, transcript, tag);
+      const { fixed, dropped } = checked.report;
+      if (fixed.length || dropped.length) console.info(`${tag}: keys fixed ${fixed.join(", ") || "none"}; dropped ${dropped.join(", ") || "none"}`);
+      program = checked.program;
+      const again = checkScreen(program, input.kind);
+      if (!again.ok) failure = `Too few questions held up when their answers were checked (${again.fatal.slice(0, 2).join("; ")}).`;
+      else if (direct && (fixed.length || dropped.length)) yield { type: "program", text: program };
+    } catch (err) {
+      failure = `Checking the answers failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
   }
   if (!failure && !direct) {
     yield { type: "status", text: `Translating into ${LANGUAGES[input.lang].name}` };
