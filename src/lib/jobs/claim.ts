@@ -126,7 +126,11 @@ export function finish(claim: Claim): Promise<void> {
  * use up one of the stage's attempts: it says nothing about whether the stage
  * can succeed, only that it should wait. The cooldown still applies.
  */
-export async function fail(claim: Claim, error: string, opts: { transient?: boolean } = {}): Promise<void> {
+/**
+ * Record a failed build. `transient` (Sarvam's rate limit) gives the attempt
+ * back; `final` uses up the rest, for a failure retrying can't change.
+ */
+export async function fail(claim: Claim, error: string, opts: { transient?: boolean; final?: boolean } = {}): Promise<void> {
   // Recorded even if the claim was lost meanwhile, as long as nobody finished it.
   await getDb()
     .update(jobs)
@@ -135,6 +139,7 @@ export async function fail(claim: Claim, error: string, opts: { transient?: bool
       error: error.slice(0, 2000),
       updatedAt: sql`now()`,
       ...(opts.transient ? { attempts: sql`greatest(${jobs.attempts} - 1, 0)` } : {}),
+      ...(opts.final ? { attempts: MAX_ATTEMPTS } : {}),
     })
     .where(and(eq(jobs.id, claim.job.id), eq(jobs.claimToken, claim.token)));
 }
