@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gt, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { type Course, courses, generatedScreens, type Lecture, lectures, type NewCourse, type NewLecture, studyPacks, transcripts } from "@/db/schema";
@@ -6,6 +6,8 @@ import { type Lang, LANGUAGES } from "@/lib/languages";
 import { fetchCourseOutline } from "@/lib/nptel/client";
 import type { NptelCourseList, NptelLesson } from "@/lib/nptel/decode";
 import { STUDY_PROMPT_VERSION } from "@/lib/study/generate";
+
+import { type CoverageTier, coverageTier, STUDYABLE_SHARE, VIDEO_ONLY_SHARE } from "./coverage";
 
 /**
  * The course bank in Postgres. The full course list is mirrored by
@@ -124,10 +126,11 @@ export async function getCourseWithLectures(courseId: number): Promise<CourseWit
       }
       await tx
         .update(courses)
-        .set({ humanLangs, outlineFetchedAt: new Date() })
+        .set({ humanLangs, captionShare: captionShareOf(outline.lessons), outlineFetchedAt: new Date() })
         .where(eq(courses.id, courseId));
     });
     course.humanLangs = humanLangs;
+    course.captionShare = captionShareOf(outline.lessons);
     course.outlineFetchedAt = new Date();
   }
 
@@ -140,6 +143,12 @@ export async function getCourseWithLectures(courseId: number): Promise<CourseWit
 }
 
 export const COURSE_PAGE_SIZE = 30;
+
+/** Share of lessons with a video and NPTEL English captions; 0 for a course with none. */
+export function captionShareOf(lessons: NptelLesson[]): number {
+  if (lessons.length === 0) return 0;
+  return lessons.filter((l) => l.youtubeId && l.vttIds[LANGUAGES.en.nptelName]).length / lessons.length;
+}
 
 // --- Featured shelf ----------------------------------------------------------
 
@@ -167,8 +176,7 @@ const ADVANCED = /\b(advanced|quantum field|path integral|commutative algebra|al
 
 export function scoreForShelf(disciplineId: number, lessons: NptelLesson[], title = ""): FeatureScore {
   if (lessons.length === 0) return { eligible: false, score: 0, coverage: 0, humanLangs: [] };
-  const playable = lessons.filter((l) => l.youtubeId && l.vttIds[LANGUAGES.en.nptelName]).length;
-  const coverage = playable / lessons.length;
+  const coverage = captionShareOf(lessons);
   const humanLangs = humanLangsOf(lessons);
   const starter = STARTER_DISCIPLINES.indexOf(disciplineId);
   const level = INTRODUCTORY.test(title) ? 6 : 0;
@@ -211,17 +219,35 @@ export async function listDisciplines(): Promise<Discipline[]> {
 export interface ListCoursesQuery {
   disciplineId?: number;
   q?: string;
-  /** The last course id of the previous page. */
-  cursor?: number;
+  /** Where the previous page ended: its last course's tier and id. */
+  cursor?: CourseCursor;
   limit: number;
+}
+
+export interface CourseCursor {
+  tier: CoverageTier;
+  id: number;
 }
 
 export interface CoursePage {
   courses: Course[];
-  nextCursor: number | null;
+  nextCursor: string | null;
 }
 
-/** Browse video courses, optionally by discipline and a search over title, professor and institute. */
+const tierSql = sql<number>`(case when ${courses.captionShare} >= ${STUDYABLE_SHARE} then 0 when ${courses.captionShare} < ${VIDEO_ONLY_SHARE} then 2 else 1 end)`;
+
+/** The opaque page cursor, "tier.id", and back; null for anything else. */
+export const encodeCursor = (c: CourseCursor) => `${c.tier}.${c.id}`;
+export function decodeCursor(raw: string): CourseCursor | null {
+  const m = /^([012])\.(\d{1,12})$/.exec(raw);
+  return m ? { tier: Number(m[1]) as CoverageTier, id: Number(m[2]) } : null;
+}
+
+/**
+ * Browse video courses, optionally by discipline and a search over title,
+ * professor and institute. Courses that can mostly be studied come first,
+ * mostly-video-only ones last; within a tier, NPTEL's id order.
+ */
 export async function listCourses({ disciplineId, q, cursor, limit }: ListCoursesQuery): Promise<CoursePage> {
   const term = q?.trim();
   const pattern = term ? `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
@@ -232,7 +258,7 @@ export async function listCourses({ disciplineId, q, cursor, limit }: ListCourse
       and(
         eq(courses.contentType, "Video"),
         disciplineId === undefined ? undefined : eq(courses.disciplineId, disciplineId),
-        cursor === undefined ? undefined : gt(courses.id, cursor),
+        cursor === undefined ? undefined : sql`(${tierSql}, ${courses.id}) > (${cursor.tier}, ${cursor.id})`,
         pattern
           ? or(
               ilike(courses.title, pattern),
@@ -242,10 +268,11 @@ export async function listCourses({ disciplineId, q, cursor, limit }: ListCourse
           : undefined,
       ),
     )
-    .orderBy(asc(courses.id))
+    .orderBy(tierSql, asc(courses.id))
     .limit(limit + 1);
   const page = rows.slice(0, limit);
-  return { courses: page, nextCursor: rows.length > limit ? page[page.length - 1].id : null };
+  const last = page[page.length - 1];
+  return { courses: page, nextCursor: rows.length > limit ? encodeCursor({ tier: coverageTier(last.captionShare), id: last.id }) : null };
 }
 
 // --- Context for lists ------------------------------------------------------
@@ -316,6 +343,8 @@ export interface CourseDto {
   humanLangs: string[] | null;
   /** null until the course has been opened once and its outline fetched. */
   lectureCount: number | null;
+  /** Share of lectures that can be studied (video and English captions); null until the outline is fetched. */
+  captionShare: number | null;
 }
 
 export interface LectureDto {
@@ -346,6 +375,7 @@ export function toCourseDto(c: Course, lectureCount: number | null = null): Cour
     disciplineName: c.disciplineName,
     humanLangs: c.humanLangs,
     lectureCount: c.outlineFetchedAt ? lectureCount ?? 0 : null,
+    captionShare: c.captionShare,
   };
 }
 

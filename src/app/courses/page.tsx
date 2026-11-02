@@ -13,20 +13,20 @@ export default function CoursesPage() {
   const [discipline, setDiscipline] = useState<number | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[] | null>(null);
   const [courses, setCourses] = useState<CourseDto[] | null>(null);
-  const [nextCursor, setNextCursor] = useState<number | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  async function load(cursor?: number) {
+  async function load(cursor?: string) {
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
     if (discipline !== null) params.set("discipline", String(discipline));
-    if (cursor) params.set("cursor", String(cursor));
+    if (cursor) params.set("cursor", cursor);
     const res = await fetch(`/api/courses?${params}`);
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error ?? `GET /api/courses → HTTP ${res.status}`);
-    return body as { courses: CourseDto[]; nextCursor: number | null; disciplines?: Discipline[] };
+    return body as { courses: CourseDto[]; nextCursor: string | null; disciplines?: Discipline[] };
   }
 
   useEffect(() => {
