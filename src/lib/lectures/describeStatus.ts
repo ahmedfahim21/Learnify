@@ -27,6 +27,10 @@ export function describeStatus(status: LectureStatus): StatusLine | null {
         : `Translating the study material into ${name}`;
 
   if (stage.state === "failed") {
+    if (!stage.willRetry && stage.stage === "transcript" && stage.lang === "en" && stage.error?.startsWith("No English transcript")) {
+      // The lecture plays; there's just no text to study it from.
+      return { text: "This lecture has no captions Learnify can read, so it can't be studied here yet. It still plays.", tone: "failed" };
+    }
     if (stage.willRetry && stage.error && /HTTP 429|rate limit/i.test(stage.error)) {
       return { text: `${what}: Sarvam is busy, picking up where it left off shortly`, tone: "retrying" };
     }
