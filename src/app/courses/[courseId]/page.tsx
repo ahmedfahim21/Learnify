@@ -95,7 +95,7 @@ export default function CoursePage() {
             <div className="flex flex-wrap items-center gap-4">
               <span className="font-mono text-sm text-(--color-mist)">
                 {lectures.length} lectures · {units.length} {units.length === 1 ? "unit" : "units"}
-                {videoOnly > 0 && ` · ${videoOnly} video only`}
+                {videoOnly > 0 && ` · ${videoOnly} without NPTEL captions`}
               </span>
               {first && (
                 <Link
@@ -178,7 +178,7 @@ function LectureRow({ lecture, best }: { lecture: LectureDto; best?: { score: nu
       {!lecture.youtubeId && <span className="block text-sm text-(--color-faint)">No video on NPTEL</span>}
       {lecture.youtubeId && !lecture.studyable && (
         <span className="flex items-center gap-1.5 text-sm text-(--color-faint)">
-          <CaptionsOff size={13} aria-hidden /> Video only: no captions to study from
+          <CaptionsOff size={13} aria-hidden /> No NPTEL captions: YouTube&apos;s are tried when you open it
         </span>
       )}
       {(lecture.ready.notes.length > 0 || lecture.ready.quiz.length > 0) && (
@@ -203,7 +203,7 @@ function LectureRow({ lecture, best }: { lecture: LectureDto; best?: { score: nu
     <Link
       href={`/lecture/${lecture.id}`}
       className={`tile group flex items-center gap-4 rounded-2xl border border-(--color-line) bg-(--color-node) p-3 hover:border-(--color-signal) ${
-        lecture.studyable ? "" : "opacity-60 grayscale-[0.6] transition-[opacity,filter] hover:opacity-100 hover:grayscale-0"
+        lecture.studyable ? "" : "opacity-80 grayscale-[0.3] transition-[opacity,filter] hover:opacity-100 hover:grayscale-0"
       }`}
     >
       {thumb}
