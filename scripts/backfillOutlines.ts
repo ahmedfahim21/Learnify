@@ -15,7 +15,8 @@ import { getDb } from "@/db";
 import { courses } from "@/db/schema";
 import { getCourseWithLectures } from "@/lib/courses/repo";
 
-const CONCURRENCY = 3;
+/** Requests at once; BACKFILL_CONCURRENCY overrides it. */
+const CONCURRENCY = Number(process.env.BACKFILL_CONCURRENCY ?? 3);
 const PAUSE_MS = 400;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
