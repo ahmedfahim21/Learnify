@@ -45,6 +45,7 @@ const course: Course = {
   humanLangs: ["hi", "ta"],
   outlineFetchedAt: new Date("2026-10-31T00:00:00Z"),
   featuredRank: null,
+  captionShare: 0.95,
   syncedAt: new Date("2026-10-31T00:00:00Z"),
 };
 
@@ -70,6 +71,7 @@ const expectedCourse = {
   disciplineName: "Computer Science and Engineering",
   humanLangs: ["hi", "ta"],
   lectureCount: 42,
+  captionShare: 0.95,
 };
 
 const ctx = (courseId: string) => ({ params: Promise.resolve({ courseId }) });
@@ -83,11 +85,12 @@ beforeEach(() => {
 
 describe("GET /api/courses", () => {
   it("returns a page of courses with exactly the public fields", async () => {
-    mocks.listCourses.mockResolvedValue({ courses: [course], nextCursor: 106106127 });
-    const res = await listGET(new Request("http://x/api/courses?discipline=106&q=%20data%20&cursor=5"));
+    mocks.listCourses.mockResolvedValue({ courses: [course], nextCursor: "0.106106127" });
+    const res = await listGET(new Request("http://x/api/courses?discipline=106&q=%20data%20&cursor=1.5"));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ courses: [expectedCourse], nextCursor: 106106127 });
-    expect(mocks.listCourses).toHaveBeenCalledWith({ disciplineId: 106, q: "data", cursor: 5, limit: PAGE_SIZE });
+    expect(await res.json()).toEqual({ courses: [expectedCourse], nextCursor: "0.106106127" });
+    // The cursor carries the coverage tier the previous page ended in, and its last id.
+    expect(mocks.listCourses).toHaveBeenCalledWith({ disciplineId: 106, q: "data", cursor: { tier: 1, id: 5 }, limit: PAGE_SIZE });
     expect(mocks.listDisciplines).not.toHaveBeenCalled();
   });
 
@@ -111,7 +114,7 @@ describe("GET /api/courses", () => {
 
   it("leaves the lecture count null for a course nobody has opened, without counting it", async () => {
     mocks.listCourses.mockResolvedValue({ courses: [{ ...course, outlineFetchedAt: null }], nextCursor: null });
-    const body = await (await listGET(new Request("http://x/api/courses?cursor=1"))).json();
+    const body = await (await listGET(new Request("http://x/api/courses?cursor=0.1"))).json();
     expect(body.courses).toEqual([{ ...expectedCourse, lectureCount: null }]);
     expect(mocks.lectureCounts).toHaveBeenCalledWith([]);
   });
@@ -122,7 +125,7 @@ describe("GET /api/courses", () => {
     expect(mocks.listCourses).toHaveBeenCalledWith({ disciplineId: undefined, q: undefined, cursor: undefined, limit: PAGE_SIZE });
   });
 
-  it.each(["discipline=abc", "cursor=-1", `q=${"x".repeat(101)}`])("rejects %s without querying", async (qs) => {
+  it.each(["discipline=abc", "cursor=-1", "cursor=5", "cursor=3.5", "cursor=1.x", `q=${"x".repeat(101)}`])("rejects %s without querying", async (qs) => {
     const res = await listGET(new Request(`http://x/api/courses?${qs}`));
     expect(res.status).toBe(400);
     expect(mocks.listCourses).not.toHaveBeenCalled();

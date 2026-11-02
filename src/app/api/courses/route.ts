@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { COURSE_PAGE_SIZE, lectureCounts, listCourses, listDisciplines, listFeatured, toCourseDto } from "@/lib/courses/repo";
+import { COURSE_PAGE_SIZE, decodeCursor, lectureCounts, listCourses, listDisciplines, listFeatured, toCourseDto } from "@/lib/courses/repo";
 import type { Course } from "@/db/schema";
 
 export const runtime = "nodejs";
@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 const query = z.object({
   discipline: z.coerce.number().int().positive().optional(),
   q: z.string().trim().max(100).optional(),
-  cursor: z.coerce.number().int().positive().optional(),
+  cursor: z.string().transform((raw, ctx) => decodeCursor(raw) ?? (ctx.addIssue({ code: "custom", message: "Invalid cursor" }), z.NEVER)).optional(),
   featured: z.enum(["1"]).optional(),
 });
 
