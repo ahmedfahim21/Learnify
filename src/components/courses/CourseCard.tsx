@@ -1,5 +1,7 @@
+import { CaptionsOff } from "lucide-react";
 import Link from "next/link";
 
+import { coverageTier } from "@/lib/courses/coverage";
 import { instituteLogo } from "@/lib/courses/institutes";
 
 import { subjectIcon } from "./subjects";
@@ -76,10 +78,14 @@ export const courseTitle = (title: string) => title.replace(/^NOC:\s*/, "");
 
 export function CourseCard({ course }: { course: CourseDto }) {
   const colour = disciplineColour(course.disciplineId);
+  // Under half its lectures have captions to study from: still listed (the videos play), but faded and said so.
+  const videoOnly = coverageTier(course.captionShare) === 2;
   return (
     <Link
       href={`/courses/${course.id}`}
-      className="tile group flex h-full flex-col gap-3 rounded-[1.25rem] border border-(--color-line)/70 bg-(--color-node) p-5 shadow-(--shadow-soft) hover:border-(--color-signal)"
+      className={`tile group flex h-full flex-col gap-3 rounded-[1.25rem] border border-(--color-line)/70 bg-(--color-node) p-5 shadow-(--shadow-soft) hover:border-(--color-signal) ${
+        videoOnly ? "opacity-60 grayscale-[0.6] transition-[opacity,filter] hover:opacity-100 hover:grayscale-0" : ""
+      }`}
     >
       <span className="flex items-center gap-2 text-xs tracking-wide text-(--color-mist) uppercase">
         <SubjectIcon name={course.disciplineName} colour={colour} />
@@ -89,6 +95,11 @@ export function CourseCard({ course }: { course: CourseDto }) {
         )}
       </span>
       <span className="line-clamp-3 text-lg leading-snug group-hover:text-(--color-signal)">{courseTitle(course.title)}</span>
+      {videoOnly && (
+        <span className="flex items-center gap-1.5 text-sm text-(--color-faint)">
+          <CaptionsOff size={13} aria-hidden /> Mostly video only: few captions to study from
+        </span>
+      )}
       <span className="mt-auto flex items-center gap-2.5 pt-1">
         <InstituteBadge institute={course.institute} colour={colour} size={36} />
         <span className="min-w-0 text-sm leading-tight">
