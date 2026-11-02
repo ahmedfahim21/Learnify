@@ -49,6 +49,11 @@ export const courses = pgTable(
     outlineFetchedAt: timestamp("outline_fetched_at", { withTimezone: true }),
     /** Place on the landing page's featured shelf (1 = first); null if not featured. Set by scripts/warmFeatured.ts. */
     featuredRank: integer("featured_rank"),
+    /**
+     * Share of its lectures with a video and NPTEL English captions (0–1): the
+     * ones Learnify can build study material from. Null until the outline is fetched.
+     */
+    captionShare: real("caption_share"),
     syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("courses_discipline_idx").on(table.disciplineId)],

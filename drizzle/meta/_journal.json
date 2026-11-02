@@ -85,6 +85,13 @@
       "when": 1793517571932,
       "tag": "0011_quiz_attempts",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793643161560,
+      "tag": "0012_caption_share",
+      "breakpoints": true
     }
   ]
 }
