@@ -60,7 +60,10 @@ export default function CoursePage() {
 
   const { course, lectures } = data;
   const colour = disciplineColour(course.disciplineId);
-  const units = [...Map.groupBy(lectures, (l) => l.unitName)];
+  // Within each unit, lectures that can be studied come first, in NPTEL's order; video-only ones follow.
+  const units = [...Map.groupBy(lectures, (l) => l.unitName)].map(
+    ([unit, ls]) => [unit, [...ls.filter((l) => l.studyable), ...ls.filter((l) => !l.studyable)]] as const,
+  );
   const first = lectures.find((l) => l.youtubeId && l.studyable);
   const videoOnly = lectures.filter((l) => l.youtubeId && !l.studyable).length;
   const readyLectures = lectures.filter((l) => l.ready.notes.length || l.ready.quiz.length).length;
@@ -199,7 +202,9 @@ function LectureRow({ lecture, best }: { lecture: LectureDto; best?: { score: nu
   return (
     <Link
       href={`/lecture/${lecture.id}`}
-      className="tile group flex items-center gap-4 rounded-2xl border border-(--color-line) bg-(--color-node) p-3 hover:border-(--color-signal)"
+      className={`tile group flex items-center gap-4 rounded-2xl border border-(--color-line) bg-(--color-node) p-3 hover:border-(--color-signal) ${
+        lecture.studyable ? "" : "opacity-60 grayscale-[0.6] transition-[opacity,filter] hover:opacity-100 hover:grayscale-0"
+      }`}
     >
       {thumb}
       {body}
