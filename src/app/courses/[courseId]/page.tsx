@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, CheckCircle2, Play, Trophy, VideoOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, CaptionsOff, CheckCircle2, Play, Trophy, VideoOff } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -61,7 +61,8 @@ export default function CoursePage() {
   const { course, lectures } = data;
   const colour = disciplineColour(course.disciplineId);
   const units = [...Map.groupBy(lectures, (l) => l.unitName)];
-  const first = lectures.find((l) => l.youtubeId);
+  const first = lectures.find((l) => l.youtubeId && l.studyable);
+  const videoOnly = lectures.filter((l) => l.youtubeId && !l.studyable).length;
   const readyLectures = lectures.filter((l) => l.ready.notes.length || l.ready.quiz.length).length;
   const readyLangs = [...new Set(lectures.flatMap((l) => [...l.ready.notes, ...l.ready.quiz]))];
   const professors = course.professor.split(/,\s*/).map((p) => p.replace(/\s+/g, " ").trim());
@@ -91,6 +92,7 @@ export default function CoursePage() {
             <div className="flex flex-wrap items-center gap-4">
               <span className="font-mono text-sm text-(--color-mist)">
                 {lectures.length} lectures · {units.length} {units.length === 1 ? "unit" : "units"}
+                {videoOnly > 0 && ` · ${videoOnly} video only`}
               </span>
               {first && (
                 <Link
@@ -171,6 +173,11 @@ function LectureRow({ lecture, best }: { lecture: LectureDto; best?: { score: nu
         </span>
       )}
       {!lecture.youtubeId && <span className="block text-sm text-(--color-faint)">No video on NPTEL</span>}
+      {lecture.youtubeId && !lecture.studyable && (
+        <span className="flex items-center gap-1.5 text-sm text-(--color-faint)">
+          <CaptionsOff size={13} aria-hidden /> Video only: no captions to study from
+        </span>
+      )}
       {(lecture.ready.notes.length > 0 || lecture.ready.quiz.length > 0) && (
         <span className="flex flex-wrap items-center gap-x-1.5 text-sm text-(--color-deep)">
           <CheckCircle2 size={13} aria-hidden />
