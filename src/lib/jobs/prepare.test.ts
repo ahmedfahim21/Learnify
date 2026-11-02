@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Job } from "@/db/schema";
+import { TranscriptUnavailableError } from "@/lib/transcripts/resolve";
 
 import { LostClaimError } from "./claim";
 import { lectureStatus, type PrepareDeps, runStages, STAGE_BUDGET_MS, stagesFor } from "./prepare";
@@ -111,14 +112,27 @@ describe("runStages", () => {
       built: [],
       stoppedAt: { lang: "en", stage: "transcript", reason: "error", detail: "Sarvam /translate failed (HTTP 503)" },
     });
-    expect(d.fail).toHaveBeenCalledWith(expect.objectContaining({ token: "tok" }), "Sarvam /translate failed (HTTP 503)", { transient: false });
+    expect(d.fail).toHaveBeenCalledWith(expect.objectContaining({ token: "tok" }), "Sarvam /translate failed (HTTP 503)", { transient: false, final: false });
     expect(d.finish).not.toHaveBeenCalled();
   });
 
   it("marks a rate-limited failure as transient so it doesn't use up an attempt", async () => {
     const d = deps({ build: vi.fn(async () => Promise.reject(new Error("No Hindi transcript: machine translation: Sarvam /translate failed (HTTP 429): Rate limit exceeded"))) });
     await runStages("lec-1", "hi", d);
-    expect(d.fail).toHaveBeenCalledWith(expect.anything(), expect.stringContaining("HTTP 429"), { transient: true });
+    expect(d.fail).toHaveBeenCalledWith(expect.anything(), expect.stringContaining("HTTP 429"), { transient: true, final: false });
+  });
+
+  it("fails for good when there are no English captions anywhere, instead of retrying", async () => {
+    const none = new TranscriptUnavailableError("en", ["NPTEL lists no English caption file", "YouTube captions: Video not playable on any client"]);
+    const d = deps({ build: vi.fn(async () => Promise.reject(none)) });
+    await runStages("lec-1", "en", d);
+    expect(d.fail).toHaveBeenCalledWith(expect.anything(), none.message, { transient: false, final: true });
+  });
+
+  it("still retries a missing translated transcript, which another try can fix", async () => {
+    const d = deps({ build: vi.fn(async () => Promise.reject(new TranscriptUnavailableError("ta", ["machine translation: Sarvam /translate failed (HTTP 503)"]))) });
+    await runStages("lec-1", "ta", d);
+    expect(d.fail).toHaveBeenCalledWith(expect.anything(), expect.any(String), { transient: false, final: false });
   });
 
   it("backs off without marking failure when its claim was taken over", async () => {

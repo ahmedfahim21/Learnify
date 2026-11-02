@@ -146,7 +146,8 @@ describe("GET /api/courses/[courseId]", () => {
           title: "Introduction to Computers and Programming",
           youtubeId: "DYFhgnaZCRE",
           captionLangs: ["en", "ta", "od"],
-          ready: { notes: [], quiz: [], pack: [] },
+          ready: { notes: [], quiz: [], pack: [], transcript: false },
+          studyable: true,
         },
       ],
     });
@@ -156,12 +157,25 @@ describe("GET /api/courses/[courseId]", () => {
 
   it("says which study screens are already written for each lecture, by language", async () => {
     mocks.getCourseWithLectures.mockResolvedValue({ course, lectures: [lecture] });
-    mocks.studyReadiness.mockResolvedValue(new Map([[lecture.id, { notes: ["hi", "bn"], quiz: ["hi"], pack: ["en", "hi"] }]]));
+    mocks.studyReadiness.mockResolvedValue(new Map([[lecture.id, { notes: ["hi", "bn"], quiz: ["hi"], pack: ["en", "hi"], transcript: true }]]));
 
     const body = await (await courseGET(new Request("http://x"), ctx("106106127"))).json();
 
-    expect(body.lectures[0].ready).toEqual({ notes: ["hi", "bn"], quiz: ["hi"], pack: ["en", "hi"] });
+    expect(body.lectures[0].ready).toEqual({ notes: ["hi", "bn"], quiz: ["hi"], pack: ["en", "hi"], transcript: true });
     expect(mocks.studyReadiness).toHaveBeenCalledWith([lecture.id]);
+  });
+
+  it("marks a lecture video only when it has no English captions and no stored transcript", async () => {
+    const bare = { ...lecture, id: "1c1e0c7e-5f1a-4f4b-9d55-6d2a4cbb4b12", vttRefs: { Tamil: "x" } };
+    const fetched = { ...lecture, id: "2d2e0c7e-5f1a-4f4b-9d55-6d2a4cbb4b13", vttRefs: {} };
+    mocks.getCourseWithLectures.mockResolvedValue({ course, lectures: [lecture, bare, fetched] });
+    mocks.studyReadiness.mockResolvedValue(new Map([[fetched.id, { notes: [], quiz: [], pack: [], transcript: true }]]));
+
+    const body = await (await courseGET(new Request("http://x"), ctx("106106127"))).json();
+
+    // NPTEL's English captions, none at all, and a transcript stored from YouTube.
+    expect(body.lectures.map((l: { studyable: boolean }) => l.studyable)).toEqual([true, false, true]);
+    expect(body.lectures[1].captionLangs).toEqual(["ta"]);
   });
 
   it("404s an id that isn't in the bank", async () => {

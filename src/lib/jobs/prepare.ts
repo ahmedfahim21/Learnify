@@ -5,6 +5,7 @@ import { type Job, studyPacks, transcripts } from "@/db/schema";
 import type { Lang } from "@/lib/languages";
 import { STUDY_PROMPT_VERSION } from "@/lib/study/generate";
 import { ensurePack } from "@/lib/study/store";
+import { TranscriptUnavailableError } from "@/lib/transcripts/resolve";
 import { dbDeps as transcriptDeps, ensureTranscript } from "@/lib/transcripts/store";
 
 import { type Claim, type ClaimResult, claimStage, fail, finish, heartbeat, isRateLimited, jobsFor, LostClaimError, MAX_ATTEMPTS, type Stage } from "./claim";
@@ -166,10 +167,13 @@ export async function runStages(
       }
       const message = err instanceof Error ? err.message : String(err);
       const transient = isRateLimited(message);
+      // No English captions anywhere: NPTEL lists none and YouTube refused or has none.
+      // Asking again seconds later gets the same answer, so it's final rather than retried.
+      const final = !transient && err instanceof TranscriptUnavailableError && err.lang === "en";
       console.error(
-        `job failed ${tag} (attempt ${result.claim.job.attempts}/${MAX_ATTEMPTS}${transient ? ", rate-limited: not counted" : ""}): ${message}`,
+        `job failed ${tag} (attempt ${result.claim.job.attempts}/${MAX_ATTEMPTS}${transient ? ", rate-limited: not counted" : final ? ", final" : ""}): ${message}`,
       );
-      await deps.fail(result.claim, message, { transient });
+      await deps.fail(result.claim, message, { transient, final });
       return { built, stoppedAt: { ...key, reason: "error", detail: message } };
     }
   }

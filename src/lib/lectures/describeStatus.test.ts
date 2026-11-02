@@ -42,8 +42,17 @@ describe("describeStatus", () => {
       text: "Building checks, flashcards and the concept map hit a problem; trying again",
       tone: "retrying",
     });
-    expect(
-      describeStatus(status([{ lang: "en", stage: "transcript", state: "failed", error: "No English transcript", willRetry: false }])),
-    ).toEqual({ text: "Fetching the lecture's captions failed: No English transcript", tone: "failed" });
+    expect(describeStatus(status([{ lang: "en", stage: "pack", state: "failed", error: "Study pack failed validation", willRetry: false }]))).toEqual({
+      text: "Building checks, flashcards and the concept map failed: Study pack failed validation",
+      tone: "failed",
+    });
+  });
+
+  it("says plainly when a lecture has no captions to study from, without the fetch details", () => {
+    const error = "No English transcript: NPTEL lists no English caption file; YouTube captions: Video not playable on any client. Attempts:\nios: LOGIN_REQUIRED";
+    expect(describeStatus(status([{ lang: "en", stage: "transcript", state: "failed", error, willRetry: false }]))).toEqual({
+      text: "This lecture has no captions Learnify can read, so it can't be studied here yet. It still plays.",
+      tone: "failed",
+    });
   });
 });
