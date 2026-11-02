@@ -1,7 +1,7 @@
 import { and, asc, count, eq, gt, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { type Course, courses, generatedScreens, type Lecture, lectures, type NewCourse, type NewLecture, studyPacks } from "@/db/schema";
+import { type Course, courses, generatedScreens, type Lecture, lectures, type NewCourse, type NewLecture, studyPacks, transcripts } from "@/db/schema";
 import { type Lang, LANGUAGES } from "@/lib/languages";
 import { fetchCourseOutline } from "@/lib/nptel/client";
 import type { NptelCourseList, NptelLesson } from "@/lib/nptel/decode";
@@ -266,15 +266,17 @@ export interface Readiness {
   notes: Lang[];
   quiz: Lang[];
   pack: Lang[];
+  /** An English transcript is stored (from NPTEL or, before YouTube started refusing, YouTube). */
+  transcript: boolean;
 }
 
-export const NOT_READY: Readiness = { notes: [], quiz: [], pack: [] };
+export const NOT_READY: Readiness = { notes: [], quiz: [], pack: [], transcript: false };
 
 export async function studyReadiness(lectureIds: string[]): Promise<Map<string, Readiness>> {
   const out = new Map<string, Readiness>();
   if (lectureIds.length === 0) return out;
   const db = getDb();
-  const [screens, packs] = await Promise.all([
+  const [screens, packs, english] = await Promise.all([
     db
       .selectDistinct({ lectureId: generatedScreens.lectureId, lang: generatedScreens.lang, kind: generatedScreens.kind })
       .from(generatedScreens)
@@ -283,14 +285,19 @@ export async function studyReadiness(lectureIds: string[]): Promise<Map<string, 
       .selectDistinct({ lectureId: studyPacks.lectureId, lang: studyPacks.lang })
       .from(studyPacks)
       .where(and(inArray(studyPacks.lectureId, lectureIds), eq(studyPacks.promptVersion, STUDY_PROMPT_VERSION))),
+    db
+      .select({ lectureId: transcripts.lectureId })
+      .from(transcripts)
+      .where(and(inArray(transcripts.lectureId, lectureIds), eq(transcripts.lang, "en"))),
   ]);
   const entry = (id: string) => {
     let r = out.get(id);
-    if (!r) out.set(id, (r = { notes: [], quiz: [], pack: [] }));
+    if (!r) out.set(id, (r = { notes: [], quiz: [], pack: [], transcript: false }));
     return r;
   };
   for (const s of screens) if (s.kind === "notes" || s.kind === "quiz") entry(s.lectureId)[s.kind].push(s.lang as Lang);
   for (const p of packs) entry(p.lectureId).pack.push(p.lang as Lang);
+  for (const t of english) entry(t.lectureId).transcript = true;
   return out;
 }
 
@@ -322,6 +329,11 @@ export interface LectureDto {
   captionLangs: Lang[];
   /** Study screens already written for it, by language. */
   ready: Readiness;
+  /**
+   * Whether anything can be studied from it: it needs English text, from
+   * NPTEL's captions or a stored transcript. Without either it's video only.
+   */
+  studyable: boolean;
 }
 
 export function toCourseDto(c: Course, lectureCount: number | null = null): CourseDto {
@@ -347,5 +359,6 @@ export function toLectureDto(l: Lecture, ready: Readiness = NOT_READY): LectureD
     youtubeId: l.youtubeId,
     captionLangs: (Object.keys(LANGUAGES) as Lang[]).filter((code) => l.vttRefs[LANGUAGES[code].nptelName]),
     ready,
+    studyable: Boolean(l.vttRefs[LANGUAGES.en.nptelName]) || ready.transcript,
   };
 }
